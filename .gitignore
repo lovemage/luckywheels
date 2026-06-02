@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vite/
+
+prototype-*.png
+視覺草稿.png
+public/visual-draft.png
+
+public/assets/*-key.png
+public/assets/lucky-logo.png
+public/lucky-logo.svg
+
+*.log
+.DS_Store
+Thumbs.db
