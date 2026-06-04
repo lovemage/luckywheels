@@ -5,12 +5,12 @@
 建立一套 LINE 會員抽獎系統，包含：
 
 - LINE 會員登入/註冊
-- Admin 手動儲值點數
-- 會員使用點數兌換抽獎次數
-- 會員抽獎
+- LINE 註冊完成後，會員綁定娛樂城會員編號（抽獎前置條件）
+- Admin 手動派發積分
+- 會員以積分直接抽獎（單抽 / 連抽 tier，由系統依「集點抽獎門檻」扣積分）
 - Admin 管理獎品、上傳獎品圖片、設定庫存與權重
-- 會員查看我的獎品
-- Admin 查看抽獎紀錄與領獎狀態
+- 會員以 Redemption 隨機碼向 Admin 兌換中獎彩金
+- Admin 查看抽獎紀錄、Redemption 狀態（未完成 / 已派送 / 已取消）
 
 ### 2026-06-03 業主會議結論
 
@@ -102,18 +102,18 @@ LINE Login
 可以：
 
 - 使用 LINE 登入
-- 查看點數餘額
-- 查看抽獎次數
-- 使用點數兌換抽獎次數
-- 抽獎
-- 查看我的獎品
+- 綁定娛樂城會員編號（一次性、由 Admin 在後台異動）
+- 查看積分餘額
+- 查看「可抽次數」（由積分對照 `pointThresholds` 推導）
+- 抽獎（single / multi tier，直接扣積分）
+- 查看我的中獎紀錄與 Redemption 隨機碼
 - 查看活動規則
 - 查看排行榜（消耗排行榜、幸運排行榜）
 
 不可：
 
-- 自行修改點數
-- 自行修改抽獎次數
+- 自行修改積分
+- 自行覆寫娛樂城會員編號（綁定後僅 Admin 可改）
 - 指定中獎結果
 - 修改獎品資料
 
@@ -156,10 +156,9 @@ LINE Login
 
 - 查看會員列表
 - 搜尋會員
-- 手動儲值點數
-- 手動調整抽獎次數
-- 查看點數流水
-- 查看抽獎次數流水
+- 手動派發積分（含流水）
+- 查看會員積分異動紀錄
+- 查看會員的 Redemption 紀錄並切換狀態（未完成 / 已派送 / 已取消）
 - 新增/編輯/停用獎品
 - 上傳獎品圖片
 - 設定獎品庫存
@@ -210,38 +209,18 @@ points              // 唯一入場貨幣；依 pointThresholds 階層扣抵
 - 不可只改 `users.points`。
 - 流水需記錄 Admin 操作者與原因。
 
-### 3. 會員點數兌換抽獎次數
+### 3. ~~會員點數兌換抽獎次數~~（已廢止）
 
-> **已淘汰**（見上方 2026-06-03 業主會議結論之「積分制」段落）。現行模型沒有「兌換抽獎次數」步驟：`users.points` 即為抽獎入場貨幣，由 `POST /api/draw` 帶 `tier` 直接扣抵。本節保留作為歷史紀錄，正式版可移除整個 `/api/exchange` 端點與兌換頁。
-
-1. 會員打開兌換頁。
-2. 選擇兌換方案。
-3. 後端檢查點數是否足夠。
-4. 扣除點數。
-5. 增加抽獎次數。
-6. 建立點數流水與抽獎次數流水。
-7. 回傳最新餘額。
-
-範例方案：
-
-| 方案 | 消耗點數 | 取得次數 |
-|---|---:|---:|
-| 單次試手氣 | 100 | 1 |
-| 人氣五連抽 | 450 | 5 |
-| 豪華十連抽 | 850 | 10 |
+積分制取代了「點數 → 抽獎次數」雙幣別模型。`users.points` 即為抽獎入場貨幣，由 `POST /api/draw` 帶 `tier` 直接依 `pointThresholds` 扣抵；不存在 `drawBalance` / `draw_credit_transactions` / `draw_packages` / `/api/exchange`。正式版實作直接略過本流程。
 
 ### 4. 會員抽獎
 
-1. 會員點擊中心旋鈕或下方立即抽獎。
-2. 前端呼叫後端抽獎 API。
-3. 後端檢查抽獎次數是否足夠。
-4. 後端扣除 1 次抽獎次數。
-5. 後端依照啟用獎品與權重抽出結果。
-6. 若獎品有庫存，扣除庫存。
-7. 建立抽獎紀錄。
-8. 若中獎，建立會員獎品紀錄。
-9. 回傳中獎結果與目標獎品 id。
-10. 前端依照結果播放轉盤動畫。
+1. 會員按下 CTA（單抽 / 連抽）。
+2. 前端呼叫 `POST /api/draw`，帶 `tier` 與 `Idempotency-Key` header。
+3. 後端依序檢查 blacklist → entertainment-code → tier；通過則進交易。
+4. 交易內：lock 系統累計、扣積分 + 累計次數、跑 N 次加權抽出（multi N=10）、扣對應庫存、寫 N 筆 `draw_logs`，最後寫一筆 `Redemption`（含隨機 code、totalWinAmount）並 increment 系統累計。
+5. 回傳 `{ redemption, draws[], points, tier, tierDraws, isTest }`。
+6. 前端依 `draws[0].prize.wheelPosition` 計算停止角度，播放動畫；停盤後彈窗顯示 N 筆中獎金額 + Redemption 隨機碼供截圖。
 
 前端播放動畫時需使用 Admin 設定：
 
@@ -396,19 +375,21 @@ lineUserId
 displayName
 pictureUrl
 vipLevel
-points                   // 入場貨幣，依 pointThresholds 階層扣抵
-accountType              // verified, test, blacklisted（預設 verified）
-verifiedAt               // LINE 註冊完成時間，自動填入
-testSkipCost             // 僅 accountType=test 時生效，是否略過扣彩金
-testForcePrizeId         // 僅 accountType=test 時生效，nullable，強制中此獎品
-blacklistedAt            // 被列入黑名單時間，nullable
-blacklistedByAdminUserId // 操作者，nullable
-blacklistReason          // 備註，nullable
-totalBurnAmount          // 累計消耗積分，用於消耗排行榜
-totalLuckAmount          // 累計中獎彩金（cash），用於幸運排行榜
-lifetimeDrawCount        // 累計抽獎次數（含被成本控管閘門攔下的）
-lifetimePayoutAmount     // 累計實際中獎彩金
-lastWinDrawIndex         // 上次中獎時的 lifetimeDrawCount，用於冷卻判斷
+points                       // 入場貨幣，依 pointThresholds 階層扣抵
+entertainmentMemberCode      // 娛樂城會員編號，nullable，unique；綁定後才能抽獎
+entertainmentCodeBoundAt     // 綁定時間，nullable
+accountType                  // verified, test, blacklisted（預設 verified）
+verifiedAt                   // LINE 註冊完成時間，自動填入
+testSkipCost                 // 僅 accountType=test 時生效，是否略過扣積分
+testForcePrizeId             // 僅 accountType=test 時生效，nullable，強制中此獎品
+blacklistedAt                // 被列入黑名單時間，nullable
+blacklistedByAdminUserId     // 操作者，nullable
+blacklistReason              // 備註，nullable
+totalBurnAmount              // 累計消耗積分，用於消耗排行榜
+totalLuckAmount              // 累計中獎彩金（cash），用於幸運排行榜
+lifetimeDrawCount            // 累計抽獎次數（含被成本控管閘門攔下的）
+lifetimePayoutAmount         // 累計實際中獎彩金
+lastWinDrawIndex             // 上次中獎時的 lifetimeDrawCount，用於冷卻判斷
 createdAt
 updatedAt
 ```
@@ -417,6 +398,8 @@ updatedAt
 
 - `accountType` 預設為 `verified`。LINE 註冊完成即視同正式會員（依後續會議決議移除 pending 人工審核閘）。後台仍可手動切回 `test` 或 `blacklisted`。
 - `testSkipCost` 與 `testForcePrizeId` 對 `verified` 帳號**無效**，後端必須忽略這兩個欄位。
+- `entertainmentMemberCode` 為 unique，預設 null。會員透過 `POST /api/onboarding/entertainment-code` 完成綁定後 `entertainmentCodeBoundAt` 自動填入。一旦綁定，再次呼叫且帶不同碼回 409；同碼則 idempotent 200。要改值需 Admin 介入。
+- 未綁定的會員打 `POST /api/draw` 直接回 `403 ENTERTAINMENT_CODE_REQUIRED`，前端引導到綁定頁。
 
 ### admin_users
 
@@ -447,33 +430,6 @@ balanceAfter
 adminUserId
 note
 createdAt
-```
-
-### draw_credit_transactions
-
-```text
-id
-userId
-type              // exchange_gain, draw_cost, admin_adjustment
-amount
-balanceAfter
-adminUserId
-note
-createdAt
-```
-
-### draw_packages
-
-```text
-id
-title
-pointsCost
-drawCount
-badgeText
-enabled
-sortOrder
-createdAt
-updatedAt
 ```
 
 ### prizes
@@ -507,31 +463,53 @@ updatedAt
 ```text
 id
 userId
+redemptionId            // 每筆 draw_log 必屬於一個 Redemption（single 為 1 筆，multi 為 10 筆）
+subIndex                // 在該 Redemption 內的編號：single 固定 0；multi 為 0..9
 prizeId
-drawCreditBefore
-drawCreditAfter
+tier                    // single | multi
+tierCost                // 該批扣的積分總額（與其他 sub-row 相同）
+tierDraws               // 該批的 draws 總數（與其他 sub-row 相同）
+pointsBefore            // 該 sub-draw 寫入前的會員 points
+pointsAfter             // 該 sub-draw 寫入後的會員 points（finalize 後同批 sub-rows 相同）
 randomSeed
-winningCashAmount     // 此次實際中獎金額 = prizes.cashAmount（安慰獎/被閘門攔下時為 0）
-isTest                // 是否為測試帳號抽出的紀錄；true 時不進排行榜
-forcedByAdmin         // 測試帳號被 testForcePrizeId 強制中獎時為 true
-gatedBy               // 被成本控管閘門攔下時的原因：min_draws / cooldown / payout_cap；通過所有閘門為 null
+winningCashAmount       // = prizes.cashAmount，安慰獎 / 被閘門攔下時為 0
+isTest                  // 測試帳號抽出；true 時不進排行榜也不影響系統累計
+forcedByAdmin           // 測試帳號被 testForcePrizeId 強制中獎時為 true
+gatedBy                 // 被成本控管閘門攔下時的原因：min_draws / cooldown / payout_cap；通過所有閘門為 null
 createdAt
 ```
 
-### user_prizes
+備註：
+
+- `idempotencyKey` **不**在 draw_logs。請見 `redemptions` 表（批次層綁定，避免 multi 10 筆 sub-row 撞 unique）。
+- `(redemptionId, subIndex)` 設 unique，保證同一批次內 sub-draw 不會重號。
+
+### redemptions
+
+每一筆 `POST /api/draw` 請求對應一筆 `Redemption`，內含一組對外公開的隨機兌換碼。會員把碼截圖傳給管理員，管理員依碼查詢並切換狀態。Multi tier 連抽的 10 筆 `draw_logs` 全部掛在同一筆 `Redemption` 下。
 
 ```text
 id
 userId
-prizeId
-drawLogId
-status            // pending, claimed, void
-claimedAt
-adminUserId
-note
+code                    // Crockford Base32 12 字 + 兩個 dash，格式 XXXX-XXXX-XXXX；unique
+tier                    // single | multi
+totalWinAmount          // 該批 draw_logs 的 winningCashAmount 加總（tx 末段一次性寫入）
+status                  // pending | delivered | cancelled
+statusChangedAt
+statusChangedByAdminUserId
+cancelReason            // 狀態變 cancelled 時的原因，nullable
+isTest                  // mirror draw_logs.isTest，方便管理員 dashboard 過濾
+idempotencyKey          // 由用戶端 header `Idempotency-Key` 帶入；nullable
 createdAt
 updatedAt
 ```
+
+備註與索引：
+
+- `@@unique([userId, idempotencyKey])` — 同一會員以同一 key 重送，回 replay 不會建立第二筆 Redemption。
+- `code` 設 unique；產生時若撞 `P2002`，後端重產一組碼重試（成本極低，120 bits 熵）。
+- `status` 預設 `pending`；管理員透過 Admin 後台「中獎紀錄」模組切換到 `delivered` 或 `cancelled`，每次切換寫一筆 `admin_action_logs`。
+- 索引：`[userId, createdAt]`、`[status, createdAt]`、`[isTest, createdAt]`。
 
 ### app_settings
 
@@ -656,9 +634,38 @@ updatedAt
 ```text
 GET  /api/auth/line/start
 GET  /api/auth/line/callback
-GET  /api/me
+GET  /api/me              // 含 entertainmentMemberCode 欄位
 POST /api/logout
 ```
+
+### Onboarding
+
+```text
+POST /api/onboarding/entertainment-code
+```
+
+Request：
+
+```json
+{
+  "code": "EM_654321"
+}
+```
+
+Response 200：
+
+```json
+{
+  "entertainmentMemberCode": "EM_654321"
+}
+```
+
+行為：
+
+- code 必須 6–20 字、`A-Z 0-9 _ -`，否則 400 `ENTERTAINMENT_CODE_INVALID`。
+- 該 code 已被別的會員綁定 → 409 `ENTERTAINMENT_CODE_TAKEN`。
+- 該會員已綁了不同 code → 409 `ENTERTAINMENT_CODE_ALREADY_BOUND`（重綁需 Admin 介入）。
+- 該會員已綁同樣 code → 200 idempotent 成功。
 
 ### Member
 
@@ -666,30 +673,6 @@ POST /api/logout
 GET  /api/member/wallet
 GET  /api/member/prizes
 GET  /api/member/draw-history
-```
-
-### Exchange
-
-```text
-GET  /api/draw-packages
-POST /api/exchange
-```
-
-Request:
-
-```json
-{
-  "packageId": "package_id"
-}
-```
-
-Response:
-
-```json
-{
-  "pointsBalance": 830,
-  "drawBalance": 10
-}
 ```
 
 ### Draw
@@ -1041,19 +1024,44 @@ GET   /api/admin/users/:id/draw-history          // 單一會員的抽獎歷史�
 交易順序：
 
 ```text
+# API entry (pre-tx)
+check accountType != blacklisted              # else 403 + admin_action_logs(draw_blocked_blacklist)
+check user.entertainmentMemberCode != null    # else 403 ENTERTAINMENT_CODE_REQUIRED
+parse body { tier }                            # else 400 TIER_INVALID
+resolve tier -> tierCost, tierDraws
+if accountType == 'test': branch to handleTestDraw
+
+# Verified transaction (default ReadCommitted + explicit row locks)
 begin transaction
-lock user row
-resolve tier (single|multi) -> tierCost, tierDraws
-check points >= tierCost
-decrease points by tierCost
-increment lifetimeDrawCount by tierDraws
-select active prizes
-weighted random
-if prize requires stock, decrease stock
-create draw log
-if winning prize, create user_prize
+  read system totals FOR UPDATE              # atomic payout_cap data
+  atomic UPDATE user SET points -= tierCost,
+                         lifetimeDrawCount += tierDraws,
+                         totalBurnAmount += tierCost
+                   WHERE points >= tierCost   # P2025 → 422 INSUFFICIENT_POINTS
+  evaluate gates on post-deduct counters (min_draws / cooldown / payout_cap)
+  read active prizes
+  create Redemption with random code(), totalWinAmount=0, isTest=false, idempotencyKey
+                                              # P2002 on (userId, key) → replay original
+  for i in 0..tierDraws-1:
+    chosen = gated ? consolation : pickPrize(active)
+    if not chosen.isConsolation:
+      decrement prize stock atomically WHERE stock > 0
+      if no row affected (race): chosen = consolation
+    create draw_log(redemptionId, subIndex=i, prizeId, winningCashAmount, gatedBy, ...)
+  totalWinAmount = sum of draw_logs[].winningCashAmount
+  if not gated and totalWinAmount > 0:
+    UPDATE user SET lifetimePayoutAmount += totalWinAmount,
+                    totalLuckAmount += totalWinAmount,
+                    lastWinDrawIndex = lifetimeDrawCount (post-deduct)
+  UPDATE Redemption SET totalWinAmount = ...
+  increment system totals (drawCount, pointsBurned, payoutAmount)
 commit
 ```
+
+備註：
+
+- 所有 jackpot 相關步驟（reset / increment / history）已隨機制移除。
+- Multi tier 在同一交易內跑 N 次 pickPrize，每次獨立扣 stock；其中任一次撞 race → 該 sub-draw fallback 到 consolation，其他 sub-draws 不受影響。
 
 ## 前端頁面清單
 

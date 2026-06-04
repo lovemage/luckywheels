@@ -1724,7 +1724,7 @@ git commit -m "feat(server): LINE OAuth start/callback with signed state + id_to
 - Modify: `server/tests/helpers/db.ts` (extend TABLES)
 - Create: `server/prisma/seed.ts`
 
-`draw_logs.idempotencyKey` is **scoped by `userId`** via composite unique — addresses Codex #8.
+**Idempotency lives on `Redemption.idempotencyKey`**, scoped by `(userId, idempotencyKey)` via composite unique — addresses Codex #8 and the multi-tier batch issue (10 child DrawLogs would have collided on a per-DrawLog unique).
 
 - [ ] **Step 1: Append to `server/prisma/schema.prisma`**
 
@@ -1947,7 +1947,7 @@ Expected: prints `seed done`; idempotent on re-run.
 
 ```bash
 git add server/prisma/schema.prisma server/prisma/migrations server/prisma/seed.ts server/tests/helpers/db.ts
-git commit -m "feat(server): prizes/settings/draw_logs/jackpot_history (userId-scoped idempotency)"
+git commit -m "feat(server): prizes/settings/draw_logs/redemption (batch-level idempotency on Redemption)"
 ```
 
 ---
@@ -3888,7 +3888,7 @@ cd server && npx vitest run tests/integration/public.test.ts
 
 ```bash
 git add server/src/routes/public.ts server/src/index.ts server/tests/integration/public.test.ts
-git commit -m "feat(server): /api/jackpot/public + /api/settings/public (spinDurationMs from settings)"
+git commit -m "feat(server): /api/settings/public (spinDurationMs from settings; /api/jackpot/public removed in Rev 3)"
 ```
 
 ---
