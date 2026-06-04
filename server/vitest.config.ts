@@ -5,6 +5,7 @@ export default defineConfig({
     environment: 'node',
     globals: false,
     include: ['tests/**/*.test.ts'],
+    setupFiles: ['./tests/setup.ts'],
     pool: 'forks',
     poolOptions: { forks: { singleFork: true } },
     sequence: { concurrent: false },
