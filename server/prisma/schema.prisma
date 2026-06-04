@@ -52,3 +52,20 @@ model User {
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
 }
+
+model AdminActionLog {
+  id            String    @id @default(cuid())
+  adminUserId   String?   // null for system events (e.g. draw_blocked_blacklist)
+  event         String    // e.g. draw_blocked_blacklist, user.blacklist_set, ...
+  targetType    String?
+  targetId      String?
+  payloadBefore Json?
+  payloadAfter  Json?
+  ip            String?
+  userAgent     String?
+  note          String?
+  createdAt     DateTime  @default(now())
+
+  @@index([event, createdAt])
+  @@index([targetType, targetId, createdAt])
+}
