@@ -1845,7 +1845,7 @@ Also **modify the existing `User` model from Task 3** to add the matching back-r
 - [ ] **Step 2: Migrate**
 
 ```bash
-cd server && npx prisma migrate dev --name add_prizes_settings_logs_jackpot_redemption
+cd server && npx prisma migrate dev --name add_prizes_settings_drawlogs_redemption
 ```
 
 - [ ] **Step 3: Update `server/tests/helpers/db.ts`**
@@ -2506,7 +2506,7 @@ cd server && npx vitest run tests/integration/settings_reader.test.ts
 
 ```bash
 git add server/src/draw/settings.ts server/tests/integration/settings_reader.test.ts
-git commit -m "feat(server): settings reader + jackpot row-lock + totals (tx-scoped)"
+git commit -m "feat(server): settings reader + system-totals row lock (tx-scoped)"
 ```
 
 ---

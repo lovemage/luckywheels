@@ -8,7 +8,6 @@ import {
   Sparkles,
   Trophy,
   Upload,
-  Wallet,
 } from 'lucide-react';
 import { ChangeEvent, useMemo, useState } from 'react';
 
@@ -40,12 +39,6 @@ const initialPrizes: Prize[] = [
   { id: 4, rank: '四獎', name: '彩金', detail: '500 元', stock: 80, weight: 22, segmentColor: '#38a86e', textColor: '#fff5d6', icon: '💰', enabled: true },
   { id: 5, rank: '五獎', name: '彩金', detail: '100 元', stock: 200, weight: 26, segmentColor: '#2e7cd9', textColor: '#fff5d6', icon: '💰', enabled: true },
   { id: 6, rank: '六獎', name: '謝謝參加', detail: '', stock: 9999, weight: 30, segmentColor: '#9b3eb8', textColor: '#fff5d6', icon: '💰', enabled: true },
-];
-
-const packages = [
-  { id: 1, title: '單次試手氣', points: 100, draws: 1, tag: '快速' },
-  { id: 2, title: '人氣五連抽', points: 450, draws: 5, tag: '省 50' },
-  { id: 3, title: '豪華十連抽', points: 850, draws: 10, tag: '推薦' },
 ];
 
 const POINT_THRESHOLDS = [
@@ -110,7 +103,7 @@ function wheelGradient(prizes: Prize[]) {
 }
 
 export function App() {
-  const [view, setView] = useState<'wheel' | 'exchange' | 'ranking' | 'rules' | 'mine'>('wheel');
+  const [view, setView] = useState<'wheel' | 'ranking' | 'rules' | 'mine'>('wheel');
   const [points, setPoints] = useState(28);
   const [totalDraws, setTotalDraws] = useState(0);
   const [lastDrawCount, setLastDrawCount] = useState(1);
@@ -184,12 +177,6 @@ export function App() {
     const here = cyclable.indexOf(effectiveTierIndex);
     const next = cyclable[(here + 1) % cyclable.length] ?? 0;
     setSelectedTierIndex(next);
-  };
-
-  const exchange = (pack: (typeof packages)[number]) => {
-    if (points < pack.points) return;
-    setPoints((value) => value + pack.draws);
-    setView('wheel');
   };
 
   const updatePrize = (id: number, patch: Partial<Prize>) => {
@@ -295,29 +282,13 @@ export function App() {
           </div>
         )}
 
-        {view === 'exchange' && (
-          <section className="panel-screen">
-            <ScreenHeader icon={<Wallet />} title="兌換抽獎次數" subtitle={`目前可用 ${points.toLocaleString()} 點`} />
-            <div className="package-list">
-              {packages.map((pack) => (
-                <button className="package-card" key={pack.id} onClick={() => exchange(pack)} disabled={points < pack.points}>
-                  <span className="tag">{pack.tag}</span>
-                  <strong>{pack.title}</strong>
-                  <span>{pack.points.toLocaleString()} 點</span>
-                  <b>{pack.draws} 次</b>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
         {view === 'rules' && (
           <section className="panel-screen">
             <ScreenHeader icon={<ReceiptText />} title="活動規則" subtitle="正式版可由後台編輯文案" />
             <div className="rule-list">
-              <p>每次抽獎消耗 1 次抽獎機會，結果由伺服器判定。</p>
-              <p>中獎獎項會進入我的獎品，領取狀態由管理員更新。</p>
-              <p>點數由後台儲值，會員可自行兌換抽獎次數。</p>
+              <p>單抽消耗 6 積分、連抽消耗 48 積分，結果由伺服器判定。</p>
+              <p>中獎時會產生 Redemption 隨機碼，將碼截圖傳給管理員兌換彩金。</p>
+              <p>積分由管理員後台派發，會員不可自行修改。</p>
             </div>
           </section>
         )}

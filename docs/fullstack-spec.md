@@ -218,7 +218,7 @@ points              // 唯一入場貨幣；依 pointThresholds 階層扣抵
 1. 會員按下 CTA（單抽 / 連抽）。
 2. 前端呼叫 `POST /api/draw`，帶 `tier` 與 `Idempotency-Key` header。
 3. 後端依序檢查 blacklist → entertainment-code → tier；通過則進交易。
-4. 交易內：lock 系統累計、扣積分 + 累計次數、跑 N 次加權抽出（multi N=10）、扣對應庫存、寫 N 筆 `draw_logs`，最後寫一筆 `Redemption`（含隨機 code、totalWinAmount）並 increment 系統累計。
+4. 交易內：lock 系統累計、扣積分 + 累計次數、**先 create 一筆 `Redemption`**（產生隨機 code、`totalWinAmount=0`、`idempotencyKey`），再跑 N 次加權抽出（multi N=10）、扣對應庫存、寫 N 筆 `draw_logs`（`redemptionId` 必填、`subIndex` 0..N-1），最後 update `Redemption.totalWinAmount = SUM(draws)` 並 increment 系統累計。
 5. 回傳 `{ redemption, draws[], points, tier, tierDraws, isTest }`。
 6. 前端依 `draws[0].prize.wheelPosition` 計算停止角度，播放動畫；停盤後彈窗顯示 N 筆中獎金額 + Redemption 隨機碼供截圖。
 
@@ -973,10 +973,26 @@ GET   /api/admin/users/:id/draw-history          // 單一會員的抽獎歷史�
 
 #### accountType = test（測試帳號）
 
-1. 若 `testSkipCost = true`，不檢查也不扣 `users.points`；否則照正式會員方式依 tier 扣積分。
-2. 若 `testForcePrizeId` 不為空且該獎品 `enabled = true`，直接以該獎品為 `prize`，標記 `forcedByAdmin = true`；否則照共通規則加權抽出。
-3. 進入「中獎處理」流程。
-4. `draw_logs.isTest = true`。
+1. **不進入成本控管閘門**（min_draws / cooldown / payout_cap 皆跳過）。
+2. 若 `testSkipCost = true`，不檢查也不扣 `users.points`；否則照正式會員方式依 tier 扣積分。
+3. 對 `tierDraws` 數量跑 N 次：
+   - 若 `testForcePrizeId` 不為空且該獎品 `enabled = true`，**每一筆 sub-draw 都用該獎品**，標記 `forcedByAdmin = true`。
+   - 否則照共通規則加權抽出。
+4. 進入「測試帳號中獎處理」流程（見下節，與 verified 不同）。
+5. 寫 N 筆 `draw_logs`，`isTest = true`；寫一筆 `Redemption`，`isTest = true`。
+
+#### 測試帳號中獎處理（Test draw post-pick）
+
+對齊 backend plan Rev 3 的「測試帳號 counters frozen」決議。測試帳號的 sub-draw **仍會產生 Redemption + DrawLog**（管理員可以用 Redemption code 查紀錄、看獎品），但其他 side effect 全部停掉：
+
+- **不扣獎品庫存**（即使中到 stock > 0 的獎品也不 decrement；測試 session 不可耗光真實庫存）。
+- **不更新 `users.lastWinDrawIndex`**。
+- **不增加 `users.lifetimePayoutAmount` / `lifetimeDrawCount`**。
+- **不更新排行榜累計**（`users.totalBurnAmount` / `users.totalLuckAmount` 完全不動）。
+- **不更新系統累計**（`totalDrawCount` / `totalPayoutAmount` / `totalPointsBurned` 三個 app_settings key 完全不動）。
+- 仍會：寫 `draw_logs.winningCashAmount = prize.cashAmount`（或安慰獎為 0）、寫 `Redemption.totalWinAmount = SUM(...)`、產生隨機 `code` 回傳前端。
+
+> 設計動機：管理員把 test → verified 切回去時，不會殘留 test session 灌出來的 lifetime 值；且測試不會污染派彩比例 / 排行榜 / 庫存。
 
 
 ### 中獎處理（僅 verified）
@@ -1069,10 +1085,10 @@ commit
 
 ```text
 /                 輪盤首頁
+/onboarding       娛樂城會員編號綁定（未綁定者抽獎前一律強制導向）
 /ranking          排行榜
 /rules            活動規則
-/my-prizes        我的獎品
-/exchange         點數兌換抽獎次數
+/my-prizes        我的獎品（顯示 Redemption code 與狀態）
 ```
 
 目前展示版在單頁中使用 tab 切換，正式版可保留 tab 或改路由。
@@ -1082,11 +1098,10 @@ commit
 ```text
 /admin/login
 /admin/users
-/admin/users/:id              // 含 accountType 切換與測試帳號設定
+/admin/users/:id              // 含 accountType 切換、測試帳號設定、entertainmentMemberCode 重綁
 /admin/prizes                 // 含 cashAmount 欄位
-/admin/draw-packages
+/admin/redemptions            // 「中獎紀錄」模組：以 Redemption code / 會員 / 狀態 / 日期區間查詢，切換 pending → delivered / cancelled
 /admin/draw-logs              // 預設僅顯示正式會員紀錄，可切換顯示測試紀錄
-/admin/user-prizes
 /admin/leaderboards           // 編輯消耗 / 幸運兩榜的手動條目
 /admin/settings
 ```
@@ -1118,19 +1133,19 @@ refresh wallet
 
 ## 實作順序建議
 
-1. 建立 PostgreSQL + Prisma schema（含 `accountType`、`cashAmount`、`Redemption`、`leaderboard_overrides`）。
-2. 建立 LINE 登入；新註冊預設 `accountType = verified`（無 pending 審核閘，符合後續會議決議）。
-3. 建立會員資料與 wallet API。
-4. 建立 Admin 登入與會員列表。
-5. 建立 Admin 手動儲值點數。
-6. 建立兌換方案與兌換 API。
+1. 建立 PostgreSQL + Prisma schema（含 `accountType`、`cashAmount`、`Redemption`、`leaderboard_overrides`、`AdminActionLog`、`User.entertainmentMemberCode`）。
+2. 建立 LINE 登入；新註冊預設 `accountType = verified`（無 pending 審核閘）。
+3. 建立會員資料 API（`GET /api/me` 回傳 `entertainmentMemberCode`）。
+4. 建立 `POST /api/onboarding/entertainment-code` 綁定端點（會員首次抽獎前置條件）。
+5. 建立 Admin 登入與會員列表（含 `accountType` 切換、測試帳號設定、`entertainmentMemberCode` 重綁）。
+6. 建立 Admin 手動派發積分（含積分流水）。
 7. 建立獎品 CRUD 與圖片上傳，含 `cashAmount`。
-8. 建立 Admin 活動設定，包含輪盤旋轉時間、`pointThresholds` 階層。
-9. 建立 Admin 帳號類型管理（verified / test / blacklisted 切換 + 測試帳號設定）。
-10. 建立正式抽獎 API，含依 `accountType` 分流、Redemption + 隨機碼產生。
-11. 建立排行榜計算與 `leaderboard_overrides` 編輯介面。
-12. 前端接 API，移除假資料；輪盤頁加入兌換碼彈窗顯示。
-13. 加入抽獎紀錄、我的獎品、領獎狀態。
+8. 建立 Admin 活動設定（輪盤旋轉時間、`pointThresholds` 階層、成本控管參數）。
+9. 建立正式抽獎 API（`POST /api/draw`）：blacklist + entertainment-code 入口 gate；tx 內 system totals lock → 扣積分 → 閘門 → 先 create Redemption → N sub-picks → write draw_logs → finalize Redemption + 系統累計；依 `accountType` 分流 test 分支。
+10. 建立排行榜計算與 `leaderboard_overrides` 編輯介面。
+11. 建立 Admin「中獎紀錄」模組：以 Redemption code 查詢、切換 `pending → delivered / cancelled` 狀態。
+12. 前端接 API，移除假資料；輪盤頁加入 Redemption code + N 筆 sub-draw 金額彈窗。
+13. 加入抽獎紀錄、我的獎品（顯示 Redemption code 與狀態）。
 
 ## 安全要求
 
