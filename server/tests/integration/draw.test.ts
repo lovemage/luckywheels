@@ -161,3 +161,91 @@ describe('POST /api/draw — verified core', () => {
     expect(r.status).toBe(401);
   });
 });
+
+describe('POST /api/draw — gates', () => {
+  beforeEach(async () => { await resetDb(); });
+
+  // NOTE: `gatedBy` lives on each sub-draw entry (`body.draws[i].gatedBy`), not at the top level —
+  // single tier has one entry, multi has 10 but all share the same gate result for the batch.
+  it('min_draws: blocks until threshold reached (post-deduct counting)', async () => {
+    await seedDefaultSettings({ minDrawsBeforeWin: '5' });
+    const consolation = await createPrize({ isConsolation: true, weight: 1 });
+    await createPrize({ weight: 1, cashAmount: 500 });
+    await prisma.appSetting.update({ where: { key: SETTINGS_KEYS.consolationPrizeId },
+                                      data: { value: consolation.id } });
+
+    // lifetimeDrawCount starts at 4; after deduct it becomes 5 → first eligible
+    const u = await createUser({ points: 100, lifetimeDrawCount: 4 });
+    const r = await app.request('/api/draw', {
+      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
+    });
+    const body = await r.json();
+    expect(body.draws[0].gatedBy).toBeNull();
+
+    // a different user starts at 3 → after deduct = 4 < 5 → gated
+    const u2 = await createUser({ points: 100, lifetimeDrawCount: 3 });
+    const r2 = await app.request('/api/draw', {
+      method: 'POST', headers: await authedHeaders(u2.id), body: JSON.stringify({ tier: 'single' }),
+    });
+    expect((await r2.json()).draws[0].gatedBy).toBe('min_draws');
+  });
+
+  it('cooldown: enforces exact boundary (< not <=)', async () => {
+    await seedDefaultSettings({ cooldownDrawsAfterWin: '3' });
+    const consolation = await createPrize({ isConsolation: true, weight: 1 });
+    await createPrize({ weight: 1, cashAmount: 500 });
+    await prisma.appSetting.update({ where: { key: SETTINGS_KEYS.consolationPrizeId },
+                                      data: { value: consolation.id } });
+
+    const cases = [
+      { startLifetime: 5, expectGated: 'cooldown' as const },
+      { startLifetime: 6, expectGated: 'cooldown' as const },
+      { startLifetime: 7, expectGated: null as null },           // boundary opens here
+      { startLifetime: 8, expectGated: null as null },
+    ];
+    for (const { startLifetime, expectGated } of cases) {
+      const u = await createUser({
+        points: 100, lifetimeDrawCount: startLifetime, lastWinDrawIndex: 5,
+      });
+      const r = await app.request('/api/draw', {
+        method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
+      });
+      expect((await r.json()).draws[0].gatedBy).toBe(expectGated);
+    }
+  }, 30000);
+
+  it('cooldown gated: freezes lastWinDrawIndex / lifetime payout', async () => {
+    await seedDefaultSettings({ cooldownDrawsAfterWin: '3' });
+    const consolation = await createPrize({ isConsolation: true, weight: 1 });
+    await createPrize({ weight: 1, cashAmount: 500 });
+    await prisma.appSetting.update({ where: { key: SETTINGS_KEYS.consolationPrizeId },
+                                      data: { value: consolation.id } });
+
+    const u = await createUser({ points: 100, lifetimeDrawCount: 5, lastWinDrawIndex: 5 });
+    await app.request('/api/draw', {
+      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
+    });
+    const after = await prisma.user.findUnique({ where: { id: u.id } });
+    expect(after?.lastWinDrawIndex).toBe(5);              // frozen
+    expect(after?.totalLuckAmount).toBe(0);               // frozen
+  });
+
+  it('payout_cap: blocked when ratio exceeded (totals stored in app_settings, not derived from User)', async () => {
+    await seedDefaultSettings({
+      payoutCapEnabled: 'true',
+      payoutCapRatio: '0.45',
+      totalPayoutAmount: '600',
+      totalPointsBurned: '1000',
+    });
+    const consolation = await createPrize({ isConsolation: true, weight: 1 });
+    await createPrize({ weight: 1, cashAmount: 500 });
+    await prisma.appSetting.update({ where: { key: SETTINGS_KEYS.consolationPrizeId },
+                                      data: { value: consolation.id } });
+
+    const u = await createUser({ points: 100 });
+    const r = await app.request('/api/draw', {
+      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
+    });
+    expect((await r.json()).draws[0].gatedBy).toBe('payout_cap');
+  });
+});
