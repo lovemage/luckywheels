@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { env } from './env.js';
 import { formatError } from './errors.js';
 import { meRoutes } from './routes/me.js';
+import { authRoutes } from './routes/auth.js';
 
 const app = new Hono();
 
@@ -14,6 +15,7 @@ app.onError((err, c) => {
 app.get('/api/health', (c) => c.json({ ok: true }));
 
 app.route('/', meRoutes);
+app.route('/', authRoutes);
 
 export { app };
 
