@@ -13,5 +13,7 @@ meRoutes.get('/api/me', requireUser, (c) => {
     vipLevel: u.vipLevel,
     points: u.points,
     accountType: u.accountType,
+    nickname: u.nickname,
+    entertainmentMemberCode: u.entertainmentMemberCode,
   });
 });

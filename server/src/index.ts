@@ -6,6 +6,7 @@ import { meRoutes } from './routes/me.js';
 import { authRoutes } from './routes/auth.js';
 import { drawRoutes } from './routes/draw.js';
 import { publicRoutes } from './routes/public.js';
+import { onboardingRoutes } from './routes/onboarding.js';
 
 const app = new Hono();
 
@@ -20,6 +21,7 @@ app.route('/', meRoutes);
 app.route('/', authRoutes);
 app.route('/', drawRoutes);
 app.route('/', publicRoutes);
+app.route('/', onboardingRoutes);
 
 export { app };
 
