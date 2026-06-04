@@ -5,6 +5,7 @@ import { formatError } from './errors.js';
 import { meRoutes } from './routes/me.js';
 import { authRoutes } from './routes/auth.js';
 import { drawRoutes } from './routes/draw.js';
+import { publicRoutes } from './routes/public.js';
 
 const app = new Hono();
 
@@ -18,6 +19,7 @@ app.get('/api/health', (c) => c.json({ ok: true }));
 app.route('/', meRoutes);
 app.route('/', authRoutes);
 app.route('/', drawRoutes);
+app.route('/', publicRoutes);
 
 export { app };
 
