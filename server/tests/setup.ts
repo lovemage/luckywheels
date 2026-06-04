@@ -1,3 +1,26 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Load .env before applying defaults so the real DATABASE_URL (Railway)
+// wins over the local fallbacks below. Defaults only fill genuinely-unset vars.
+try {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const envPath = resolve(here, '..', '.env');
+  const raw = readFileSync(envPath, 'utf8');
+  for (const line of raw.split('\n')) {
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (!m) continue;
+    const [, key, value] = m;
+    if (key && value !== undefined && process.env[key] === undefined) {
+      const trimmed = value.replace(/^['"]|['"]$/g, '');
+      process.env[key] = trimmed;
+    }
+  }
+} catch {
+  // .env is optional (e.g. CI provides vars directly).
+}
+
 const defaults: Record<string, string> = {
   DATABASE_URL: 'postgresql://lucky:lucky@127.0.0.1:5433/luckywheels',
   PORT: '3001',
