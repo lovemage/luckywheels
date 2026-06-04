@@ -249,3 +249,34 @@ describe('POST /api/draw — gates', () => {
     expect((await r.json()).draws[0].gatedBy).toBe('payout_cap');
   });
 });
+
+describe('POST /api/draw — gated accounting', () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seedDefaultSettings({ minDrawsBeforeWin: '99' });
+    const cp = await createPrize({ isConsolation: true });
+    await prisma.appSetting.update({
+      where: { key: SETTINGS_KEYS.consolationPrizeId }, data: { value: cp.id },
+    });
+    await createPrize({ weight: 1, cashAmount: 500 });
+  });
+
+  it('gated draw: charges points, increments lifetime, but freezes win-accounting', async () => {
+    const u = await createUser({ points: 100 });
+    const r = await app.request('/api/draw', {
+      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
+    });
+    const body = await r.json();
+    expect(body.draws[0].gatedBy).toBe('min_draws');
+    expect(body.draws[0].winningCashAmount).toBe(0);
+    expect(body.redemption.totalWinAmount).toBe(0);
+
+    const after = await prisma.user.findUnique({ where: { id: u.id } });
+    expect(after?.points).toBe(94);                  // 100 - 6
+    expect(after?.lifetimeDrawCount).toBe(1);        // counted
+    expect(after?.totalBurnAmount).toBe(6);          // counted
+    expect(after?.lifetimePayoutAmount).toBe(0);     // frozen
+    expect(after?.totalLuckAmount).toBe(0);          // frozen
+    expect(after?.lastWinDrawIndex).toBeNull();      // frozen
+  });
+});
