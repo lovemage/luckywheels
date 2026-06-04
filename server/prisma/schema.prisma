@@ -49,6 +49,9 @@ model User {
   lifetimePayoutAmount     Int          @default(0)
   lastWinDrawIndex         Int?
 
+  drawLogs                 DrawLog[]
+  redemptions              Redemption[]
+
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
 }
@@ -69,3 +72,104 @@ model AdminActionLog {
   @@index([event, createdAt])
   @@index([targetType, targetId, createdAt])
 }
+
+model Prize {
+  id            String   @id @default(cuid())
+  rankLabel     String                                // 頭獎 / 二獎 / ...
+  name          String
+  description   String?
+  imageUrl      String?
+  stock         Int      @default(0)
+  weight        Int      @default(0)
+  wheelPosition Int      @default(0)
+  sortOrder     Int      @default(0)
+  cashAmount    Int      @default(0)                  // fixed payout per win (no jackpot accumulation)
+  segmentColor  String   @default("#9b3eb8")
+  textColor     String   @default("#fff5d6")
+  enabled       Boolean  @default(true)
+  isConsolation Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  drawLogs      DrawLog[]
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+enum GatedBy {
+  min_draws
+  cooldown
+  payout_cap
+}
+
+enum RedemptionStatus {
+  pending      // 未完成 — default after draw
+  delivered    // 已派送 — admin transferred the cash to the entertainment center account
+  cancelled    // 已取消 — admin marked as invalid (e.g. fraud, duplicate screenshot)
+}
+
+/// One Redemption represents one抽獎請求 (single = 1 prize hit, multi = 10).
+/// `code` is the random redemption code the member screenshots and sends to admin.
+/// Lifetime: one row per `POST /api/draw` call. Owned by one user; multiple `DrawLog`
+/// children hang off it via `redemptionId`.
+model Redemption {
+  id                          String           @id @default(cuid())
+  userId                      String
+  user                        User             @relation(fields: [userId], references: [id])
+  code                        String           @unique         // Crockford Base32, e.g. K3F7-PRA2-NX9V
+  tier                        String                          // "single" | "multi"
+  totalWinAmount              Int              @default(0)    // sum of winningCashAmount across drawLogs; written once at end of tx
+  status                      RedemptionStatus @default(pending)
+  statusChangedAt             DateTime?
+  statusChangedByAdminUserId  String?
+  cancelReason                String?
+  isTest                      Boolean          @default(false) // mirrors draw_logs.isTest, for admin filtering
+  // Idempotency lives at the BATCH level. A multi-tier request has 10 child DrawLogs
+  // that all share the same idempotency key, so the unique constraint must NOT be on
+  // DrawLog (would block sub-draw 2..10). One Redemption per (user, key) is the contract.
+  idempotencyKey              String?
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+
+  drawLogs                    DrawLog[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([isTest, createdAt])
+}
+
+model DrawLog {
+  id                  String      @id @default(cuid())
+  userId              String
+  user                User        @relation(fields: [userId], references: [id])
+
+  // Rev 3: every draw_log belongs to a Redemption (1 for single, 10 for multi).
+  redemptionId        String
+  redemption          Redemption  @relation(fields: [redemptionId], references: [id])
+  subIndex            Int                                     // 0 for single; 0..9 for multi
+
+  prizeId             String
+  prize               Prize       @relation(fields: [prizeId], references: [id])
+  tier                String                                  // "single" | "multi"
+  tierCost            Int
+  tierDraws           Int
+  pointsBefore        Int
+  pointsAfter         Int
+  randomSeed          String
+  winningCashAmount   Int         @default(0)                 // = prize.cashAmount, or 0 if consolation/gated
+  isTest              Boolean     @default(false)
+  forcedByAdmin       Boolean     @default(false)
+  gatedBy             GatedBy?
+  // NOTE: no idempotencyKey here — multi-tier writes 10 sub-rows that share one batch key.
+  //       The unique key lives on Redemption to prevent that collision.
+  createdAt           DateTime    @default(now())
+
+  @@unique([redemptionId, subIndex])  // each sub-draw within a batch is unique
+  @@index([userId, createdAt])
+}
+
+// JackpotHistory and JackpotEventType deliberately omitted (Rev 3 jackpot removal).
