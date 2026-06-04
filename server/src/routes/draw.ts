@@ -253,7 +253,7 @@ async function handleVerifiedDraw(c: Context, user: User, tier: Tier) {
       });
 
       return { redemption: finalRedemption, drawLogs, finalUser };
-    }, { timeout: 30_000, maxWait: 10_000 });
+    }, { timeout: 60_000, maxWait: 30_000 });
   } catch (err) {
     if ((err as { code?: string })?.code === 'P2025') {
       throw new AppError('INSUFFICIENT_POINTS', 'points below tier cost', 422);
@@ -365,7 +365,7 @@ async function handleTestDraw(c: Context, user: User, tier: Tier) {
 
       // Test draws DON'T update system totals or user lifetime/ranking counters.
       return { redemption: finalRedemption, drawLogs, finalUser };
-    }, { timeout: 30_000, maxWait: 10_000 });
+    }, { timeout: 60_000, maxWait: 30_000 });
   } catch (err) {
     if ((err as { code?: string })?.code === 'P2025') {
       throw new AppError('INSUFFICIENT_POINTS', 'points below tier cost', 422);
