@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { env } from './env.js';
 import { formatError } from './errors.js';
+import { meRoutes } from './routes/me.js';
 
 const app = new Hono();
 
@@ -11,6 +12,8 @@ app.onError((err, c) => {
 });
 
 app.get('/api/health', (c) => c.json({ ok: true }));
+
+app.route('/', meRoutes);
 
 export { app };
 
