@@ -27,6 +27,7 @@ const defaults: Record<string, string> = {
   PUBLIC_FRONTEND_ORIGIN: 'http://127.0.0.1:5173',
   JWT_SECRET: 'test-jwt-secret-must-be-at-least-32-chars-xxxx',
   STATE_SECRET: 'test-state-secret-distinct-from-jwt-32-chars-yy',
+  ADMIN_JWT_SECRET: 'test-admin-jwt-secret-32-chars-or-more-xxxx',
   JWT_ISSUER: 'luckywheels-test',
   JWT_AUDIENCE: 'luckywheels-test-aud',
   LINE_CHANNEL_ID: '1234567890',

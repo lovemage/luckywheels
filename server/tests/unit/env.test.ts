@@ -7,6 +7,7 @@ const baseValid = {
   PUBLIC_FRONTEND_ORIGIN: 'http://127.0.0.1:5173',
   JWT_SECRET: 'a'.repeat(32),
   STATE_SECRET: 'b'.repeat(32),
+  ADMIN_JWT_SECRET: 'd'.repeat(32),
   JWT_ISSUER: 'luckywheels',
   JWT_AUDIENCE: 'front',
   LINE_CHANNEL_ID: '1234567890',

@@ -12,7 +12,10 @@
     "db:up": "docker compose up -d",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset --force",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "admin-ui:dev": "npm --prefix admin-ui run dev",
+    "admin-ui:build": "npm --prefix admin-ui run build",
+    "admin-ui:test": "npm --prefix admin-ui run test"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
