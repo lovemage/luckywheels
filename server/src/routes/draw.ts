@@ -227,8 +227,99 @@ async function handleVerifiedDraw(c: Context, user: User, tier: Tier) {
   }));
 }
 
-async function handleTestDraw(_c: Context, _user: User, _tier: Tier): Promise<Response> {
-  throw new AppError('NOT_IMPLEMENTED', 'test branch lands in Task 22', 500);
+async function handleTestDraw(c: Context, user: User, tier: Tier) {
+  const settings = await readDrawSettings();
+  const threshold = resolveThreshold(tier, settings.pointThresholds);
+
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      let finalUser: User = user;
+      if (!user.testSkipCost) {
+        finalUser = await tx.user.update({
+          where: { id: user.id, points: { gte: threshold.points } },
+          data: { points: { decrement: threshold.points } },
+        });
+      }
+
+      // Prize selection inside tx so a concurrent admin disable can't poison
+      // the read. Test draws DO NOT decrement stock (documented decision: test
+      // sessions must not deplete real prize stock).
+      const eligible = await tx.prize.findMany({ where: { enabled: true } });
+
+      const redemption = await tx.redemption.create({
+        data: {
+          userId: user.id,
+          code: generateRedemptionCode(),
+          tier,
+          totalWinAmount: 0,
+          isTest: true,
+          idempotencyKey: c.req.header('idempotency-key') ?? null,
+        },
+      });
+
+      const subDraws: Array<{ chosen: Prize; winningCashAmount: number }> = [];
+      for (let i = 0; i < threshold.draws; i++) {
+        let chosen: Prize;
+        if (user.testForcePrizeId) {
+          const found = eligible.find((p) => p.id === user.testForcePrizeId);
+          if (!found) throw new AppError('FORCE_PRIZE_NOT_FOUND', 'test override prize missing', 422);
+          chosen = found;
+        } else {
+          chosen = pickPrize(eligible);
+        }
+        const winningCashAmount = chosen.isConsolation ? 0 : chosen.cashAmount;
+        subDraws.push({ chosen, winningCashAmount });
+      }
+
+      const totalWinAmount = subDraws.reduce((s, d) => s + d.winningCashAmount, 0);
+
+      const drawLogs: Array<{ log: Awaited<ReturnType<typeof tx.drawLog.create>>; chosen: Prize }> = [];
+      for (let i = 0; i < subDraws.length; i++) {
+        const { chosen, winningCashAmount } = subDraws[i]!;
+        const log = await tx.drawLog.create({
+          data: {
+            userId: user.id,
+            redemptionId: redemption.id,
+            subIndex: i,
+            prizeId: chosen.id,
+            tier,
+            tierCost: threshold.points,
+            tierDraws: threshold.draws,
+            pointsBefore: user.points,
+            pointsAfter: finalUser.points,
+            randomSeed: randomBytes(8).toString('hex'),
+            winningCashAmount,
+            isTest: true,
+            forcedByAdmin: Boolean(user.testForcePrizeId),
+          },
+        });
+        drawLogs.push({ log, chosen });
+      }
+
+      const finalRedemption = await tx.redemption.update({
+        where: { id: redemption.id },
+        data: { totalWinAmount },
+      });
+
+      // Test draws DON'T update system totals or user lifetime/ranking counters.
+      return { redemption: finalRedemption, drawLogs, finalUser };
+    }, { timeout: 30_000, maxWait: 10_000 });
+  } catch (err) {
+    if ((err as { code?: string })?.code === 'P2025') {
+      throw new AppError('INSUFFICIENT_POINTS', 'points below tier cost', 422);
+    }
+    throw err;
+  }
+
+  return c.json(buildResponse({
+    redemption: result.redemption,
+    drawLogs: result.drawLogs,
+    finalUserPoints: result.finalUser.points,
+    tier,
+    tierDraws: threshold.draws,
+    isTest: true,
+  }));
 }
 
 export { buildResponse };
