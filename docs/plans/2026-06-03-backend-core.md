@@ -32,14 +32,14 @@
     - `GET /api/jackpot/public` endpoint
     - Tasks 16 (`resolveJackpot` unit) 與 19 (jackpot hit integration) 從計畫中刪除
     - Tasks 17, 18, 20, 21, 22, 24, 25 內所有 jackpot 相關 setup / assertion 移除
-  - **娛樂城會員編號 binding** (`User.entertainmentMemberCode`). LINE 註冊完成不代表能抽獎；會員必須先呼叫 `POST /api/onboarding/entertainment-code` 綁定娛樂城帳號編號才能 `POST /api/draw`。未綁定會員打抽獎 → 403 `ENTERTAINMENT_CODE_REQUIRED`，由前端引導到綁定頁。
-  - **娛樂城會員編號 binding** (`User.entertainmentMemberCode`). LINE 註冊完成不代表能抽獎；會員必須先呼叫 `POST /api/onboarding/entertainment-code` 綁定娛樂城帳號編號才能 `POST /api/draw`。未綁定會員打抽獎 → 403 `ENTERTAINMENT_CODE_REQUIRED`，由前端引導到綁定頁。
+  - **Onboarding binding (`User.nickname` + `User.entertainmentMemberCode`)**。LINE 註冊完成不代表能抽獎；會員必須先呼叫 `POST /api/onboarding/profile` 一次提交「暱稱」與「娛樂城會員編號」才能 `POST /api/draw`。任一欄位仍為 null 的會員打抽獎 → 403 `ONBOARDING_REQUIRED`，由前端引導到 onboarding 表單。
+  - **Onboarding binding (`User.nickname` + `User.entertainmentMemberCode`)**。LINE 註冊完成不代表能抽獎；會員必須先呼叫 `POST /api/onboarding/profile` 一次提交「暱稱」與「娛樂城會員編號」才能 `POST /api/draw`。任一欄位仍為 null 的會員打抽獎 → 403 `ONBOARDING_REQUIRED`，由前端引導到 onboarding 表單。
   - **Redemption batch + 隨機兌換碼**。每一次抽獎請求（不論 single 或 multi）產生一筆 `Redemption` 紀錄，含一組 12-char Crockford Base32 隨機碼（格式 `XXXX-XXXX-XXXX`）。所屬 `DrawLog` 多筆（multi 為 10 筆）以 `redemptionId` 連到該 Redemption。`Redemption.status` 為 `pending / delivered / cancelled` 三態，由 Admin 後台手動切換。
   - **連抽真的抽 10 次**。`tier=multi` 時後端執行 10 次 `pickPrize` 並回傳 10 筆 sub-draw 結果（每筆有自己的 `prize` / `winningCashAmount` / `subIndex`）；前端 modal 顯示 1–10 筆金額 + 1 組兌換碼。每筆 sub-draw 都用 `prize.cashAmount` 直接計算中獎金額（沒有 jackpot 累加/重置邏輯需要處理）。
   - **API response shape 改了**。所有抽獎回傳改為 `{ redemption: {code, status, ...}, draws: [...], points, tier, ... }`。原本扁平的 `prize` / `drawLogId` / `winningCashAmount` 都移進 `draws[i]`。所有抽獎 test 同步調整。
   - **新增表**：`Redemption`、`RedemptionStatus` enum、`DrawLog.redemptionId` + `subIndex`。`Redemption.code` 採全域唯一。
   - **新增 helper**：`generateRedemptionCode()`（Crockford Base32，含驗證 + 防混淆字元）。
-  - **新增端點**：`POST /api/onboarding/entertainment-code` 與 `GET /api/me` 補上 `entertainmentMemberCode` 欄位。
+  - **新增端點**：`POST /api/onboarding/profile`（body 為 `{ nickname, code }` 兩欄位原子提交）與 `GET /api/me` 補上 `nickname` + `entertainmentMemberCode` 兩個欄位。
   - **管理員「中獎紀錄」模組** 仍延後到 Admin 後台 plan。本 plan 提供完整 schema + 隨機碼查詢索引，Admin 模組只需做 UI 與狀態切換 endpoint。
 
 ### Codex-finding → Task mapping (Rev 1 + Rev 2 + Rev 2.1)
@@ -84,9 +84,9 @@
 
 ## Plan Header
 
-**Goal:** Stand up the Lucky Wheels backend with Postgres + Prisma, real LINE OAuth (signed state + id_token nonce), 娛樂城會員編號 binding, and a fully-gated `POST /api/draw` honoring the current 積分制 (parse tier → entertainment-code gate → deduct + lifetime → gates → N weighted picks bundled in one Redemption with a random code → log + audit), with userId-scoped idempotency, blacklist audit logging, and stock row-level locks. **No jackpot accumulation** — each prize wins its fixed `cashAmount`.
+**Goal:** Stand up the Lucky Wheels backend with Postgres + Prisma, real LINE OAuth (signed state + id_token nonce), onboarding binding (`nickname` + `entertainmentMemberCode` atomic), and a fully-gated `POST /api/draw` honoring the current 積分制 (parse tier → onboarding gate → deduct + lifetime → gates → N weighted picks bundled in one Redemption with a random code → log + audit), with userId-scoped idempotency, blacklist audit logging, and stock row-level locks. **No jackpot accumulation** — each prize wins its fixed `cashAmount`. **LINE 是會員唯一的登入方式**（無 email / 訪客 fallback）。
 
-**Architecture:** Hono on Node 22 in a new `server/` workspace. Prisma against Postgres 16 (Docker for local). JWT in httpOnly cookie for member session. LINE OAuth uses an HMAC-signed `state` cookie + a per-flow `nonce` echoed back via `id_token`; both are verified server-side. After OAuth completes, the user is `verified` but needs to bind a 娛樂城會員編號 via `POST /api/onboarding/entertainment-code` before they can call `POST /api/draw`. The draw API processes each request through ordered side effects **inside one `prisma.$transaction`** (default ReadCommitted): `SELECT FOR UPDATE` on system-totals rows, optimistic `WHERE points >= cost` on the user row, atomic `updateMany WHERE stock > 0` on each prize, evaluate gates against post-deduct counters, run `N = threshold.draws` picks (1 for `single`, 10 for `multi`) — each pick wins `prize.cashAmount` directly with no jackpot interaction — wrap them in one `Redemption` row with a Crockford-Base32 code, write N `draw_log` rows. No global isolation escalation — the explicit row locks are the contention primitives. Blacklist and entertainment-code gates are enforced at API entry; blacklist writes an `admin_action_logs` row.
+**Architecture:** Hono on Node 22 in a new `server/` workspace. Prisma against Postgres 16 (Docker for local). JWT in httpOnly cookie for member session. LINE OAuth uses an HMAC-signed `state` cookie + a per-flow `nonce` echoed back via `id_token`; both are verified server-side. **LINE 是會員唯一的登入方式**，沒有 email + password / 訪客 fallback。After OAuth completes, the user is `verified` but needs to submit onboarding (`nickname` + `entertainmentMemberCode`) via `POST /api/onboarding/profile` before they can call `POST /api/draw`. The draw API processes each request through ordered side effects **inside one `prisma.$transaction`** (default ReadCommitted): `SELECT FOR UPDATE` on system-totals rows, optimistic `WHERE points >= cost` on the user row, atomic `updateMany WHERE stock > 0` on each prize, evaluate gates against post-deduct counters, run `N = threshold.draws` picks (1 for `single`, 10 for `multi`) — each pick wins `prize.cashAmount` directly with no jackpot interaction — wrap them in one `Redemption` row with a Crockford-Base32 code, write N `draw_log` rows. No global isolation escalation — the explicit row locks are the contention primitives. Blacklist and onboarding gates are enforced at API entry; blacklist writes an `admin_action_logs` row.
 
 **Tech Stack:** Node 22 LTS, TypeScript 5.6, Hono 4, Prisma 5, Postgres 16, vitest 2, zod 3, jose 5 (JWT + LINE id_token), undici 6 (`MockAgent` for LINE in tests).
 
@@ -139,7 +139,7 @@ server/
     routes/
       auth.ts                       # /api/auth/line/start, /callback, /api/logout
       me.ts                         # GET /api/me
-      onboarding.ts                 # POST /api/onboarding/entertainment-code
+      onboarding.ts                 # POST /api/onboarding/profile
       draw.ts                       # POST /api/draw
       public.ts                     # GET /api/settings/public
     draw/
@@ -515,9 +515,12 @@ model User {
   pictureUrl               String?
   vipLevel                 Int          @default(0)
 
-  // 娛樂城會員編號（Rev 3）。LINE 註冊完成不會自動有值；
-  // 會員必須透過 POST /api/onboarding/entertainment-code 綁定後才能抽獎。
-  // unique 防止兩個 LINE 帳號綁同一個娛樂城會員。
+  // Onboarding 表單欄位（Rev 3）。LINE 註冊完成不會自動有值；會員必須透過
+  // POST /api/onboarding/profile 一次原子提交 `nickname` + `entertainmentMemberCode`
+  // 後才能抽獎。`displayName` 是 LINE profile 給的，`nickname` 是站內顯示用、
+  // 可由會員自己改（MVP 暫由 Admin 改）。
+  nickname                 String?
+  // 娛樂城會員編號。unique 防止兩個 LINE 帳號綁同一個娛樂城會員；first-bind-only。
   entertainmentMemberCode  String?      @unique
   entertainmentCodeBoundAt DateTime?
 
@@ -1977,17 +1980,22 @@ export async function createUser(o: Partial<{
   lastWinDrawIndex: number | null;
   totalBurnAmount: number;
   totalLuckAmount: number;
-  entertainmentMemberCode: string | null;  // Rev 3: pass a value to skip the onboarding gate
+  nickname: string | null;                  // Rev 3: pass null to opt out of the onboarding gate (default: pre-onboarded)
+  entertainmentMemberCode: string | null;   // Rev 3: same — pass null to test the onboarding gate
 }> = {}) {
   u += 1;
-  // Default: factory users are pre-bound to a fake entertainment code so existing
-  // draw tests don't need to call the onboarding endpoint. Tests of the onboarding
-  // gate itself pass `entertainmentMemberCode: null` to opt out.
+  // Factory default: users are pre-onboarded (both nickname AND code set) so existing
+  // draw tests don't have to call the onboarding endpoint. Tests of the onboarding
+  // gate explicitly pass `nickname: null` or `entertainmentMemberCode: null` to opt out.
+  const defaultNickname = `小測${u}`;
   const defaultCode = `EM_${u.toString().padStart(8, '0')}`;
+  const codeValue = o.entertainmentMemberCode === undefined ? defaultCode : o.entertainmentMemberCode;
+  const nicknameValue = o.nickname === undefined ? defaultNickname : o.nickname;
   return prisma.user.create({
     data: {
       lineUserId: o.lineUserId ?? `U_test_${u}`,
       displayName: o.displayName ?? `Tester ${u}`,
+      nickname: nicknameValue,
       points: o.points ?? 100,
       accountType: o.accountType ?? 'verified',
       testSkipCost: o.testSkipCost ?? false,
@@ -1996,8 +2004,8 @@ export async function createUser(o: Partial<{
       lastWinDrawIndex: o.lastWinDrawIndex ?? null,
       totalBurnAmount: o.totalBurnAmount ?? 0,
       totalLuckAmount: o.totalLuckAmount ?? 0,
-      entertainmentMemberCode: o.entertainmentMemberCode === undefined ? defaultCode : o.entertainmentMemberCode,
-      entertainmentCodeBoundAt: o.entertainmentMemberCode === null ? null : new Date(),
+      entertainmentMemberCode: codeValue,
+      entertainmentCodeBoundAt: codeValue === null ? null : new Date(),
     },
   });
 }
@@ -2604,7 +2612,7 @@ git commit -m "feat(server): redemption code generator (Crockford Base32, 12 cha
 
 ---
 
-## Task 18: POST /api/draw — blacklist + entertainment-code gates + verified flow with Redemption batching
+## Task 18: POST /api/draw — blacklist + onboarding gates + verified flow with Redemption batching
 
 Addresses Codex Rev 1 #1, #2, #3, #4, #11 + Rev 3 redemption + multi sub-picks (no jackpot — removed in Rev 3).
 
@@ -2615,7 +2623,7 @@ Addresses Codex Rev 1 #1, #2, #3, #4, #11 + Rev 3 redemption + multi sub-picks (
 This task lands the verified-flow handler with:
 - zod body parsing → tier
 - blacklist gate writing `admin_action_logs.event = 'draw_blocked_blacklist'`
-- entertainment-code gate → 403 `ENTERTAINMENT_CODE_REQUIRED` if `user.entertainmentMemberCode` is null
+- onboarding gate → 403 `ONBOARDING_REQUIRED` if `user.nickname` OR `user.entertainmentMemberCode` is null
 - everything inside one transaction (default ReadCommitted + explicit row locks on system totals)
 - gates evaluated AFTER point deduction + lifetime increment
 - For `tier=multi`, the handler loops `pickPrize` 10 times and bundles results in one `Redemption` row with a Crockford-Base32 code
@@ -2666,18 +2674,28 @@ describe('POST /api/draw — verified core', () => {
     expect(audits[0]?.adminUserId).toBeNull();
   });
 
-  it('user without entertainment code → 403 ENTERTAINMENT_CODE_REQUIRED, no charge', async () => {
+  it('user with no entertainment code → 403 ONBOARDING_REQUIRED, no charge', async () => {
     const u = await createUser({ entertainmentMemberCode: null, points: 100 });
     const r = await app.request('/api/draw', {
       method: 'POST', headers: await authedHeaders(u.id),
       body: JSON.stringify({ tier: 'single' }),
     });
     expect(r.status).toBe(403);
-    expect((await r.json()).error.code).toBe('ENTERTAINMENT_CODE_REQUIRED');
+    expect((await r.json()).error.code).toBe('ONBOARDING_REQUIRED');
 
     const after = await prisma.user.findUnique({ where: { id: u.id } });
     expect(after?.points).toBe(100);
     expect(await prisma.redemption.count()).toBe(0);
+  });
+
+  it('user with no nickname → 403 ONBOARDING_REQUIRED, no charge', async () => {
+    const u = await createUser({ nickname: null, points: 100 });
+    const r = await app.request('/api/draw', {
+      method: 'POST', headers: await authedHeaders(u.id),
+      body: JSON.stringify({ tier: 'single' }),
+    });
+    expect(r.status).toBe(403);
+    expect((await r.json()).error.code).toBe('ONBOARDING_REQUIRED');
   });
 
   it('400 TIER_INVALID on malformed body', async () => {
@@ -2836,8 +2854,8 @@ drawRoutes.post('/api/draw', requireUser, async (c) => {
   }
 
   // Gate 0.5: entertainment-code binding required
-  if (!user.entertainmentMemberCode) {
-    throw new AppError('ENTERTAINMENT_CODE_REQUIRED', 'must bind 娛樂城會員編號 before drawing', 403);
+  if (!user.nickname || !user.entertainmentMemberCode) {
+    throw new AppError('ONBOARDING_REQUIRED', 'must complete onboarding (nickname + entertainment code) before drawing', 403);
   }
 
   // Body parse
@@ -3069,7 +3087,7 @@ Expected: PASS 7/7 (blacklist + entertainment-code + tier_invalid + insufficient
 
 ```bash
 git add server/src/routes/draw.ts server/src/index.ts server/tests/integration/draw.test.ts
-git commit -m "feat(server): POST /api/draw (blacklist + entertainment-code gates + Redemption batching for single/multi)"
+git commit -m "feat(server): POST /api/draw (blacklist + onboarding gates + Redemption batching for single/multi)"
 ```
 
 ---
@@ -3893,19 +3911,25 @@ git commit -m "feat(server): /api/settings/public (spinDurationMs from settings;
 
 ---
 
-## Task 25b: POST /api/onboarding/entertainment-code + /api/me reflects binding
+## Task 25b: POST /api/onboarding/profile + /api/me reflects nickname + code
 
-Addresses Rev 3: 娛樂城會員編號 binding. Without this endpoint, every member fails the entertainment-code gate from Task 18 and can't draw.
+Addresses Rev 3 onboarding gate. Without this endpoint, every newly LINE-registered member fails the onboarding gate in Task 18 and can't draw. The endpoint atomically writes both `nickname` and `entertainmentMemberCode` (UI submits them as one form).
 
 **Files:**
 - Create: `server/src/routes/onboarding.ts`
-- Modify: `server/src/routes/me.ts` (expose `entertainmentMemberCode`)
+- Modify: `server/src/routes/me.ts` (expose `nickname` + `entertainmentMemberCode`)
 - Modify: `server/src/index.ts` (mount onboarding route)
 - Create: `server/tests/integration/onboarding.test.ts`
 
-Validation: code must be 6–20 chars, alphanumeric + dash/underscore. Uniqueness is enforced at the schema level (`User.entertainmentMemberCode @unique`); duplicate binding → 409 `ENTERTAINMENT_CODE_TAKEN`.
+Validation:
+- `nickname`: 2–12 chars, must contain at least one non-whitespace character; rejects bodies with only whitespace.
+- `code`: 6–20 chars matching `^[A-Za-z0-9_-]+$`.
+- Uniqueness on `code` enforced at the schema level (`User.entertainmentMemberCode @unique`); cross-user duplicate → 409 `ENTERTAINMENT_CODE_TAKEN`.
 
-Design decision: **first-bind-only**. Once a code is set, calling the endpoint again with a different code returns 409 `ENTERTAINMENT_CODE_ALREADY_BOUND`. Rebinding requires Admin intervention (out of scope here, lands in the Admin plan).
+Design decisions:
+- **`code` is first-bind-only.** Once bound, calling with a different code returns 409 `ENTERTAINMENT_CODE_ALREADY_BOUND`. Rebinding requires Admin intervention (out of scope for this plan; lands in Admin plan).
+- **`nickname` is mutable.** Calling with the same `code` but a different `nickname` is allowed and updates the nickname — supports a future "edit profile" flow without adding a new endpoint.
+- Both fields are required on every call. We do **not** support setting one without the other; that would let a member skip onboarding partially.
 
 - [ ] **Step 1: Write failing test**
 
@@ -3924,39 +3948,57 @@ async function H(id: string) {
   return { cookie: `${SESSION_COOKIE}=${t}`, 'content-type': 'application/json' };
 }
 
-describe('POST /api/onboarding/entertainment-code', () => {
+describe('POST /api/onboarding/profile', () => {
   beforeEach(resetDb);
 
   it('401 without session', async () => {
-    const r = await app.request('/api/onboarding/entertainment-code', {
-      method: 'POST', body: JSON.stringify({ code: 'EM_12345' }),
+    const r = await app.request('/api/onboarding/profile', {
+      method: 'POST', body: JSON.stringify({ nickname: '小明', code: 'EM_12345' }),
       headers: { 'content-type': 'application/json' },
     });
     expect(r.status).toBe(401);
   });
 
-  it('binds the code and surfaces it via /api/me', async () => {
-    const u = await createUser({ entertainmentMemberCode: null });
-    const r = await app.request('/api/onboarding/entertainment-code', {
-      method: 'POST', headers: await H(u.id), body: JSON.stringify({ code: 'EM_654321' }),
+  it('first onboard: writes both fields and surfaces them via /api/me', async () => {
+    const u = await createUser({ nickname: null, entertainmentMemberCode: null });
+    const r = await app.request('/api/onboarding/profile', {
+      method: 'POST', headers: await H(u.id),
+      body: JSON.stringify({ nickname: '小明', code: 'EM_654321' }),
     });
     expect(r.status).toBe(200);
-    expect(await r.json()).toMatchObject({ entertainmentMemberCode: 'EM_654321' });
+    expect(await r.json()).toMatchObject({ nickname: '小明', entertainmentMemberCode: 'EM_654321' });
 
     const me = await app.request('/api/me', { headers: await H(u.id) });
-    expect((await me.json()).entertainmentMemberCode).toBe('EM_654321');
+    const body = await me.json();
+    expect(body.nickname).toBe('小明');
+    expect(body.entertainmentMemberCode).toBe('EM_654321');
 
     const fresh = await prisma.user.findUnique({ where: { id: u.id } });
+    expect(fresh?.nickname).toBe('小明');
     expect(fresh?.entertainmentMemberCode).toBe('EM_654321');
     expect(fresh?.entertainmentCodeBoundAt).not.toBeNull();
   });
 
-  it('400 ENTERTAINMENT_CODE_INVALID on malformed input', async () => {
-    const u = await createUser({ entertainmentMemberCode: null });
+  it('400 NICKNAME_INVALID on bad nickname', async () => {
+    const u = await createUser({ nickname: null, entertainmentMemberCode: null });
+    const bad = ['', ' ', '\t', 'a', 'a'.repeat(13), '     '];
+    for (const nickname of bad) {
+      const r = await app.request('/api/onboarding/profile', {
+        method: 'POST', headers: await H(u.id),
+        body: JSON.stringify({ nickname, code: 'EM_VALID01' }),
+      });
+      expect(r.status).toBe(400);
+      expect((await r.json()).error.code).toBe('NICKNAME_INVALID');
+    }
+  });
+
+  it('400 ENTERTAINMENT_CODE_INVALID on bad code', async () => {
+    const u = await createUser({ nickname: null, entertainmentMemberCode: null });
     const bad = ['', 'ab', 'has space', '!!!', 'a'.repeat(50)];
     for (const code of bad) {
-      const r = await app.request('/api/onboarding/entertainment-code', {
-        method: 'POST', headers: await H(u.id), body: JSON.stringify({ code }),
+      const r = await app.request('/api/onboarding/profile', {
+        method: 'POST', headers: await H(u.id),
+        body: JSON.stringify({ nickname: '阿明', code }),
       });
       expect(r.status).toBe(400);
       expect((await r.json()).error.code).toBe('ENTERTAINMENT_CODE_INVALID');
@@ -3964,31 +4006,39 @@ describe('POST /api/onboarding/entertainment-code', () => {
   });
 
   it('409 ENTERTAINMENT_CODE_TAKEN when another user already bound this code', async () => {
-    await createUser({ entertainmentMemberCode: 'EM_SHARED' });
-    const u2 = await createUser({ entertainmentMemberCode: null });
-    const r = await app.request('/api/onboarding/entertainment-code', {
-      method: 'POST', headers: await H(u2.id), body: JSON.stringify({ code: 'EM_SHARED' }),
+    await createUser({ nickname: '其他', entertainmentMemberCode: 'EM_SHARED' });
+    const u2 = await createUser({ nickname: null, entertainmentMemberCode: null });
+    const r = await app.request('/api/onboarding/profile', {
+      method: 'POST', headers: await H(u2.id),
+      body: JSON.stringify({ nickname: '我', code: 'EM_SHARED' }),
     });
     expect(r.status).toBe(409);
     expect((await r.json()).error.code).toBe('ENTERTAINMENT_CODE_TAKEN');
   });
 
-  it('409 ENTERTAINMENT_CODE_ALREADY_BOUND when this user already bound a different code', async () => {
-    const u = await createUser({ entertainmentMemberCode: 'EM_OLD' });
-    const r = await app.request('/api/onboarding/entertainment-code', {
-      method: 'POST', headers: await H(u.id), body: JSON.stringify({ code: 'EM_NEW' }),
+  it('409 ENTERTAINMENT_CODE_ALREADY_BOUND when this user tries to change code', async () => {
+    const u = await createUser({ nickname: '小明', entertainmentMemberCode: 'EM_OLD' });
+    const r = await app.request('/api/onboarding/profile', {
+      method: 'POST', headers: await H(u.id),
+      body: JSON.stringify({ nickname: '小明', code: 'EM_NEW' }),
     });
     expect(r.status).toBe(409);
     expect((await r.json()).error.code).toBe('ENTERTAINMENT_CODE_ALREADY_BOUND');
   });
 
-  it('idempotent re-bind of the SAME code returns 200 (so frontend retries are safe)', async () => {
-    const u = await createUser({ entertainmentMemberCode: 'EM_SAME' });
-    const r = await app.request('/api/onboarding/entertainment-code', {
-      method: 'POST', headers: await H(u.id), body: JSON.stringify({ code: 'EM_SAME' }),
+  it('same code + different nickname → 200, nickname updated, code unchanged', async () => {
+    const u = await createUser({ nickname: '舊名', entertainmentMemberCode: 'EM_SAME' });
+    const r = await app.request('/api/onboarding/profile', {
+      method: 'POST', headers: await H(u.id),
+      body: JSON.stringify({ nickname: '新名', code: 'EM_SAME' }),
     });
     expect(r.status).toBe(200);
-    expect((await r.json()).entertainmentMemberCode).toBe('EM_SAME');
+    const body = await r.json();
+    expect(body.nickname).toBe('新名');
+    expect(body.entertainmentMemberCode).toBe('EM_SAME');
+
+    const fresh = await prisma.user.findUnique({ where: { id: u.id } });
+    expect(fresh?.nickname).toBe('新名');
   });
 });
 ```
@@ -4008,34 +4058,56 @@ import { AppError } from '../errors.js';
 import { requireUser } from '../auth/middleware.js';
 import { prisma } from '../db.js';
 
+// Nickname: 2–12 chars, must include at least one non-whitespace character.
+// (Allows Chinese, English, numbers, common symbols — anti-spec is "all whitespace".)
+const NicknameSchema = z.string().min(2).max(12).refine((v) => v.trim().length > 0, {
+  message: 'nickname must contain non-whitespace',
+});
+const CodeSchema = z.string().regex(/^[A-Za-z0-9_-]{6,20}$/);
+
 const BodySchema = z.object({
-  code: z.string().regex(/^[A-Za-z0-9_-]{6,20}$/, 'invalid entertainment code'),
+  nickname: NicknameSchema,
+  code: CodeSchema,
 });
 
 export const onboardingRoutes = new Hono();
 
-onboardingRoutes.post('/api/onboarding/entertainment-code', requireUser, async (c) => {
+onboardingRoutes.post('/api/onboarding/profile', requireUser, async (c) => {
   const user = c.get('user');
 
-  let body: { code: string };
-  try { body = BodySchema.parse(await c.req.json()); }
-  catch { throw new AppError('ENTERTAINMENT_CODE_INVALID', 'code must be 6–20 chars: A-Z, 0-9, _, -', 400); }
-
-  // Already bound to the same code → idempotent success
-  if (user.entertainmentMemberCode === body.code) {
-    return c.json({ entertainmentMemberCode: body.code });
+  let body: { nickname: string; code: string };
+  try {
+    body = BodySchema.parse(await c.req.json());
+  } catch (err) {
+    // Distinguish which field failed so the frontend can highlight the right input.
+    const issues = (err as z.ZodError)?.issues ?? [];
+    const failedFields = new Set(issues.map((i) => i.path[0]));
+    if (failedFields.has('nickname')) {
+      throw new AppError('NICKNAME_INVALID', 'nickname must be 2–12 chars and not all whitespace', 400);
+    }
+    throw new AppError('ENTERTAINMENT_CODE_INVALID', 'code must be 6–20 chars: A-Z, 0-9, _, -', 400);
   }
+
   // Already bound to a different code → admin must intervene
   if (user.entertainmentMemberCode && user.entertainmentMemberCode !== body.code) {
     throw new AppError('ENTERTAINMENT_CODE_ALREADY_BOUND', 'user already bound a different code', 409);
   }
 
+  // Same code (or first bind) → update both fields atomically
   try {
     const updated = await prisma.user.update({
       where: { id: user.id },
-      data: { entertainmentMemberCode: body.code, entertainmentCodeBoundAt: new Date() },
+      data: {
+        nickname: body.nickname,
+        entertainmentMemberCode: body.code,
+        // Only stamp boundAt on first bind; preserve original on idempotent re-call.
+        entertainmentCodeBoundAt: user.entertainmentMemberCode === null ? new Date() : undefined,
+      },
     });
-    return c.json({ entertainmentMemberCode: updated.entertainmentMemberCode });
+    return c.json({
+      nickname: updated.nickname,
+      entertainmentMemberCode: updated.entertainmentMemberCode,
+    });
   } catch (err) {
     if ((err as { code?: string })?.code === 'P2002') {
       throw new AppError('ENTERTAINMENT_CODE_TAKEN', 'this code is already bound to another account', 409);
@@ -4045,11 +4117,12 @@ onboardingRoutes.post('/api/onboarding/entertainment-code', requireUser, async (
 });
 ```
 
-- [ ] **Step 4: Surface the field via `/api/me`**
+- [ ] **Step 4: Surface the fields via `/api/me`**
 
 Edit `server/src/routes/me.ts` and add to the returned JSON:
 
 ```ts
+nickname: u.nickname,
 entertainmentMemberCode: u.entertainmentMemberCode,
 ```
 
@@ -4072,7 +4145,7 @@ cd server && npx vitest run tests/integration/onboarding.test.ts tests/integrati
 
 ```bash
 git add server/src/routes/onboarding.ts server/src/routes/me.ts server/src/index.ts server/tests/integration/onboarding.test.ts
-git commit -m "feat(server): /api/onboarding/entertainment-code (first-bind-only, surfaced via /api/me)"
+git commit -m "feat(server): /api/onboarding/profile (nickname + code atomic, code first-bind-only, nickname mutable)"
 ```
 
 ---

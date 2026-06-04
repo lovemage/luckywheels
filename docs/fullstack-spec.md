@@ -4,8 +4,8 @@
 
 建立一套 LINE 會員抽獎系統，包含：
 
-- LINE 會員登入/註冊
-- LINE 註冊完成後，會員綁定娛樂城會員編號（抽獎前置條件）
+- LINE 會員登入/註冊（站台**只開放 LINE 一種登入方式**，無 email + password / 訪客 / 手機驗證等其他途徑；登入頁顯示活動 logo）
+- LINE 註冊完成後，會員在 onboarding 表單同時填寫「暱稱」與「娛樂城會員編號」（抽獎前置條件）
 - Admin 手動派發積分
 - 會員以積分直接抽獎（單抽 / 連抽 tier，由系統依「集點抽獎門檻」扣積分）
 - Admin 管理獎品、上傳獎品圖片、設定庫存與權重
@@ -102,7 +102,7 @@ LINE Login
 可以：
 
 - 使用 LINE 登入
-- 綁定娛樂城會員編號（一次性、由 Admin 在後台異動）
+- 在 onboarding 表單填寫暱稱與娛樂城會員編號（一次性綁定；娛樂城編號之後僅 Admin 可改、暱稱可由會員自行修改）
 - 查看積分餘額
 - 查看「可抽次數」（由積分對照 `pointThresholds` 推導）
 - 抽獎（single / multi tier，直接扣積分）
@@ -217,7 +217,7 @@ points              // 唯一入場貨幣；依 pointThresholds 階層扣抵
 
 1. 會員按下 CTA（單抽 / 連抽）。
 2. 前端呼叫 `POST /api/draw`，帶 `tier` 與 `Idempotency-Key` header。
-3. 後端依序檢查 blacklist → entertainment-code → tier；通過則進交易。
+3. 後端依序檢查 blacklist → onboarding（nickname + entertainmentMemberCode 都已填）→ tier；通過則進交易。
 4. 交易內：lock 系統累計、扣積分 + 累計次數、**先 create 一筆 `Redemption`**（產生隨機 code、`totalWinAmount=0`、`idempotencyKey`），再跑 N 次加權抽出（multi N=10）、扣對應庫存、寫 N 筆 `draw_logs`（`redemptionId` 必填、`subIndex` 0..N-1），最後 update `Redemption.totalWinAmount = SUM(draws)` 並 increment 系統累計。
 5. 回傳 `{ redemption, draws[], points, tier, tierDraws, isTest }`。
 6. 前端依 `draws[0].prize.wheelPosition` 計算停止角度，播放動畫；停盤後彈窗顯示 N 筆中獎金額 + Redemption 隨機碼供截圖。
@@ -372,7 +372,8 @@ totalPointsBurned       // 全系統累計消耗點數（兌換 + 直接扣抽�
 ```text
 id
 lineUserId
-displayName
+displayName                  // 由 LINE profile 帶回，可能隨 LINE 那邊變動
+nickname                     // 會員在站內顯示用暱稱，由 onboarding 表單收集；非 unique；2–12 chars
 pictureUrl
 vipLevel
 points                       // 入場貨幣，依 pointThresholds 階層扣抵
@@ -398,8 +399,10 @@ updatedAt
 
 - `accountType` 預設為 `verified`。LINE 註冊完成即視同正式會員（依後續會議決議移除 pending 人工審核閘）。後台仍可手動切回 `test` 或 `blacklisted`。
 - `testSkipCost` 與 `testForcePrizeId` 對 `verified` 帳號**無效**，後端必須忽略這兩個欄位。
-- `entertainmentMemberCode` 為 unique，預設 null。會員透過 `POST /api/onboarding/entertainment-code` 完成綁定後 `entertainmentCodeBoundAt` 自動填入。一旦綁定，再次呼叫且帶不同碼回 409；同碼則 idempotent 200。要改值需 Admin 介入。
-- 未綁定的會員打 `POST /api/draw` 直接回 `403 ENTERTAINMENT_CODE_REQUIRED`，前端引導到綁定頁。
+- `nickname` 與 `entertainmentMemberCode` 由 onboarding 表單**一次同時提交**至 `POST /api/onboarding/profile`，兩者都非 null 才算完成 onboarding。
+- `entertainmentMemberCode` 為 unique，預設 null。完成綁定後 `entertainmentCodeBoundAt` 自動填入。一旦綁定，再次呼叫且帶不同碼回 409；同碼則 idempotent 200，且可同時更新 `nickname`。要改 code 需 Admin 介入。
+- `nickname` 不要求 unique；會員可日後透過獨立的「修改暱稱」端點調整（不在 MVP scope，先由 Admin 改）。
+- 未完成 onboarding 的會員打 `POST /api/draw` 直接回 `403 ONBOARDING_REQUIRED`，前端引導到 onboarding 表單。
 
 ### admin_users
 
@@ -634,20 +637,21 @@ updatedAt
 ```text
 GET  /api/auth/line/start
 GET  /api/auth/line/callback
-GET  /api/me              // 含 entertainmentMemberCode 欄位
+GET  /api/me              // 含 nickname、entertainmentMemberCode 欄位（onboardingComplete 由前端從兩者都非 null 推導）
 POST /api/logout
 ```
 
 ### Onboarding
 
 ```text
-POST /api/onboarding/entertainment-code
+POST /api/onboarding/profile
 ```
 
 Request：
 
 ```json
 {
+  "nickname": "小明",
   "code": "EM_654321"
 }
 ```
@@ -656,16 +660,19 @@ Response 200：
 
 ```json
 {
+  "nickname": "小明",
   "entertainmentMemberCode": "EM_654321"
 }
 ```
 
-行為：
+行為（兩個欄位必填、原子提交）：
 
-- code 必須 6–20 字、`A-Z 0-9 _ -`，否則 400 `ENTERTAINMENT_CODE_INVALID`。
+- `nickname` 必須 2–12 字、允許中英數字（不可全空白），否則 400 `NICKNAME_INVALID`。
+- `code` 必須 6–20 字、`A-Z 0-9 _ -`，否則 400 `ENTERTAINMENT_CODE_INVALID`。
 - 該 code 已被別的會員綁定 → 409 `ENTERTAINMENT_CODE_TAKEN`。
 - 該會員已綁了不同 code → 409 `ENTERTAINMENT_CODE_ALREADY_BOUND`（重綁需 Admin 介入）。
-- 該會員已綁同樣 code → 200 idempotent 成功。
+- 該會員已綁同樣 code → 200 idempotent 成功；本次帶的 `nickname` 會覆蓋舊值（允許會員回頭改暱稱）。
+- 首次成功 → 同 tx 寫 `users.nickname / entertainmentMemberCode / entertainmentCodeBoundAt`，回傳兩個欄位。
 
 ### Member
 
@@ -1042,7 +1049,7 @@ GET   /api/admin/users/:id/draw-history          // 單一會員的抽獎歷史�
 ```text
 # API entry (pre-tx)
 check accountType != blacklisted              # else 403 + admin_action_logs(draw_blocked_blacklist)
-check user.entertainmentMemberCode != null    # else 403 ENTERTAINMENT_CODE_REQUIRED
+check user.nickname != null AND user.entertainmentMemberCode != null    # else 403 ONBOARDING_REQUIRED
 parse body { tier }                            # else 400 TIER_INVALID
 resolve tier -> tierCost, tierDraws
 if accountType == 'test': branch to handleTestDraw
@@ -1085,7 +1092,7 @@ commit
 
 ```text
 /                 輪盤首頁
-/onboarding       娛樂城會員編號綁定（未綁定者抽獎前一律強制導向）
+/onboarding       Onboarding 表單（暱稱 + 娛樂城會員編號，缺一者抽獎前一律強制導向）
 /ranking          排行榜
 /rules            活動規則
 /my-prizes        我的獎品（顯示 Redemption code 與狀態）
@@ -1136,12 +1143,12 @@ refresh wallet
 1. 建立 PostgreSQL + Prisma schema（含 `accountType`、`cashAmount`、`Redemption`、`leaderboard_overrides`、`AdminActionLog`、`User.entertainmentMemberCode`）。
 2. 建立 LINE 登入；新註冊預設 `accountType = verified`（無 pending 審核閘）。
 3. 建立會員資料 API（`GET /api/me` 回傳 `entertainmentMemberCode`）。
-4. 建立 `POST /api/onboarding/entertainment-code` 綁定端點（會員首次抽獎前置條件）。
+4. 建立 `POST /api/onboarding/profile` 端點（會員首次抽獎前置條件，一次原子寫入 `nickname` + `entertainmentMemberCode`）。
 5. 建立 Admin 登入與會員列表（含 `accountType` 切換、測試帳號設定、`entertainmentMemberCode` 重綁）。
 6. 建立 Admin 手動派發積分（含積分流水）。
 7. 建立獎品 CRUD 與圖片上傳，含 `cashAmount`。
 8. 建立 Admin 活動設定（輪盤旋轉時間、`pointThresholds` 階層、成本控管參數）。
-9. 建立正式抽獎 API（`POST /api/draw`）：blacklist + entertainment-code 入口 gate；tx 內 system totals lock → 扣積分 → 閘門 → 先 create Redemption → N sub-picks → write draw_logs → finalize Redemption + 系統累計；依 `accountType` 分流 test 分支。
+9. 建立正式抽獎 API（`POST /api/draw`）：blacklist + onboarding（nickname + code 都已填）入口 gate；tx 內 system totals lock → 扣積分 → 閘門 → 先 create Redemption → N sub-picks → write draw_logs → finalize Redemption + 系統累計；依 `accountType` 分流 test 分支。
 10. 建立排行榜計算與 `leaderboard_overrides` 編輯介面。
 11. 建立 Admin「中獎紀錄」模組：以 Redemption code 查詢、切換 `pending → delivered / cancelled` 狀態。
 12. 前端接 API，移除假資料；輪盤頁加入 Redemption code + N 筆 sub-draw 金額彈窗。
