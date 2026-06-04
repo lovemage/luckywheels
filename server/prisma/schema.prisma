@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  verified
+  test
+  blacklisted
+}
+
+model User {
+  id                       String       @id @default(cuid())
+  lineUserId               String       @unique
+  displayName              String
+  pictureUrl               String?
+  vipLevel                 Int          @default(0)
+
+  // Onboarding 表單欄位（Rev 3）。LINE 註冊完成不會自動有值；會員必須透過
+  // POST /api/onboarding/profile 一次原子提交 `nickname` + `entertainmentMemberCode`
+  // 後才能抽獎。`displayName` 是 LINE profile 給的，`nickname` 是站內顯示用、
+  // 可由會員自己改（MVP 暫由 Admin 改）。
+  nickname                 String?
+  // 娛樂城會員編號。unique 防止兩個 LINE 帳號綁同一個娛樂城會員；first-bind-only。
+  entertainmentMemberCode  String?      @unique
+  entertainmentCodeBoundAt DateTime?
+
+  // 積分制 entry currency (sole balance)
+  points                   Int          @default(0)
+
+  accountType              AccountType  @default(verified)
+  verifiedAt               DateTime     @default(now())
+
+  testSkipCost             Boolean      @default(false)
+  testForcePrizeId         String?
+
+  blacklistedAt            DateTime?
+  blacklistedByAdminUserId String?
+  blacklistReason          String?
+
+  totalBurnAmount          Int          @default(0)
+  totalLuckAmount          Int          @default(0)
+
+  lifetimeDrawCount        Int          @default(0)
+  lifetimePayoutAmount     Int          @default(0)
+  lastWinDrawIndex         Int?
+
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+}
