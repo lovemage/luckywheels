@@ -90,6 +90,42 @@ function buildResponse(params: {
   };
 }
 
+function replayBody(
+  redemption: Awaited<ReturnType<typeof prisma.redemption.findUnique>> & {
+    drawLogs: Array<{ id: string; subIndex: number; winningCashAmount: number; gatedBy: string | null; pointsAfter: number; prize: Prize }>;
+  },
+  threshold: { points: number; draws: number },
+  tier: Tier,
+) {
+  return {
+    redemption: {
+      id: redemption!.id,
+      code: redemption!.code,
+      status: redemption!.status,
+      totalWinAmount: redemption!.totalWinAmount,
+    },
+    draws: redemption!.drawLogs.map((log) => ({
+      drawLogId: log.id,
+      subIndex: log.subIndex,
+      prize: {
+        id: log.prize.id,
+        rankLabel: log.prize.rankLabel,
+        name: log.prize.name,
+        description: log.prize.description,
+        imageUrl: log.prize.imageUrl,
+        wheelPosition: log.prize.wheelPosition,
+      },
+      winningCashAmount: log.winningCashAmount,
+      gatedBy: log.gatedBy,
+    })),
+    // pointsAfter is identical across all sibling sub-draws (set by the same finalize step).
+    points: redemption!.drawLogs[0]?.pointsAfter ?? 0,
+    tier,
+    tierDraws: threshold.draws,
+    isTest: redemption!.isTest,
+  };
+}
+
 async function handleVerifiedDraw(c: Context, user: User, tier: Tier) {
   const settings = await readDrawSettings();
   const threshold = resolveThreshold(tier, settings.pointThresholds);
@@ -100,6 +136,14 @@ async function handleVerifiedDraw(c: Context, user: User, tier: Tier) {
 
   // Idempotency on Redemption (NOT DrawLog — multi has 10 children with same key).
   const idempotencyKey = c.req.header('idempotency-key') ?? null;
+
+  if (idempotencyKey) {
+    const existing = await prisma.redemption.findUnique({
+      where: { userId_idempotencyKey: { userId: user.id, idempotencyKey } },
+      include: { drawLogs: { include: { prize: true }, orderBy: { subIndex: 'asc' } } },
+    });
+    if (existing) return c.json(replayBody(existing, threshold, tier));
+  }
 
   let result;
   try {
@@ -214,6 +258,13 @@ async function handleVerifiedDraw(c: Context, user: User, tier: Tier) {
     if ((err as { code?: string })?.code === 'P2025') {
       throw new AppError('INSUFFICIENT_POINTS', 'points below tier cost', 422);
     }
+    if ((err as { code?: string })?.code === 'P2002' && idempotencyKey) {
+      const replay = await prisma.redemption.findUnique({
+        where: { userId_idempotencyKey: { userId: user.id, idempotencyKey } },
+        include: { drawLogs: { include: { prize: true }, orderBy: { subIndex: 'asc' } } },
+      });
+      if (replay) return c.json(replayBody(replay, threshold, tier));
+    }
     throw err;
   }
 
@@ -230,6 +281,16 @@ async function handleVerifiedDraw(c: Context, user: User, tier: Tier) {
 async function handleTestDraw(c: Context, user: User, tier: Tier) {
   const settings = await readDrawSettings();
   const threshold = resolveThreshold(tier, settings.pointThresholds);
+
+  const idempotencyKey = c.req.header('idempotency-key') ?? null;
+
+  if (idempotencyKey) {
+    const existing = await prisma.redemption.findUnique({
+      where: { userId_idempotencyKey: { userId: user.id, idempotencyKey } },
+      include: { drawLogs: { include: { prize: true }, orderBy: { subIndex: 'asc' } } },
+    });
+    if (existing) return c.json(replayBody(existing, threshold, tier));
+  }
 
   let result;
   try {
@@ -254,7 +315,7 @@ async function handleTestDraw(c: Context, user: User, tier: Tier) {
           tier,
           totalWinAmount: 0,
           isTest: true,
-          idempotencyKey: c.req.header('idempotency-key') ?? null,
+          idempotencyKey,
         },
       });
 
@@ -308,6 +369,13 @@ async function handleTestDraw(c: Context, user: User, tier: Tier) {
   } catch (err) {
     if ((err as { code?: string })?.code === 'P2025') {
       throw new AppError('INSUFFICIENT_POINTS', 'points below tier cost', 422);
+    }
+    if ((err as { code?: string })?.code === 'P2002' && idempotencyKey) {
+      const replay = await prisma.redemption.findUnique({
+        where: { userId_idempotencyKey: { userId: user.id, idempotencyKey } },
+        include: { drawLogs: { include: { prize: true }, orderBy: { subIndex: 'asc' } } },
+      });
+      if (replay) return c.json(replayBody(replay, threshold, tier));
     }
     throw err;
   }
