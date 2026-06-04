@@ -19,7 +19,8 @@ type Prize = {
   detail: string;
   stock: number;
   weight: number;
-  color: 'violet' | 'cream';
+  segmentColor: string;
+  textColor: string;
   icon: string;
   image?: string;
   enabled: boolean;
@@ -33,13 +34,12 @@ type WonPrize = {
 };
 
 const initialPrizes: Prize[] = [
-  { id: 1, rank: '頭獎', name: '旗艦手機', detail: 'Grand Prize', stock: 1, weight: 2, color: 'violet', icon: '📱', enabled: true },
-  { id: 2, rank: '二獎', name: '藍牙耳機', detail: 'Premium Audio', stock: 5, weight: 6, color: 'cream', icon: '🎧', enabled: true },
-  { id: 3, rank: '三獎', name: '超商禮券', detail: '500 元', stock: 30, weight: 16, color: 'violet', icon: '🎟️', enabled: true },
-  { id: 4, rank: '四獎', name: 'LINE POINTS', detail: '100 點', stock: 80, weight: 24, color: 'cream', icon: '🟢', enabled: true },
-  { id: 5, rank: '五獎', name: '咖啡兌換券', detail: '任選一杯', stock: 120, weight: 24, color: 'cream', icon: '☕', enabled: true },
-  { id: 6, rank: '六獎', name: '精美小禮物', detail: '限量周邊', stock: 200, weight: 20, color: 'violet', icon: '🎁', enabled: true },
-  { id: 7, rank: '七獎', name: '謝謝參加', detail: '再接再厲', stock: 9999, weight: 8, color: 'cream', icon: '🙂', enabled: true },
+  { id: 1, rank: '頭獎', name: '最高彩金', detail: '', stock: 1, weight: 2, segmentColor: '#d92b3a', textColor: '#fff5d6', icon: '💰', enabled: true },
+  { id: 2, rank: '二獎', name: '彩金', detail: '5,000 元', stock: 5, weight: 6, segmentColor: '#ec8a26', textColor: '#fff5d6', icon: '💰', enabled: true },
+  { id: 3, rank: '三獎', name: '彩金', detail: '1,000 元', stock: 30, weight: 14, segmentColor: '#c98612', textColor: '#fff5d6', icon: '💰', enabled: true },
+  { id: 4, rank: '四獎', name: '彩金', detail: '500 元', stock: 80, weight: 22, segmentColor: '#38a86e', textColor: '#fff5d6', icon: '💰', enabled: true },
+  { id: 5, rank: '五獎', name: '彩金', detail: '100 元', stock: 200, weight: 26, segmentColor: '#2e7cd9', textColor: '#fff5d6', icon: '💰', enabled: true },
+  { id: 6, rank: '六獎', name: '謝謝參加', detail: '', stock: 9999, weight: 30, segmentColor: '#9b3eb8', textColor: '#fff5d6', icon: '💰', enabled: true },
 ];
 
 const packages = [
@@ -47,6 +47,26 @@ const packages = [
   { id: 2, title: '人氣五連抽', points: 450, draws: 5, tag: '省 50' },
   { id: 3, title: '豪華十連抽', points: 850, draws: 10, tag: '推薦' },
 ];
+
+const POINT_THRESHOLDS = [
+  { points: 6, draws: 1 },
+  { points: 15, draws: 3 },
+  { points: 25, draws: 5 },
+  { points: 35, draws: 7 },
+  { points: 48, draws: 10 },
+] as const;
+
+const SINGLE_DRAW_COST = POINT_THRESHOLDS[0].points;
+const MULTI_DRAW_COST = POINT_THRESHOLDS[POINT_THRESHOLDS.length - 1].points;
+
+function availableDrawsFor(currentPoints: number): number {
+  let draws = 0;
+  for (const t of POINT_THRESHOLDS) {
+    if (currentPoints >= t.points) draws = t.draws;
+    else break;
+  }
+  return draws;
+}
 
 function segmentPath(index: number, total: number) {
   const radius = 49;
@@ -78,30 +98,33 @@ function pickPrize(prizes: Prize[]) {
 }
 
 function wheelGradient(prizes: Prize[]) {
-  const colors = {
-    violet: '#9f2df1',
-    cream: '#ffedb5',
-  };
   const step = 100 / prizes.length;
 
   return prizes
     .map((prize, index) => {
       const start = (index * step).toFixed(4);
       const end = ((index + 1) * step).toFixed(4);
-      return `${colors[prize.color]} ${start}% ${end}%`;
+      return `${prize.segmentColor} ${start}% ${end}%`;
     })
     .join(', ');
 }
 
-function dividerAngles(total: number) {
-  return Array.from({ length: total }, (_, index) => (360 / total) * index);
-}
-
 export function App() {
   const [view, setView] = useState<'wheel' | 'exchange' | 'ranking' | 'rules' | 'mine'>('wheel');
-  const [points, setPoints] = useState(1280);
-  const [draws, setDraws] = useState(5);
-  const [totalDraws, setTotalDraws] = useState(28);
+  const [points, setPoints] = useState(28);
+  const [totalDraws, setTotalDraws] = useState(0);
+  const [lastDrawCount, setLastDrawCount] = useState(1);
+  const [selectedTierIndex, setSelectedTierIndex] = useState(0);
+  const availableDraws = availableDrawsFor(points);
+  const maxAffordableIndex = (() => {
+    let i = -1;
+    for (let k = 0; k < POINT_THRESHOLDS.length; k += 1) {
+      if (POINT_THRESHOLDS[k].points <= points) i = k;
+    }
+    return i;
+  })();
+  const effectiveTierIndex = Math.min(selectedTierIndex, Math.max(maxAffordableIndex, 0));
+  const selectedTier = POINT_THRESHOLDS[effectiveTierIndex];
   const [prizes, setPrizes] = useState(initialPrizes);
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -113,24 +136,25 @@ export function App() {
 
   const activePrizes = useMemo(() => prizes.filter((prize) => prize.enabled), [prizes]);
 
-  const spin = () => {
-    if (spinning || draws <= 0) return;
+  const spinByTier = (tier: (typeof POINT_THRESHOLDS)[number]) => {
+    if (spinning || points < tier.points) return;
 
     const result = pickPrize(prizes);
     const index = activePrizes.findIndex((prize) => prize.id === result.id);
     const segmentSize = 360 / activePrizes.length;
-    const targetCenter = index * segmentSize + segmentSize / 2;
+    const targetCenter = index * segmentSize;
     const nextRotation = rotation + 1440 + (360 - targetCenter);
 
     setSpinning(true);
-    setDraws((value) => value - 1);
-    setTotalDraws((value) => value + 1);
+    setPoints((value) => value - tier.points);
+    setTotalDraws((value) => value + tier.draws);
     setRotation(nextRotation);
+    setLastDrawCount(tier.draws);
 
     window.setTimeout(() => {
       setSpinning(false);
       setLastPrize(result);
-      if (result.rank !== '七獎') {
+      if (result.name !== '謝謝參加') {
         setWonPrizes((current) => [
           {
             id: Date.now(),
@@ -150,10 +174,21 @@ export function App() {
     }, 4300);
   };
 
+  const cycleTier = () => {
+    if (spinning) return;
+    const cyclable: number[] = [];
+    POINT_THRESHOLDS.forEach((t, i) => {
+      if (t.draws <= availableDraws) cyclable.push(i);
+    });
+    if (cyclable.length <= 1) return;
+    const here = cyclable.indexOf(effectiveTierIndex);
+    const next = cyclable[(here + 1) % cyclable.length] ?? 0;
+    setSelectedTierIndex(next);
+  };
+
   const exchange = (pack: (typeof packages)[number]) => {
     if (points < pack.points) return;
-    setPoints((value) => value - pack.points);
-    setDraws((value) => value + pack.draws);
+    setPoints((value) => value + pack.draws);
     setView('wheel');
   };
 
@@ -162,7 +197,9 @@ export function App() {
   };
 
   const addPrize = () => {
+    const fallbackPalette = ['#d92b3a', '#ec8a26', '#f4cb3a', '#38a86e', '#2e7cd9', '#9b3eb8'];
     const nextId = Math.max(...prizes.map((prize) => prize.id)) + 1;
+    const segmentColor = fallbackPalette[prizes.length % fallbackPalette.length];
     setPrizes((current) => [
       ...current,
       {
@@ -172,8 +209,9 @@ export function App() {
         detail: '請填寫說明',
         stock: 10,
         weight: 10,
-        color: nextId % 2 === 0 ? 'cream' : 'violet',
-        icon: '✨',
+        segmentColor,
+        textColor: '#ffffff',
+        icon: '💰',
         enabled: true,
       },
     ]);
@@ -205,17 +243,20 @@ export function App() {
             <div className="avatar" />
             <div className="member-copy">
               <strong>會員專區</strong>
-              <span>您好，LINE 會員</span>
+              <span>您好，會員</span>
             </div>
-            <span className="vip">VIP 3</span>
             <dl>
               <div>
-                <dt>點數餘額</dt>
-                <dd>{points.toLocaleString()}</dd>
+                <dt>積分</dt>
+                <dd>{points}</dd>
               </div>
               <div>
-                <dt>可抽獎次數</dt>
-                <dd>{draws} 次</dd>
+                <dt>可抽次數</dt>
+                <dd>{availableDraws} 次</dd>
+              </div>
+              <div>
+                <dt>累計抽獎次數</dt>
+                <dd>{totalDraws} 次</dd>
               </div>
             </dl>
           </aside>
@@ -223,22 +264,35 @@ export function App() {
 
         {view === 'wheel' && (
           <section className="wheel-screen">
-            <Wheel
-              prizes={activePrizes}
-              rotation={rotation}
-              spinning={spinning}
-              onSpin={spin}
-              disabled={spinning || draws <= 0}
-            />
-            <button className="primary-cta" onClick={spin} disabled={spinning || draws <= 0}>
-              <Gift size={34} />
-              <span>{spinning ? '抽獎中' : draws > 0 ? '立即抽獎' : '請先兌換次數'}</span>
-              <small>消耗 1 次抽獎機會</small>
-            </button>
-            <button className="exchange-link" onClick={() => setView('exchange')}>
-              用點數兌換抽獎次數
-            </button>
+            <Wheel prizes={activePrizes} rotation={rotation} spinning={spinning} />
           </section>
+        )}
+
+        {view === 'wheel' && (
+          <div className="cta-row">
+            <button
+              className="primary-cta primary-cta--spin"
+              onClick={() => spinByTier(selectedTier)}
+              disabled={spinning || points < selectedTier.points}
+            >
+              <Gift size={24} />
+              <span>
+                {spinning
+                  ? '抽獎中'
+                  : selectedTier.draws === 1
+                  ? '抽獎'
+                  : `${selectedTier.draws} 連抽`}
+              </span>
+            </button>
+            <button
+              className="primary-cta primary-cta--cycle"
+              onClick={cycleTier}
+              disabled={spinning || availableDraws <= 1}
+              aria-label="切換連抽次數"
+            >
+              <Sparkles size={22} />
+            </button>
+          </div>
         )}
 
         {view === 'exchange' && (
@@ -308,29 +362,51 @@ export function App() {
 
         <nav className="bottom-tabs">
           <TabButton active={view === 'wheel'} icon={<RotateCw />} label="輪盤" onClick={() => setView('wheel')} />
-          <TabButton active={view === 'ranking'} icon={<Trophy />} label="排行" onClick={() => setView('ranking')} />
-          <TabButton active={view === 'rules'} icon={<LayoutList />} label="規則" onClick={() => setView('rules')} />
-          <TabButton active={view === 'mine'} icon={<Gift />} label="獎品" onClick={() => setView('mine')} />
+          <TabButton active={view === 'ranking'} icon={<Trophy />} label="排行榜" onClick={() => setView('ranking')} />
+          <TabButton active={view === 'rules'} icon={<LayoutList />} label="活動規則" onClick={() => setView('rules')} />
+          <TabButton active={view === 'mine'} icon={<Gift />} label="我的獎品" onClick={() => setView('mine')} />
         </nav>
 
         {lastPrize && (
-          <div className="result-toast">
-            <Sparkles size={22} />
-            <span>
-              抽中 <b>{lastPrize.rank}</b>，{lastPrize.name}
-            </span>
-            <button onClick={() => setLastPrize(null)}>知道了</button>
+          <div className="result-modal" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
+            <button
+              type="button"
+              className="result-modal__backdrop"
+              aria-label="關閉中獎彈窗"
+              onClick={() => setLastPrize(null)}
+            />
+            <div className="result-modal__card">
+              <Sparkles size={22} className="result-modal__sparkle result-modal__sparkle--a" />
+              <Sparkles size={18} className="result-modal__sparkle result-modal__sparkle--b" />
+              <h2 id="result-modal-title">
+                恭喜中獎
+                {lastDrawCount > 1 && <small className="result-modal__multi-tag">{lastDrawCount} 連抽結果</small>}
+              </h2>
+              <div
+                className="result-modal__prize"
+                style={{ background: lastPrize.segmentColor, color: lastPrize.textColor }}
+              >
+                {lastPrize.image ? <img src={lastPrize.image} alt="" /> : <span>{lastPrize.icon}</span>}
+              </div>
+              <strong>{lastPrize.rank}</strong>
+              <p>
+                {lastPrize.name}
+                {lastPrize.detail ? `・${lastPrize.detail}` : ''}
+              </p>
+              <button type="button" className="result-modal__close" onClick={() => setLastPrize(null)}>
+                知道了
+              </button>
+            </div>
           </div>
         )}
       </section>
 
       <AdminConsole
         points={points}
-        draws={draws}
+        availableDraws={availableDraws}
         totalDraws={totalDraws}
         prizes={prizes}
         setPoints={setPoints}
-        setDraws={setDraws}
         updatePrize={updatePrize}
         addPrize={addPrize}
         uploadPrizeImage={uploadPrizeImage}
@@ -343,14 +419,10 @@ function Wheel({
   prizes,
   rotation,
   spinning,
-  onSpin,
-  disabled,
 }: {
   prizes: Prize[];
   rotation: number;
   spinning: boolean;
-  onSpin: () => void;
-  disabled: boolean;
 }) {
   return (
     <div className="wheel-wrap">
@@ -360,32 +432,31 @@ function Wheel({
           className="wheel-face"
           style={{ '--segments': wheelGradient(prizes) } as React.CSSProperties}
           aria-hidden="true"
-        >
-          {dividerAngles(prizes.length).map((angle) => (
-            <span className="segment-divider-line" key={angle} style={{ '--line-angle': `${angle}deg` } as React.CSSProperties} />
-          ))}
-        </div>
+        />
         {prizes.map((prize, index) => {
-          const angle = (360 / prizes.length) * index + 360 / prizes.length / 2;
+          const angle = (360 / prizes.length) * index;
           return (
             <div
-              className={`prize-label ${prize.color === 'violet' ? 'on-violet' : 'on-cream'}`}
+              className="prize-label"
               key={prize.id}
-              style={{ transform: `rotate(${angle}deg) translateY(var(--label-radius)) rotate(${-angle}deg)` }}
+              style={{
+                transform: `rotate(${angle}deg) translateY(var(--label-radius)) rotate(${-(angle + rotation)}deg)`,
+                color: prize.textColor,
+              }}
             >
               <div className="prize-content">
                 <strong>{prize.rank}</strong>
                 <span>{prize.name}</span>
-                <small>{prize.detail}</small>
+                {prize.detail && <small>{prize.detail}</small>}
                 {prize.image ? <img src={prize.image} alt="" /> : <b>{prize.icon}</b>}
               </div>
             </div>
           );
         })}
       </div>
-      <button className={`hub ${spinning ? 'is-spinning' : ''}`} aria-label="立即抽獎" onClick={onSpin} disabled={disabled}>
+      <div className={`hub ${spinning ? 'is-spinning' : ''}`} aria-hidden="true">
         <span />
-      </button>
+      </div>
     </div>
   );
 }
@@ -421,21 +492,19 @@ function TabButton({
 
 function AdminConsole({
   points,
-  draws,
+  availableDraws,
   totalDraws,
   prizes,
   setPoints,
-  setDraws,
   updatePrize,
   addPrize,
   uploadPrizeImage,
 }: {
   points: number;
-  draws: number;
+  availableDraws: number;
   totalDraws: number;
   prizes: Prize[];
   setPoints: React.Dispatch<React.SetStateAction<number>>;
-  setDraws: React.Dispatch<React.SetStateAction<number>>;
   updatePrize: (id: number, patch: Partial<Prize>) => void;
   addPrize: () => void;
   uploadPrizeImage: (id: number, event: ChangeEvent<HTMLInputElement>) => void;
@@ -455,29 +524,29 @@ function AdminConsole({
           <small>U9f8a...demo</small>
         </article>
         <article>
-          <span>點數餘額</span>
+          <span>積分</span>
           <strong>{points.toLocaleString()}</strong>
-          <small>Admin 可手動儲值</small>
+          <small>Admin 可手動派發</small>
         </article>
         <article>
           <span>抽獎次數</span>
-          <strong>{draws}</strong>
+          <strong>{availableDraws}</strong>
           <small>累計 {totalDraws} 次</small>
         </article>
       </section>
 
       <section className="admin-tools">
         <div>
-          <h3>手動儲值</h3>
-          <p>正式版會寫入點數流水與操作者。</p>
+          <h3>手動派發積分</h3>
+          <p>正式版會寫入積分流水與操作者。</p>
         </div>
-        <button onClick={() => setPoints((value) => value + 500)}>
+        <button onClick={() => setPoints((value) => value + SINGLE_DRAW_COST)}>
           <Plus size={18} />
-          加 500 點
+          加 {SINGLE_DRAW_COST} 點
         </button>
-        <button onClick={() => setDraws((value) => value + 1)}>
+        <button onClick={() => setPoints((value) => value + MULTI_DRAW_COST)}>
           <Plus size={18} />
-          加 1 次
+          加 {MULTI_DRAW_COST} 點
         </button>
       </section>
 
