@@ -15,6 +15,7 @@ import { useSession } from './hooks/useMe.js';
 import { Login } from './components/Login.js';
 import { Onboarding } from './components/Onboarding.js';
 import { WinModal } from './components/WinModal.js';
+import { Legal, type LegalTab } from './components/Legal.js';
 
 function availableDrawsFor(points: number, thresholds: { points: number; draws: number }[]): number {
   let draws = 0;
@@ -38,6 +39,8 @@ function wheelGradient(prizes: PublicPrize[]) {
 
 export function App() {
   const session = useSession();
+  const [legalTab, setLegalTab] = useState<LegalTab | null>(null);
+  const openLegal = (tab: LegalTab) => setLegalTab(tab);
 
   useEffect(() => {
     setUnauthorizedHandler(() => sessionStore.getState().setAnonymous());
@@ -51,27 +54,33 @@ export function App() {
     })();
   }, []);
 
+  let body: React.ReactNode;
   if (session.phase === 'loading') {
-    return (
-      <main className="splash">
-        <p>載入中…</p>
-      </main>
-    );
-  }
-  if (session.phase === 'anonymous') return <Login />;
-  if (session.phase === 'onboarding') return <Onboarding />;
-  if (session.phase === 'blacklisted') {
-    return (
+    body = <main className="splash"><p>載入中…</p></main>;
+  } else if (session.phase === 'anonymous') {
+    body = <Login onShowLegal={openLegal} />;
+  } else if (session.phase === 'onboarding') {
+    body = <Onboarding />;
+  } else if (session.phase === 'blacklisted') {
+    body = (
       <main className="splash">
         <h1>帳號已停用</h1>
         <p>請聯絡客服了解詳情。</p>
       </main>
     );
+  } else {
+    body = <MainApp me={session.me!} onShowLegal={openLegal} />;
   }
-  return <MainApp me={session.me!} />;
+
+  return (
+    <>
+      {body}
+      {legalTab && <Legal initialTab={legalTab} onClose={() => setLegalTab(null)} />}
+    </>
+  );
 }
 
-function MainApp({ me }: { me: MeProfile }) {
+function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalTab) => void }) {
   const [view, setView] = useState<'wheel' | 'ranking' | 'rules' | 'mine'>('wheel');
   const [prizes, setPrizes] = useState<PublicPrize[] | null>(null);
   const [settings, setSettings] = useState<PublicSettings | null>(null);
@@ -244,6 +253,10 @@ function MainApp({ me }: { me: MeProfile }) {
               <p>單抽消耗 6 積分、連抽消耗 48 積分，結果由伺服器判定。</p>
               <p>中獎時會產生 Redemption 隨機碼，將碼截圖傳給管理員兌換彩金。</p>
               <p>積分由管理員後台派發，會員不可自行修改。</p>
+            </div>
+            <div className="legal-footer-links">
+              <button type="button" onClick={() => onShowLegal('privacy')}>隱私權政策</button>
+              <button type="button" onClick={() => onShowLegal('terms')}>服務條款</button>
             </div>
           </section>
         )}
