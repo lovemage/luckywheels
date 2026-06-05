@@ -22,6 +22,7 @@ export function Settings() {
         cooldownDrawsAfterWin: data.cooldownDrawsAfterWin,
         payoutCapEnabled: data.payoutCapEnabled,
         payoutCapRatio: data.payoutCapRatio,
+        rulesText: data.rulesText,
       });
   }, [data]);
 
@@ -102,6 +103,23 @@ export function Settings() {
             onChange={(e) => setForm({ ...form, spinDurationMs: Number(e.target.value) })}
           />
           <Hint>控制前台轉盤動畫與轉動音效的持續時間。1000 ms = 1 秒；建議維持 3000 到 6000 ms，過短會像跳格，過長會等待太久。</Hint>
+        </label>
+      </fieldset>
+
+      <fieldset style={{ marginBottom: 16 }}>
+        <legend>前台活動規則內容</legend>
+        <p style={{ marginTop: 0, color: '#6b7280' }}>
+          這段文字會顯示在會員前台「活動規則 / 使用須知」頁面。每一行會在前台顯示成一段規則。
+        </p>
+        <label>
+          使用須知文字（rulesText）
+          <textarea
+            rows={6}
+            value={form.rulesText ?? ''}
+            onChange={(e) => setForm({ ...form, rulesText: e.target.value })}
+            style={{ width: '100%', display: 'block', marginTop: 6 }}
+          />
+          <Hint>請用換行分隔不同規則。最多 2000 個字；儲存後前台重新載入即可看到新內容。</Hint>
         </label>
       </fieldset>
 

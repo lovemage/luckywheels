@@ -43,7 +43,6 @@ const SOUND_SOURCES = {
   spinConfirm: '/assets/sfx/spin-confirm.ogg',
   wheelSpinning: '/assets/sfx/spin-sound.mp3',
   win: '/assets/sfx/floraphonic-coin-payout-6-213526.mp3',
-  modalConfirm: '/assets/sfx/spin-sound.mp3',
 } as const;
 
 type SoundKey = keyof typeof SOUND_SOURCES;
@@ -165,7 +164,6 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       spinConfirm: createAudio(SOUND_SOURCES.spinConfirm),
       wheelSpinning: createAudio(SOUND_SOURCES.wheelSpinning),
       win: createAudio(SOUND_SOURCES.win),
-      modalConfirm: createAudio(SOUND_SOURCES.modalConfirm),
     };
 
     return () => {
@@ -305,7 +303,6 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
 
   function closeResult() {
     stopSound('wheelSpinning');
-    playSound('modalConfirm');
     setResult(null);
   }
 
@@ -388,9 +385,9 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           <section className="panel-screen">
             <ScreenHeader icon={<LayoutList />} title="活動規則" subtitle="使用須知" />
             <div className="rule-list">
-              <p>單抽消耗 6 積分、連抽消耗 48 積分，結果由伺服器判定。</p>
-              <p>中獎時會產生 Redemption 隨機碼，將碼截圖傳給管理員兌換彩金。</p>
-              <p>積分由管理員後台派發，會員不可自行修改。</p>
+              {settings.rulesText.split('\n').filter((line) => line.trim()).map((line, index) => (
+                <p key={index}>{line}</p>
+              ))}
             </div>
             <div className="legal-footer-links">
               <button type="button" onClick={() => onShowLegal('privacy')}>隱私權政策</button>
@@ -406,7 +403,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
               {winHistory.length === 0 ? (
                 <p>目前尚無中獎紀錄。</p>
               ) : (
-                <ol className="win-multi-list">
+                <ol className="win-history-list">
                   {winHistory.map((entry, index) => (
                     <li key={entry.id} className="win-history-item">
                       <div className="win-history-head">
@@ -414,7 +411,6 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
                         <span>{entry.createdAt}</span>
                       </div>
                       <div className="win-history-code">兌換碼：LW-{entry.code}</div>
-                      <div className="win-history-total">總中獎金額：{entry.totalWinAmount}</div>
                       <ol className="win-history-draws">
                         {entry.draws.map((draw) => (
                           <li key={`${entry.id}-${draw.subIndex}`}>
@@ -422,7 +418,6 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
                             <span>
                               {draw.rankLabel} {draw.prizeName}
                             </span>
-                            <span>{draw.winningCashAmount}</span>
                           </li>
                         ))}
                       </ol>

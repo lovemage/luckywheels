@@ -21,6 +21,7 @@ const Body = z.object({
   cooldownDrawsAfterWin: z.number().int().min(0).max(100).optional(),
   payoutCapEnabled: z.boolean().optional(),
   payoutCapRatio: z.number().min(0).max(1).optional(),
+  rulesText: z.string().min(1).max(2000).optional(),
 });
 type BodyT = z.infer<typeof Body>;
 
@@ -76,6 +77,7 @@ adminSettingsRoutes.get('/api/admin/settings', requireAdmin, async (c) => {
     cooldownDrawsAfterWin: Number(m[SETTINGS_KEYS.cooldownDrawsAfterWin] ?? '0'),
     payoutCapEnabled: (m[SETTINGS_KEYS.payoutCapEnabled] ?? 'false') === 'true',
     payoutCapRatio: Number(m[SETTINGS_KEYS.payoutCapRatio] ?? '0'),
+    rulesText: m[SETTINGS_KEYS.rulesText] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.rulesText],
     totals: {
       drawCount: Number(m[SETTINGS_KEYS.totalDrawCount] ?? '0'),
       payoutAmount: Number(m[SETTINGS_KEYS.totalPayoutAmount] ?? '0'),
@@ -111,6 +113,8 @@ adminSettingsRoutes.patch('/api/admin/settings', requireAdmin, async (c) => {
     updates.push({ key: SETTINGS_KEYS.payoutCapEnabled, value: serialize(body.payoutCapEnabled) });
   if (body.payoutCapRatio !== undefined)
     updates.push({ key: SETTINGS_KEYS.payoutCapRatio, value: serialize(body.payoutCapRatio) });
+  if (body.rulesText !== undefined)
+    updates.push({ key: SETTINGS_KEYS.rulesText, value: serialize(body.rulesText) });
 
   if (updates.length === 0) {
     return c.json({ ok: true });

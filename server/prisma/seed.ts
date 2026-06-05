@@ -7,6 +7,7 @@ export const SETTINGS_KEYS = {
   cooldownDrawsAfterWin: 'cooldownDrawsAfterWin',
   payoutCapEnabled: 'payoutCapEnabled',
   payoutCapRatio: 'payoutCapRatio',
+  rulesText: 'rulesText',
   consolationPrizeId: 'consolationPrizeId',
   // System totals — maintained atomically inside the draw transaction
   // (replaces SUM(User) aggregation; addresses Codex finding B1/D1).
@@ -30,6 +31,11 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   [SETTINGS_KEYS.cooldownDrawsAfterWin]: '0',
   [SETTINGS_KEYS.payoutCapEnabled]: 'false',
   [SETTINGS_KEYS.payoutCapRatio]: '0.45',
+  [SETTINGS_KEYS.rulesText]: [
+    '單抽消耗 6 積分、連抽消耗 48 積分，結果由伺服器判定。',
+    '中獎時會產生 Redemption 隨機碼，將碼截圖傳給管理員兌換彩金。',
+    '積分由管理員後台派發，會員不可自行修改。',
+  ].join('\n'),
   [SETTINGS_KEYS.consolationPrizeId]: '',
   [SETTINGS_KEYS.totalDrawCount]: '0',
   [SETTINGS_KEYS.totalPayoutAmount]: '0',

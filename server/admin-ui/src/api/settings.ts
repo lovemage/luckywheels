@@ -7,6 +7,7 @@ export interface AdminSettings {
   cooldownDrawsAfterWin: number;
   payoutCapEnabled: boolean;
   payoutCapRatio: number;
+  rulesText: string;
   totals: { drawCount: number; payoutAmount: number; pointsBurned: number };
   consolationPrizeId: string;
 }
@@ -20,6 +21,7 @@ export type SettingsUpdate = Partial<
     | 'cooldownDrawsAfterWin'
     | 'payoutCapEnabled'
     | 'payoutCapRatio'
+    | 'rulesText'
   >
 >;
 

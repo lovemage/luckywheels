@@ -4,7 +4,7 @@ import { prisma } from '../../../src/db.js';
 import { resetDb } from '../../helpers/db.js';
 import { createAdmin, adminHeaders } from '../../helpers/admin.ts';
 import { seedDefaultSettings } from '../../helpers/factories.js';
-import { SETTINGS_KEYS, DEFAULT_THRESHOLDS } from '../../../prisma/seed.js';
+import { SETTINGS_KEYS, DEFAULT_SETTINGS, DEFAULT_THRESHOLDS } from '../../../prisma/seed.js';
 
 describe('admin AppSetting edit', () => {
   beforeEach(async () => {
@@ -25,6 +25,7 @@ describe('admin AppSetting edit', () => {
       cooldownDrawsAfterWin: number;
       payoutCapEnabled: boolean;
       payoutCapRatio: number;
+      rulesText: string;
       totals: { drawCount: number; payoutAmount: number; pointsBurned: number };
       consolationPrizeId: string;
     };
@@ -34,7 +35,22 @@ describe('admin AppSetting edit', () => {
     expect(json.cooldownDrawsAfterWin).toBe(0);
     expect(json.payoutCapEnabled).toBe(false);
     expect(json.payoutCapRatio).toBe(0.45);
+    expect(json.rulesText).toBe(DEFAULT_SETTINGS[SETTINGS_KEYS.rulesText]);
     expect(json.totals).toEqual({ drawCount: 0, payoutAmount: 0, pointsBurned: 0 });
+  });
+
+  it('PATCH rulesText persists + /api/settings/public reflects it', async () => {
+    const admin = await createAdmin();
+    const rulesText = '第一條規則\n第二條規則';
+    const r = await app.request('/api/admin/settings', {
+      method: 'PATCH',
+      headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
+      body: JSON.stringify({ rulesText }),
+    });
+    expect(r.status).toBe(200);
+    const pub = await app.request('/api/settings/public');
+    const pubJson = await pub.json() as { rulesText: string };
+    expect(pubJson.rulesText).toBe(rulesText);
   });
 
   it('PATCH spinDurationMs persists + leaves pointThresholds unchanged; /api/settings/public reflects it', async () => {

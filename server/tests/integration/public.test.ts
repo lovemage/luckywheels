@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { app } from '../../src/index.js';
 import { resetDb } from '../helpers/db.js';
 import { seedDefaultSettings, SETTINGS_KEYS } from '../helpers/factories.js';
+import { DEFAULT_SETTINGS } from '../../prisma/seed.js';
 import { prisma } from '../../src/db.js';
 
 async function seedPrizes() {
@@ -37,6 +38,7 @@ describe('public endpoints', () => {
     const body = await r.json();
     expect(body.spinDurationMs).toBe(5500);     // dynamic, not hardcoded
     expect(body.pointThresholds[0]).toEqual({ points: 6, draws: 1 });
+    expect(body.rulesText).toBe(DEFAULT_SETTINGS[SETTINGS_KEYS.rulesText]);
     expect(body).not.toHaveProperty('payoutCapRatio');
     expect(body).not.toHaveProperty('minDrawsBeforeWin');
     expect(body).not.toHaveProperty('cooldownDrawsAfterWin');

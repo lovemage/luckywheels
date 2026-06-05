@@ -16,6 +16,7 @@ export interface PublicPrize {
 export interface PublicSettings {
   spinDurationMs: number;
   pointThresholds: { points: number; draws: number }[];
+  rulesText: string;
 }
 
 export function fetchPrizes(): Promise<{ items: PublicPrize[] }> {
