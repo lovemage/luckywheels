@@ -1357,3 +1357,106 @@ h1 {
   cursor: not-allowed;
 }
 
+/* ===== WinModal ===== */
+.win-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.win-modal {
+  background: #fff5d6;
+  color: #2a1430;
+  padding: 24px;
+  border-radius: 16px;
+  min-width: 280px;
+  max-width: 360px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.win-modal h2 {
+  margin: 0;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.win-modal .redemption-code {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 18px;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.win-modal .redemption-total {
+  margin: 0;
+  text-align: center;
+  font-weight: 600;
+}
+
+.win-single {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  padding: 12px;
+  background: rgba(244, 203, 58, 0.2);
+  border-radius: 8px;
+}
+
+.win-single strong {
+  font-size: 20px;
+}
+
+.win-multi-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.win-multi-list li {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+}
+
+.win-multi-list li:last-child {
+  border-bottom: 0;
+}
+
+.win-modal .hint {
+  margin: 0;
+  font-size: 12px;
+  color: #5b3a2e;
+  text-align: center;
+}
+
+.win-modal button {
+  background: #5b1678;
+  color: #fff5d6;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
