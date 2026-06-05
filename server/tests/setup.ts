@@ -54,6 +54,14 @@ const defaults: Record<string, string> = {
   LINE_API_BASE: 'https://api.line.me/oauth2/v2.1',
   LINE_PROFILE_BASE: 'https://api.line.me/v2',
   LINE_ISSUER: 'https://access.line.me',
+  // Bucket defaults so storage helper tests + upload integration tests can
+  // construct the S3 client. The S3 client is stubbed via tests/helpers/s3-mock.ts
+  // so no real network call is made — these just satisfy resolveConfig().
+  BUCKET: 'test-bucket',
+  ACCESS_KEY_ID: 'test-access-key',
+  SECRET_ACCESS_KEY: 'test-secret-key',
+  ENDPOINT: 'https://storage.test.local',
+  REGION: 'auto',
 };
 for (const [k, v] of Object.entries(defaults)) {
   if (process.env[k] === undefined) process.env[k] = v;

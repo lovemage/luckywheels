@@ -17,6 +17,14 @@ const Schema = z.object({
   LINE_API_BASE: z.string().url(),
   LINE_PROFILE_BASE: z.string().url(),
   LINE_ISSUER: z.string().url(),
+  // Railway Bucket (S3-compatible) — optional so dev / tests work without it.
+  // Upload endpoints throw BUCKET_NOT_CONFIGURED at request time if any of
+  // BUCKET / ACCESS_KEY_ID / SECRET_ACCESS_KEY / ENDPOINT are missing.
+  BUCKET: z.string().optional(),
+  ACCESS_KEY_ID: z.string().optional(),
+  SECRET_ACCESS_KEY: z.string().optional(),
+  ENDPOINT: z.string().url().optional(),
+  REGION: z.string().optional(),
 }).superRefine((e, ctx) => {
   if (e.JWT_SECRET === e.STATE_SECRET) {
     ctx.addIssue({ code: 'custom', message: 'JWT_SECRET and STATE_SECRET must be distinct', path: ['STATE_SECRET'] });
