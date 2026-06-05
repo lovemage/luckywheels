@@ -16,10 +16,4 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
   },
-  test: {
-    environment: 'happy-dom',
-    globals: false,
-    include: ['tests/**/*.test.{ts,tsx}'],
-    setupFiles: [],
-  },
 });
