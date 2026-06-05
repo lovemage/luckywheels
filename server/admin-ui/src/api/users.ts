@@ -69,3 +69,45 @@ export function updateTestSettings(id: string, body: { testSkipCost?: boolean; t
     body: JSON.stringify(body),
   });
 }
+
+export function setBlacklist(id: string, body: { blacklist: boolean; reason?: string; restoreTo?: 'verified' | 'test' }) {
+  return api<{ ok: true }>(`/api/admin/users/${id}/blacklist`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export function setEntertainmentCode(id: string, body: { code: string | null; reason: string }) {
+  return api<{ ok: true }>(`/api/admin/users/${id}/entertainment-code`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export interface DrawHistoryItem {
+  redemption: {
+    id: string;
+    code: string;
+    tier: 'single' | 'multi';
+    status: string;
+    createdAt: string;
+    statusChangedAt: string | null;
+  };
+  draws: {
+    id: string;
+    subIndex: number;
+    prize: { id: string; name: string };
+    pointsBefore: number;
+    pointsAfter: number;
+    winningCashAmount: number;
+    createdAt: string;
+    isTest: boolean;
+    gatedBy: string | null;
+  }[];
+}
+
+export function fetchDrawHistory(id: string): Promise<{ items: DrawHistoryItem[]; nextCursor: string | null }> {
+  return api(`/api/admin/users/${id}/draw-history`);
+}
