@@ -67,6 +67,55 @@ export async function createPrize(o: Partial<{
   });
 }
 
+let rdm = 0;
+export async function createRedemption(o: Partial<{
+  userId: string;
+  code: string;
+  tier: 'single' | 'multi';
+  status: 'pending' | 'delivered' | 'cancelled';
+  isTest: boolean;
+  totalWinAmount: number;
+}> = {}) {
+  rdm += 1;
+  return prisma.redemption.create({
+    data: {
+      userId: o.userId!,
+      code: o.code ?? `TST${rdm.toString().padStart(4, '0')}-XXXX-XXXX`,
+      tier: o.tier ?? 'single',
+      status: o.status ?? 'pending',
+      isTest: o.isTest ?? false,
+      totalWinAmount: o.totalWinAmount ?? 0,
+    },
+  });
+}
+
+let dlg = 0;
+export async function createDrawLog(o: Partial<{
+  userId: string;
+  redemptionId: string;
+  prizeId: string;
+  subIndex: number;
+  tier: 'single' | 'multi';
+  winningCashAmount: number;
+}> = {}) {
+  dlg += 1;
+  return prisma.drawLog.create({
+    data: {
+      userId: o.userId!,
+      redemptionId: o.redemptionId!,
+      prizeId: o.prizeId!,
+      subIndex: o.subIndex ?? 0,
+      tier: o.tier ?? 'single',
+      tierCost: o.tier === 'multi' ? 48 : 6,
+      tierDraws: o.tier === 'multi' ? 10 : 1,
+      pointsBefore: 100,
+      pointsAfter: 94,
+      randomSeed: `seed-${dlg}`,
+      winningCashAmount: o.winningCashAmount ?? 0,
+    },
+  });
+}
+
 export async function seedDefaultSettings(over: Record<string, string> = {}) {
   for (const [key, value] of Object.entries({ ...DEFAULT_SETTINGS, ...over })) {
     await prisma.appSetting.upsert({
