@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset --force",
     "db:seed": "tsx prisma/seed.ts",
+    "admin:create": "tsx scripts/create-admin.ts",
     "admin-ui:dev": "npm --prefix admin-ui run dev",
     "admin-ui:build": "npm --prefix admin-ui run build",
     "admin-ui:test": "npm --prefix admin-ui run test"
