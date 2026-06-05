@@ -6,6 +6,7 @@ const TABLES = [
   'Prize',
   'AppSetting',
   'AdminActionLog',
+  'AdminUser',
   'User',
 ] as const;
 

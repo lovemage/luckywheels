@@ -11,6 +11,7 @@ import { authRoutes } from './routes/auth.js';
 import { drawRoutes } from './routes/draw.js';
 import { publicRoutes } from './routes/public.js';
 import { onboardingRoutes } from './routes/onboarding.js';
+import { adminAuthRoutes } from './admin/routes/auth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ADMIN_DIST = join(__dirname, '..', 'admin-ui', 'dist');
@@ -32,6 +33,7 @@ app.route('/', authRoutes);
 app.route('/', drawRoutes);
 app.route('/', publicRoutes);
 app.route('/', onboardingRoutes);
+app.route('/', adminAuthRoutes);
 
 app.use('/admin/*', serveStatic({ root: './admin-ui/dist' }));
 app.get('/admin/*', (c) => {

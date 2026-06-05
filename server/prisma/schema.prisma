@@ -73,6 +73,17 @@ model AdminActionLog {
   @@index([targetType, targetId, createdAt])
 }
 
+model AdminUser {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  passwordHash        String
+  role                String    @default("admin")
+  lastLoginAt         DateTime?
+  passwordChangedAt   DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
 model Prize {
   id            String   @id @default(cuid())
   rankLabel     String                                // 頭獎 / 二獎 / ...
