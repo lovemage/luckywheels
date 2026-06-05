@@ -76,6 +76,6 @@ export { app };
 const isEntry = process.argv[1]?.endsWith('src/index.ts') || process.argv[1]?.endsWith('src/index.js');
 if (process.env.VITEST !== 'true' && isEntry) {
   await bootstrapAdminIfRequested();
-  serve({ fetch: app.fetch, port: env.PORT });
-  console.log(`server listening on :${env.PORT}`);
+  serve({ fetch: app.fetch, port: env.PORT, hostname: '0.0.0.0' });
+  console.log(`server listening on 0.0.0.0:${env.PORT}`);
 }
