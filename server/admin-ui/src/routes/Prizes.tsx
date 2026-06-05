@@ -76,7 +76,7 @@ export function Prizes() {
             <th style={{ width: 24 }}></th>
             <th>排名</th>
             <th>名稱</th>
-            <th>金額</th>
+            <th>中獎金額</th>
             <th>權重</th>
             <th>庫存</th>
             <th>顏色</th>
@@ -235,7 +235,7 @@ function PrizeEditModal({
           <ImageUploadInput value={form.imageUrl} onChange={(url) => setForm({ ...form, imageUrl: url })} />
         </label>
         <label>
-          cashAmount{' '}
+          中獎金額{' '}
           <input
             type="number"
             value={form.cashAmount}

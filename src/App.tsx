@@ -42,7 +42,7 @@ const SOUND_SOURCES = {
   wheelTap: '/assets/sfx/wheel-tap.ogg',
   spinConfirm: '/assets/sfx/spin-confirm.ogg',
   wheelSpinning: '/assets/sfx/spin-sound.mp3',
-  win: '/assets/sfx/win.ogg',
+  win: '/assets/sfx/floraphonic-coin-payout-6-213526.mp3',
   modalConfirm: '/assets/sfx/spin-sound.mp3',
 } as const;
 
@@ -128,6 +128,11 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   function playSound(key: SoundKey) {
     const audio = soundsRef.current?.[key];
     if (!audio) return;
+    const timer = soundTimersRef.current[key];
+    if (timer) {
+      window.clearTimeout(timer);
+      delete soundTimersRef.current[key];
+    }
     audio.pause();
     audio.currentTime = 0;
     void audio.play().catch(() => {});
@@ -158,7 +163,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       enter: createAudio(SOUND_SOURCES.enter),
       wheelTap: createAudio(SOUND_SOURCES.wheelTap),
       spinConfirm: createAudio(SOUND_SOURCES.spinConfirm),
-      wheelSpinning: createAudio(SOUND_SOURCES.wheelSpinning, true),
+      wheelSpinning: createAudio(SOUND_SOURCES.wheelSpinning),
       win: createAudio(SOUND_SOURCES.win),
       modalConfirm: createAudio(SOUND_SOURCES.modalConfirm),
     };
@@ -296,6 +301,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   }
 
   function closeResult() {
+    stopSound('wheelSpinning');
     playSound('modalConfirm');
     setResult(null);
   }
@@ -457,7 +463,6 @@ function Wheel({
         />
         {prizes.map((prize, index) => {
           const angle = (360 / prizes.length) * index;
-          const cashLabel = prize.cashAmount > 0 ? `${prize.cashAmount}` : '';
           return (
             <div
               className="prize-label"
@@ -470,7 +475,6 @@ function Wheel({
               <div className="prize-content">
                 <strong>{prize.rankLabel}</strong>
                 <span>{prize.name}</span>
-                {cashLabel && <small>{cashLabel}</small>}
                 {prize.imageUrl ? <img src={prize.imageUrl} alt="" /> : <b>💰</b>}
               </div>
             </div>
