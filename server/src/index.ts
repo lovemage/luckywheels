@@ -14,6 +14,8 @@ import { onboardingRoutes } from './routes/onboarding.js';
 import { adminAuthRoutes } from './admin/routes/auth.js';
 import { adminUsersRoutes } from './admin/routes/users.js';
 import { adminRedemptionsRoutes } from './admin/routes/redemptions.js';
+import { adminMeRoutes } from './admin/routes/me.js';
+import { adminActionLogsRoutes } from './admin/routes/action-logs.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ADMIN_DIST = join(__dirname, '..', 'admin-ui', 'dist');
@@ -38,6 +40,8 @@ app.route('/', onboardingRoutes);
 app.route('/', adminAuthRoutes);
 app.route('/', adminUsersRoutes);
 app.route('/', adminRedemptionsRoutes);
+app.route('/', adminMeRoutes);
+app.route('/', adminActionLogsRoutes);
 
 app.use('/admin/*', serveStatic({ root: './admin-ui/dist' }));
 app.get('/admin/*', (c) => {

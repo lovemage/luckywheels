@@ -12,6 +12,8 @@ import { Members } from './routes/Members.js';
 import { MemberDetail } from './routes/MemberDetail.js';
 import { Redemptions } from './routes/Redemptions.js';
 import { RedemptionDetail } from './routes/RedemptionDetail.js';
+import { Profile } from './routes/Profile.js';
+import { Logs } from './routes/Logs.js';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
@@ -38,6 +40,8 @@ export function App() {
               <Route path="users/:id" element={<MemberDetail />} />
               <Route path="redemptions" element={<Redemptions />} />
               <Route path="redemptions/:id" element={<RedemptionDetail />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="logs" element={<Logs />} />
             </Route>
           </Route>
         </Routes>

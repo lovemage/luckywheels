@@ -18,6 +18,14 @@ export async function createAdmin(opts: { email?: string; password?: string } = 
   });
 }
 
+export async function createAdminWithPassword(password: string, opts: { email?: string } = {}) {
+  a += 1;
+  const email = opts.email ?? `admin${a}-pw@example.com`;
+  return prisma.adminUser.create({
+    data: { email, passwordHash: await hashPassword(password), role: 'admin' },
+  });
+}
+
 export async function adminHeaders(adminUserId: string, email: string) {
   const token = await signAdminSession({ adminUserId, email });
   return {
