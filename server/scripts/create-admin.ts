@@ -7,8 +7,8 @@ export interface CreateAdminInput {
 }
 
 export async function createAdminAccount(input: CreateAdminInput): Promise<{ id: string; email: string }> {
-  if (input.password.length < 12) {
-    throw new Error('password must be at least 12 characters');
+  if (input.password.length < 8) {
+    throw new Error('password must be at least 8 characters');
   }
   const existing = await prisma.adminUser.findUnique({ where: { email: input.email } });
   if (existing) throw new Error(`admin with email ${input.email} already exists`);

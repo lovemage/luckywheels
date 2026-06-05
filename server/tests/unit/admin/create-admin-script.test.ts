@@ -15,9 +15,9 @@ describe('createAdminAccount', () => {
     expect(await verifyPassword('pw-1234567890', row!.passwordHash)).toBe(true);
   });
 
-  it('rejects passwords shorter than 12 chars', async () => {
+  it('rejects passwords shorter than 8 chars', async () => {
     await expect(createAdminAccount({ email: 'short@example.com', password: 'abc' }))
-      .rejects.toThrow(/at least 12/);
+      .rejects.toThrow(/at least 8/);
   });
 
   it('throws if email already exists', async () => {
