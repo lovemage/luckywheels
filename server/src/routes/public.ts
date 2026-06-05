@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { readDrawSettings } from '../draw/settings.js';
+import { prisma } from '../db.js';
 
 export const publicRoutes = new Hono();
 
@@ -9,4 +10,24 @@ publicRoutes.get('/api/settings/public', async (c) => {
     spinDurationMs: s.spinDurationMs,
     pointThresholds: s.pointThresholds,
   });
+});
+
+publicRoutes.get('/api/prizes/public', async (c) => {
+  const prizes = await prisma.prize.findMany({
+    where: { enabled: true },
+    orderBy: { wheelPosition: 'asc' },
+    select: {
+      id: true,
+      rankLabel: true,
+      name: true,
+      description: true,
+      imageUrl: true,
+      wheelPosition: true,
+      segmentColor: true,
+      textColor: true,
+      cashAmount: true,
+      isConsolation: true,
+    },
+  });
+  return c.json({ items: prizes });
 });
