@@ -43,9 +43,16 @@ app.route('/', adminRedemptionsRoutes);
 app.route('/', adminMeRoutes);
 app.route('/', adminActionLogsRoutes);
 
+app.use('/admin/assets/*', async (c, next) => {
+  await next();
+  c.header('cache-control', 'public, max-age=31536000, immutable');
+});
 app.use('/admin/*', serveStatic({ root: './admin-ui/dist' }));
+
+// SPA catch-all — index.html is never cached
 app.get('/admin/*', (c) => {
   const html = existsSync(ADMIN_INDEX_PATH) ? readFileSync(ADMIN_INDEX_PATH, 'utf-8') : FALLBACK_INDEX;
+  c.header('cache-control', 'no-store');
   return c.html(html);
 });
 
