@@ -21,6 +21,23 @@ try {
   // .env is optional (e.g. CI provides vars directly).
 }
 
+// Test DB isolation: if TEST_DATABASE_URL is set, route all tests at it.
+// This MUST happen before prisma client init so the override takes effect.
+if (process.env.TEST_DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+}
+
+// Loud warning if tests would mutate the live DB.
+if (
+  process.env.DATABASE_URL &&
+  /railway\.(internal|app)|rlwy\.net/.test(process.env.DATABASE_URL)
+) {
+  console.warn(
+    '\n  ⚠  TESTS WILL MUTATE A RAILWAY DATABASE.\n' +
+    '     Set TEST_DATABASE_URL to a local/dedicated Postgres before running vitest.\n',
+  );
+}
+
 const defaults: Record<string, string> = {
   DATABASE_URL: 'postgresql://lucky:lucky@127.0.0.1:5433/luckywheels',
   PORT: '3001',
