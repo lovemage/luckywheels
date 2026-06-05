@@ -5,6 +5,8 @@ const sidebarLinks = [
   { to: '/', label: '首頁', end: true },
   { to: '/users', label: '會員列表' },
   { to: '/redemptions', label: '中獎紀錄' },
+  { to: '/prizes', label: '獎品設定' },
+  { to: '/settings', label: '遊戲規則' },
   { to: '/profile', label: '個人設定' },
   { to: '/logs', label: '歷史紀錄' },
 ];

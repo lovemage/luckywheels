@@ -14,6 +14,8 @@ import { Redemptions } from './routes/Redemptions.js';
 import { RedemptionDetail } from './routes/RedemptionDetail.js';
 import { Profile } from './routes/Profile.js';
 import { Logs } from './routes/Logs.js';
+import { Prizes } from './routes/Prizes.js';
+import { Settings } from './routes/Settings.js';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
@@ -42,6 +44,8 @@ export function App() {
               <Route path="redemptions/:id" element={<RedemptionDetail />} />
               <Route path="profile" element={<Profile />} />
               <Route path="logs" element={<Logs />} />
+              <Route path="prizes" element={<Prizes />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Route>
         </Routes>
