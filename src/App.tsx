@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Gift, LayoutList, RotateCw, Sparkles, Trophy } from 'lucide-react';
+import { Gift, LayoutList, RotateCw, Sparkles } from 'lucide-react';
 import { ApiError, setUnauthorizedHandler } from './api/client.js';
 import { fetchMe } from './api/me.js';
 import {
@@ -38,11 +38,12 @@ function wheelGradient(prizes: PublicPrize[]) {
 }
 
 const SOUND_SOURCES = {
-  enter: '/assets/sfx/game-enter.ogg',
+  enter: '/assets/sfx/background-sound.mp3',
   wheelTap: '/assets/sfx/wheel-tap.ogg',
   spinConfirm: '/assets/sfx/spin-confirm.ogg',
-  wheelSpinning: '/assets/sfx/wheel-spinning.ogg',
+  wheelSpinning: '/assets/sfx/spin-sound.mp3',
   win: '/assets/sfx/win.ogg',
+  modalConfirm: '/assets/sfx/spin-sound.mp3',
 } as const;
 
 type SoundKey = keyof typeof SOUND_SOURCES;
@@ -111,7 +112,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     }[];
   };
 
-  const [view, setView] = useState<'wheel' | 'ranking' | 'rules' | 'mine'>('wheel');
+  const [view, setView] = useState<'wheel' | 'rules' | 'mine'>('wheel');
   const [prizes, setPrizes] = useState<PublicPrize[] | null>(null);
   const [settings, setSettings] = useState<PublicSettings | null>(null);
   const [selectedTierIndex, setSelectedTierIndex] = useState(0);
@@ -145,6 +146,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       spinConfirm: createAudio(SOUND_SOURCES.spinConfirm),
       wheelSpinning: createAudio(SOUND_SOURCES.wheelSpinning, true),
       win: createAudio(SOUND_SOURCES.win),
+      modalConfirm: createAudio(SOUND_SOURCES.modalConfirm),
     };
 
     return () => {
@@ -274,6 +276,11 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     setSelectedTierIndex(next);
   }
 
+  function closeResult() {
+    playSound('modalConfirm');
+    setResult(null);
+  }
+
   return (
     <main className="showcase">
       <section className="phone-shell" aria-label="會員抽獎前台" style={spinDurationStyle}>
@@ -364,15 +371,6 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           </section>
         )}
 
-        {view === 'ranking' && (
-          <section className="panel-screen">
-            <ScreenHeader icon={<Trophy />} title="排行榜" subtitle="建置中" />
-            <div className="rule-list">
-              <p>排行榜功能建置中。</p>
-            </div>
-          </section>
-        )}
-
         {view === 'mine' && (
           <section className="panel-screen">
             <ScreenHeader icon={<Gift />} title="中獎紀錄" subtitle="每次中獎明細" />
@@ -410,12 +408,11 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
 
         <nav className="bottom-tabs">
           <TabButton active={view === 'wheel'} icon={<RotateCw />} label="輪盤" onClick={() => setView('wheel')} />
-          <TabButton active={view === 'ranking'} icon={<Trophy />} label="排行榜" onClick={() => setView('ranking')} />
           <TabButton active={view === 'rules'} icon={<LayoutList />} label="活動規則" onClick={() => setView('rules')} />
           <TabButton active={view === 'mine'} icon={<Gift />} label="中獎紀錄" onClick={() => setView('mine')} />
         </nav>
 
-        {result && <WinModal result={result} onClose={() => setResult(null)} />}
+        {result && <WinModal result={result} onClose={closeResult} />}
       </section>
     </main>
   );
