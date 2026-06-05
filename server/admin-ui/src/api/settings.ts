@@ -5,10 +5,11 @@ export interface AdminSettings {
   spinDurationMs: number;
   minDrawsBeforeWin: number;
   cooldownDrawsAfterWin: number;
-  payoutCapEnabled: boolean;
-  payoutCapRatio: number;
+  costControlEnabled: boolean;
+  costControlInterval: number;
   rulesText: string;
   totals: { drawCount: number; payoutAmount: number; pointsBurned: number };
+  lowestCostPrize: { id: string; rankLabel: string; name: string; cashAmount: number } | null;
   consolationPrizeId: string;
 }
 
@@ -19,8 +20,8 @@ export type SettingsUpdate = Partial<
     | 'spinDurationMs'
     | 'minDrawsBeforeWin'
     | 'cooldownDrawsAfterWin'
-    | 'payoutCapEnabled'
-    | 'payoutCapRatio'
+    | 'costControlEnabled'
+    | 'costControlInterval'
     | 'rulesText'
   >
 >;

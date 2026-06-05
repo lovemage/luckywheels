@@ -15,7 +15,7 @@ const CreateBody = z.object({
   description: z.string().max(200).nullable().optional(),
   imageUrl: z.string().url().nullable().optional(),
   cashAmount: z.number().int().min(0),
-  weight: z.number().int().min(0),
+  weight: z.number().min(0),
   stock: z.number().int().min(0),
   segmentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),

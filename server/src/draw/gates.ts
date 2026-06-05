@@ -1,4 +1,4 @@
-export type GateReason = 'min_draws' | 'cooldown' | 'payout_cap';
+export type GateReason = 'min_draws' | 'cooldown' | 'payout_cap' | 'cost_control';
 
 export interface GateUserState {
   /** POST-deduct lifetime draw count (already incremented by tierDraws). */

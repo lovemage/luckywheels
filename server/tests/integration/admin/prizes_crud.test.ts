@@ -13,7 +13,7 @@ const validBody = {
   name: '迷你獎',
   description: 'tiny',
   cashAmount: 10,
-  weight: 5,
+  weight: 0.1,
   stock: 99,
   segmentColor: '#abcdef',
 };
@@ -71,9 +71,10 @@ describe('admin Prize CRUD', () => {
       body: JSON.stringify(validBody),
     });
     expect(r.status).toBe(200);
-    const row = await r.json() as { id: string; rankLabel: string; segmentColor: string };
+    const row = await r.json() as { id: string; rankLabel: string; segmentColor: string; weight: number };
     expect(row.rankLabel).toBe('七獎');
     expect(row.segmentColor).toBe('#abcdef');
+    expect(row.weight).toBe(0.1);
     const inDb = await prisma.prize.findUnique({ where: { id: row.id } });
     expect(inDb).not.toBeNull();
     const log = await prisma.adminActionLog.findFirstOrThrow({ where: { event: 'prize.created' } });

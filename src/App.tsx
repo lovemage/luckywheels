@@ -56,6 +56,12 @@ function copyCode(code: string) {
   void navigator.clipboard?.writeText(`LW-${code}`).catch(() => {});
 }
 
+function settleMobileViewport() {
+  const height = window.visualViewport?.height ?? window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', `${height}px`);
+  window.scrollTo({ top: 1, behavior: 'auto' });
+}
+
 const SOUND_SOURCES = {
   enter: '/assets/sfx/background-sound.mp3',
   wheelTap: '/assets/sfx/wheel-tap.ogg',
@@ -201,6 +207,18 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   }, [prizes, settings]);
 
   useEffect(() => {
+    const timers = [50, 300, 800].map((delay) => window.setTimeout(settleMobileViewport, delay));
+    const onResize = () => settleMobileViewport();
+    window.visualViewport?.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      window.visualViewport?.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, []);
+
+  useEffect(() => {
     if (view !== 'mine') return;
     fetchWinHistory()
       .then((history) => setWinHistory(formatWinHistory(history.items)))
@@ -276,7 +294,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
             ...current,
           ]);
         }
-        if (res.draws.some((draw) => draw.winningCashAmount > 0 && !draw.gatedBy)) {
+        if (res.draws.some((draw) => draw.winningCashAmount > 0)) {
           playSound('win');
         }
         sessionStore.getState().setMe({
@@ -358,10 +376,6 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
               <div>
                 <dt>可抽次數</dt>
                 <dd>{availableDraws} 次</dd>
-              </div>
-              <div>
-                <dt>累計抽獎次數</dt>
-                <dd>{me.lifetimeDrawCount} 次</dd>
               </div>
             </dl>
           </aside>

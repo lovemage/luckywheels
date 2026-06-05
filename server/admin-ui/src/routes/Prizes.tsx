@@ -39,6 +39,9 @@ export function Prizes() {
   const activeTotalWeight = items
     .filter((p) => p.enabled && p.stock > 0)
     .reduce((sum, p) => sum + p.weight, 0);
+  const activeTotalWeightText = activeTotalWeight.toLocaleString('zh-TW', {
+    maximumFractionDigits: 4,
+  });
 
   function onDrop(targetId: string) {
     if (!dragId || dragId === targetId) {
@@ -72,7 +75,7 @@ export function Prizes() {
         <h1 style={{ margin: 0 }}>獎品設定</h1>
       </header>
       <p style={{ marginTop: -8, marginBottom: 16, color: '#6b7280' }}>
-        目前可中獎總權重：<strong style={{ color: '#111827' }}>{activeTotalWeight}</strong>
+        目前可中獎總權重：<strong style={{ color: '#111827' }}>{activeTotalWeightText}</strong>
         {' '}（只計算已啟用且庫存大於 0 的獎項）
       </p>
       {isLoading && <p>載入中…</p>}
@@ -252,11 +255,13 @@ function PrizeEditModal({
           中獎權重（weight）{' '}
           <input
             type="number"
+            min={0}
+            step={0.1}
             value={form.weight}
             onChange={(e) => setForm({ ...form, weight: Number(e.target.value) })}
           />
           <small style={{ display: 'block', marginTop: 4, color: '#6b7280' }}>
-            權重會換算為中獎機率：本獎項權重 ÷ 所有可中獎獎項權重總和 × 100%。例如總權重 100、本獎項權重 6，機率約為 6%。
+            權重可使用小數，例如 0.1。中獎機率 = 本獎項權重 ÷ 所有可中獎獎項權重總和 × 100%。例如總權重 100、本獎項權重 0.1，機率約為 0.1%。
           </small>
         </label>
         <label>
@@ -293,6 +298,9 @@ function PrizeEditModal({
             onChange={(e) => setForm({ ...form, isConsolation: e.target.checked })}
           />{' '}
           安慰獎（謝謝參加）
+          <small style={{ display: 'block', marginTop: 4, color: '#6b7280' }}>
+            舊版標記；目前成本控制會自動使用「啟用獎項中最低的中獎金額」，不再依賴安慰獎。
+          </small>
         </label>
         <label>
           <input

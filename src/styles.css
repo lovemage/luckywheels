@@ -19,6 +19,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: var(--app-height, 100dvh);
   overflow-x: hidden;
 }
 
@@ -45,6 +46,7 @@ input:focus-visible {
 
 .showcase {
   min-height: 100vh;
+  min-height: var(--app-height, 100dvh);
   display: grid;
   place-items: center;
   padding: clamp(18px, 4vw, 42px);
@@ -1180,6 +1182,7 @@ h1 {
   .phone-shell {
     width: 100%;
     min-height: 100vh;
+    min-height: var(--app-height, 100dvh);
     border-radius: 0;
   }
 

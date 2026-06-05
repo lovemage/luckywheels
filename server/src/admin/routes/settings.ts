@@ -21,6 +21,8 @@ const Body = z.object({
   cooldownDrawsAfterWin: z.number().int().min(0).max(100).optional(),
   payoutCapEnabled: z.boolean().optional(),
   payoutCapRatio: z.number().min(0).max(1).optional(),
+  costControlEnabled: z.boolean().optional(),
+  costControlInterval: z.union([z.literal(3), z.literal(4), z.literal(5)]).optional(),
   rulesText: z.string().min(1).max(2000).optional(),
 });
 type BodyT = z.infer<typeof Body>;
@@ -70,6 +72,11 @@ adminSettingsRoutes.get('/api/admin/settings', requireAdmin, async (c) => {
   const m = await readAllSettings();
   let pointThresholds: { points: number; draws: number }[] = [];
   try { pointThresholds = JSON.parse(m[SETTINGS_KEYS.pointThresholds] ?? '[]'); } catch { /* ignore */ }
+  const lowestCostPrize = await prisma.prize.findFirst({
+    where: { enabled: true, cashAmount: { gt: 0 } },
+    orderBy: [{ cashAmount: 'asc' }, { wheelPosition: 'asc' }],
+    select: { id: true, rankLabel: true, name: true, cashAmount: true },
+  });
   return c.json({
     pointThresholds,
     spinDurationMs: Number(m[SETTINGS_KEYS.spinDurationMs] ?? '0'),
@@ -77,12 +84,15 @@ adminSettingsRoutes.get('/api/admin/settings', requireAdmin, async (c) => {
     cooldownDrawsAfterWin: Number(m[SETTINGS_KEYS.cooldownDrawsAfterWin] ?? '0'),
     payoutCapEnabled: (m[SETTINGS_KEYS.payoutCapEnabled] ?? 'false') === 'true',
     payoutCapRatio: Number(m[SETTINGS_KEYS.payoutCapRatio] ?? '0'),
+    costControlEnabled: (m[SETTINGS_KEYS.costControlEnabled] ?? 'false') === 'true',
+    costControlInterval: Number(m[SETTINGS_KEYS.costControlInterval] ?? '3'),
     rulesText: m[SETTINGS_KEYS.rulesText] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.rulesText],
     totals: {
       drawCount: Number(m[SETTINGS_KEYS.totalDrawCount] ?? '0'),
       payoutAmount: Number(m[SETTINGS_KEYS.totalPayoutAmount] ?? '0'),
       pointsBurned: Number(m[SETTINGS_KEYS.totalPointsBurned] ?? '0'),
     },
+    lowestCostPrize,
     consolationPrizeId: m[SETTINGS_KEYS.consolationPrizeId] ?? '',
   });
 });
@@ -113,6 +123,10 @@ adminSettingsRoutes.patch('/api/admin/settings', requireAdmin, async (c) => {
     updates.push({ key: SETTINGS_KEYS.payoutCapEnabled, value: serialize(body.payoutCapEnabled) });
   if (body.payoutCapRatio !== undefined)
     updates.push({ key: SETTINGS_KEYS.payoutCapRatio, value: serialize(body.payoutCapRatio) });
+  if (body.costControlEnabled !== undefined)
+    updates.push({ key: SETTINGS_KEYS.costControlEnabled, value: serialize(body.costControlEnabled) });
+  if (body.costControlInterval !== undefined)
+    updates.push({ key: SETTINGS_KEYS.costControlInterval, value: serialize(body.costControlInterval) });
   if (body.rulesText !== undefined)
     updates.push({ key: SETTINGS_KEYS.rulesText, value: serialize(body.rulesText) });
 

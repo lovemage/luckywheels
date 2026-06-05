@@ -7,6 +7,8 @@ export const SETTINGS_KEYS = {
   cooldownDrawsAfterWin: 'cooldownDrawsAfterWin',
   payoutCapEnabled: 'payoutCapEnabled',
   payoutCapRatio: 'payoutCapRatio',
+  costControlEnabled: 'costControlEnabled',
+  costControlInterval: 'costControlInterval',
   rulesText: 'rulesText',
   consolationPrizeId: 'consolationPrizeId',
   // System totals — maintained atomically inside the draw transaction
@@ -31,6 +33,8 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   [SETTINGS_KEYS.cooldownDrawsAfterWin]: '0',
   [SETTINGS_KEYS.payoutCapEnabled]: 'false',
   [SETTINGS_KEYS.payoutCapRatio]: '0.45',
+  [SETTINGS_KEYS.costControlEnabled]: 'false',
+  [SETTINGS_KEYS.costControlInterval]: '3',
   [SETTINGS_KEYS.rulesText]: [
     '單抽消耗 6 積分、連抽消耗 48 積分，結果由伺服器判定。',
     '中獎時會產生 Redemption 隨機碼，將碼截圖傳給管理員兌換彩金。',

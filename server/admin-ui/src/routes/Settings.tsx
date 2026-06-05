@@ -20,8 +20,8 @@ export function Settings() {
         spinDurationMs: data.spinDurationMs,
         minDrawsBeforeWin: data.minDrawsBeforeWin,
         cooldownDrawsAfterWin: data.cooldownDrawsAfterWin,
-        payoutCapEnabled: data.payoutCapEnabled,
-        payoutCapRatio: data.payoutCapRatio,
+        costControlEnabled: data.costControlEnabled,
+        costControlInterval: data.costControlInterval,
         rulesText: data.rulesText,
       });
   }, [data]);
@@ -126,50 +126,39 @@ export function Settings() {
       <fieldset style={{ marginBottom: 16 }}>
         <legend>成本控制門檻</legend>
         <p style={{ marginTop: 0, color: '#6b7280' }}>
-          這些設定會影響後端是否允許會員中獎；被門檻擋下時，系統會改派安慰獎或未中獎結果。
+          成本控制啟用後，系統會用全站累計抽獎次數判斷每一抽是否進入權重計算。只有命中指定倍數的抽獎才會依權重抽獎；其他抽獎一定派目前最低中獎金額獎項。連抽會逐筆子抽套用此規則。
         </p>
-        <label>
-          最少抽獎次數後才可中獎（minDrawsBeforeWin）{' '}
-          <input
-            type="number"
-            value={form.minDrawsBeforeWin ?? 0}
-            onChange={(e) => setForm({ ...form, minDrawsBeforeWin: Number(e.target.value) })}
-          />
-          <Hint>會員累計抽獎次數未達此數值前，不會中現金獎。填 0 代表不限制。</Hint>
-        </label>
-        <br />
-        <label>
-          中獎後冷卻抽數（cooldownDrawsAfterWin）{' '}
-          <input
-            type="number"
-            value={form.cooldownDrawsAfterWin ?? 0}
-            onChange={(e) => setForm({ ...form, cooldownDrawsAfterWin: Number(e.target.value) })}
-          />
-          <Hint>會員中獎後，需再抽滿這個次數才可能再次中獎。填 0 代表中獎後不冷卻。</Hint>
-        </label>
-        <br />
+        <p style={{ marginTop: 0, color: '#374151', fontWeight: 700 }}>
+          目前最低金額成本控制獎：
+          {data.lowestCostPrize
+            ? `${data.lowestCostPrize.rankLabel} ${data.lowestCostPrize.name}，中獎金額 ${data.lowestCostPrize.cashAmount}`
+            : '尚無啟用且金額大於 0 的獎項'}
+        </p>
         <label>
           <input
             type="checkbox"
-            checked={form.payoutCapEnabled ?? false}
-            onChange={(e) => setForm({ ...form, payoutCapEnabled: e.target.checked })}
+            checked={form.costControlEnabled ?? false}
+            onChange={(e) => setForm({ ...form, costControlEnabled: e.target.checked })}
           />{' '}
-          啟用派彩比例上限（payoutCapEnabled）
-          <Hint>開啟後，系統會依累計派彩金額與累計消耗積分的比例控管成本。超過上限時，後端會避免繼續派發現金獎。</Hint>
+          啟用全站倍數成本控制（costControlEnabled）
+          <Hint>關閉時，每一抽都依權重計算；開啟時，只有指定倍數抽獎依權重計算，其餘派最低金額獎。</Hint>
         </label>
         <br />
         <label>
-          派彩比例上限（payoutCapRatio）{' '}
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={form.payoutCapRatio ?? 0.45}
-            onChange={(e) => setForm({ ...form, payoutCapRatio: Number(e.target.value) })}
-          />{' '}
-          {((form.payoutCapRatio ?? 0.45) * 100).toFixed(0)}%
-          <Hint>計算方式：累計派彩金額 ÷ 累計消耗積分。例：45% 代表派彩總額接近或超過消耗積分的 45% 時，系統會啟動保護。</Hint>
+          權重計算倍數（costControlInterval）{' '}
+          <select
+            value={form.costControlInterval ?? 3}
+            onChange={(e) => setForm({ ...form, costControlInterval: Number(e.target.value) })}
+          >
+            {[3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                每 {n} 抽
+              </option>
+            ))}
+          </select>
+          <Hint>
+            只能擇一。例如選每 3 抽，則全站第 3、6、9、12 抽會依權重計算；第 1、2、4、5、7、8 抽會派最低金額獎。連抽會拆成多筆子抽依序計算。
+          </Hint>
         </label>
       </fieldset>
 
@@ -179,7 +168,12 @@ export function Settings() {
         <p>累計抽獎次數：{data.totals.drawCount}</p>
         <p>累計派彩金額：{data.totals.payoutAmount}</p>
         <p>累計消耗積分：{data.totals.pointsBurned}</p>
-        <p>安慰獎獎品 ID（consolationPrizeId）：{data.consolationPrizeId || '（未設定）'}</p>
+        <p>
+          成本控制最低金額獎：
+          {data.lowestCostPrize
+            ? `${data.lowestCostPrize.rankLabel} ${data.lowestCostPrize.name} / ${data.lowestCostPrize.cashAmount}`
+            : '（未偵測到）'}
+        </p>
       </fieldset>
 
       {error && <p style={{ color: '#c00' }}>{error}</p>}

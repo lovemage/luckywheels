@@ -91,7 +91,7 @@ model Prize {
   description   String?
   imageUrl      String?
   stock         Int      @default(0)
-  weight        Int      @default(0)
+  weight        Float    @default(0)
   wheelPosition Int      @default(0)
   sortOrder     Int      @default(0)
   cashAmount    Int      @default(0)                  // fixed payout per win (no jackpot accumulation)
@@ -114,6 +114,7 @@ enum GatedBy {
   min_draws
   cooldown
   payout_cap
+  cost_control
 }
 
 enum RedemptionStatus {

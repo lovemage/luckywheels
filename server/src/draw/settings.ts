@@ -12,6 +12,8 @@ export interface DrawSettings {
   cooldownDrawsAfterWin: number;
   payoutCapEnabled: boolean;
   payoutCapRatio: number;
+  costControlEnabled: boolean;
+  costControlInterval: number;
   consolationPrizeId: string;
 }
 
@@ -29,6 +31,8 @@ export async function readDrawSettings(): Promise<DrawSettings> {
     cooldownDrawsAfterWin: n(SETTINGS_KEYS.cooldownDrawsAfterWin),
     payoutCapEnabled: s(SETTINGS_KEYS.payoutCapEnabled) === 'true',
     payoutCapRatio: Number(s(SETTINGS_KEYS.payoutCapRatio) || '0'),
+    costControlEnabled: s(SETTINGS_KEYS.costControlEnabled) === 'true',
+    costControlInterval: n(SETTINGS_KEYS.costControlInterval) || 3,
     consolationPrizeId: s(SETTINGS_KEYS.consolationPrizeId),
   };
 }

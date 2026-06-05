@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
-import type { Prize, User } from '@prisma/client';
+import { GatedBy, type Prisma, type Prize, type User } from '@prisma/client';
 import { AppError } from '../errors.js';
 import { requireUser } from '../auth/middleware.js';
 import { prisma } from '../db.js';
@@ -13,7 +13,6 @@ import {
   incrementSystemTotals,
   type DrawSettings,
 } from '../draw/settings.js';
-import { evaluateGates } from '../draw/gates.js';
 import { pickPrize } from '../draw/pick.js';
 import { generateRedemptionCode } from '../draw/redemption-code.js';
 
@@ -135,6 +134,38 @@ function replayBody(
   };
 }
 
+function pickLowestCostPrize(prizes: Prize[], paidOnly = false): Prize {
+  const available = prizes.filter((p) => p.enabled && (p.isConsolation || p.stock > 0));
+  const paid = available.filter((p) => p.cashAmount > 0);
+  const pool = paidOnly && paid.length > 0 ? paid : (paid.length > 0 ? paid : available);
+  const chosen = [...pool].sort((a, b) => {
+    if (a.cashAmount !== b.cashAmount) return a.cashAmount - b.cashAmount;
+    return a.wheelPosition - b.wheelPosition;
+  })[0];
+  if (!chosen) throw new AppError('NO_PRIZE_AVAILABLE', 'no enabled prize available', 500);
+  return chosen;
+}
+
+function costControlGate(globalDrawNumber: number, settings: DrawSettings): GatedBy | null {
+  if (!settings.costControlEnabled) return null;
+  if (settings.costControlInterval <= 0) return null;
+  return globalDrawNumber % settings.costControlInterval === 0 ? null : GatedBy.cost_control;
+}
+
+async function reservePrizeStock(tx: Prisma.TransactionClient, prize: Prize): Promise<boolean> {
+  if (prize.isConsolation) return true;
+  const stockUpdate = await tx.prize.updateMany({
+    where: { id: prize.id, stock: { gt: 0 } },
+    data: { stock: { decrement: 1 } },
+  });
+  if (stockUpdate.count === 0) {
+    prize.stock = 0;
+    return false;
+  }
+  prize.stock = Math.max(0, prize.stock - 1);
+  return true;
+}
+
 async function handleVerifiedDraw(c: Context, user: User, tier: Tier, threshold: { points: number; draws: number }) {
   const settings = await readDrawSettings();
 
@@ -168,12 +199,6 @@ async function handleVerifiedDraw(c: Context, user: User, tier: Tier, threshold:
         },
       });
 
-      const gated = evaluateGates(
-        { lifetimeDrawCount: updatedUser.lifetimeDrawCount, lastWinDrawIndex: updatedUser.lastWinDrawIndex },
-        totals,
-        settings,
-      );
-
       const eligible = await tx.prize.findMany({ where: { enabled: true } });
 
       const redemption = await tx.redemption.create({
@@ -187,47 +212,50 @@ async function handleVerifiedDraw(c: Context, user: User, tier: Tier, threshold:
         },
       });
 
-      const subDraws: Array<{ chosen: Prize; winningCashAmount: number }> = [];
+      const subDraws: Array<{ chosen: Prize; winningCashAmount: number; gatedBy: GatedBy | null }> = [];
       for (let i = 0; i < threshold.draws; i++) {
         let chosen: Prize;
-        if (gated) {
-          chosen = (eligible.find((p) => p.id === settings.consolationPrizeId)
-                ?? eligible.find((p) => p.isConsolation)) as Prize | undefined
-                ?? (() => { throw new AppError('NO_CONSOLATION_PRIZE', 'consolation prize missing', 500); })();
+        const gatedBy = costControlGate(totals.totalDrawCount + i + 1, settings);
+        if (gatedBy) {
+          chosen = pickLowestCostPrize(eligible, true);
+          if (!(await reservePrizeStock(tx, chosen))) {
+            chosen = pickLowestCostPrize(eligible);
+            if (!(await reservePrizeStock(tx, chosen))) {
+              throw new AppError('NO_PRIZE_STOCK', 'lowest-cost prize stock unavailable', 500);
+            }
+          }
         } else {
           chosen = pickPrize(eligible);
           if (!chosen.isConsolation) {
-            const stockUpdate = await tx.prize.updateMany({
-              where: { id: chosen.id, stock: { gt: 0 } },
-              data: { stock: { decrement: 1 } },
-            });
-            if (stockUpdate.count === 0) {
-              chosen = (eligible.find((p) => p.id === settings.consolationPrizeId)
-                    ?? eligible.find((p) => p.isConsolation)) as Prize | undefined
-                    ?? (() => { throw new AppError('NO_CONSOLATION_PRIZE', 'consolation prize missing', 500); })();
+            if (!(await reservePrizeStock(tx, chosen))) {
+              chosen = pickLowestCostPrize(eligible);
+              if (!(await reservePrizeStock(tx, chosen))) {
+                throw new AppError('NO_PRIZE_STOCK', 'fallback prize stock unavailable', 500);
+              }
             }
           }
         }
         const winningCashAmount = chosen.isConsolation ? 0 : chosen.cashAmount;
-        subDraws.push({ chosen, winningCashAmount });
+        subDraws.push({ chosen, winningCashAmount, gatedBy });
       }
 
       const totalWinAmount = subDraws.reduce((s, d) => s + d.winningCashAmount, 0);
+      const hasWeightedWin = subDraws.some((d) => d.winningCashAmount > 0 && d.gatedBy === null);
 
-      const finalUser = (!gated && totalWinAmount > 0)
+      const finalUser = totalWinAmount > 0
         ? await tx.user.update({
             where: { id: user.id },
             data: {
               lifetimePayoutAmount: { increment: totalWinAmount },
               totalLuckAmount: { increment: totalWinAmount },
-              lastWinDrawIndex: updatedUser.lifetimeDrawCount,
+              ...(hasWeightedWin ? { lastWinDrawIndex: updatedUser.lifetimeDrawCount } : {}),
             },
           })
         : updatedUser;
 
       const drawLogs: Array<{ log: Awaited<ReturnType<typeof tx.drawLog.create>>; chosen: Prize }> = [];
       for (let i = 0; i < subDraws.length; i++) {
-        const { chosen, winningCashAmount } = subDraws[i]!;
+        const { chosen, winningCashAmount, gatedBy } = subDraws[i]!;
         const log = await tx.drawLog.create({
           data: {
             userId: user.id,
@@ -243,7 +271,7 @@ async function handleVerifiedDraw(c: Context, user: User, tier: Tier, threshold:
             winningCashAmount,
             isTest: false,
             forcedByAdmin: false,
-            gatedBy: gated ?? undefined,
+            gatedBy: gatedBy ?? undefined,
           },
         });
         drawLogs.push({ log, chosen });
