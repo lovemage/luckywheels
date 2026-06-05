@@ -53,3 +53,11 @@ export function adjustPoints(id: string, body: { delta: number; reason: string }
     body: JSON.stringify(body),
   });
 }
+
+export function setAccountType(id: string, accountType: 'verified' | 'test'): Promise<{ ok: true }> {
+  return api(`/api/admin/users/${id}/account-type`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ accountType }),
+  });
+}

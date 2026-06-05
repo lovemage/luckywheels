@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchUser, adjustPoints } from '../api/users.js';
+import { fetchUser, adjustPoints, setAccountType } from '../api/users.js';
 import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
 
@@ -25,7 +25,24 @@ export function MemberDetail() {
   if (isLoading || !data) return <p>載入中…</p>;
   return (
     <section>
-      <h1>{data.nickname ?? '(未填暱稱)'}　<AccountTypeBadge type={data.accountType} /></h1>
+      <h1>
+        {data.nickname ?? '(未填暱稱)'}　<AccountTypeBadge type={data.accountType} />
+        {data.accountType !== 'blacklisted' && (
+          <button
+            style={{ marginLeft: 12 }}
+            onClick={() => {
+              const next = data.accountType === 'test' ? 'verified' : 'test';
+              if (window.confirm(`切換為「${next === 'test' ? '測試' : '正式'}」會員？`)) {
+                setAccountType(id!, next).then(() =>
+                  qc.invalidateQueries({ queryKey: ['admin', 'users', id] }),
+                );
+              }
+            }}
+          >
+            切換為{data.accountType === 'test' ? '正式' : '測試'}會員
+          </button>
+        )}
+      </h1>
       <dl>
         <dt>LINE 名</dt><dd>{data.displayName}</dd>
         <dt>lineUserId</dt><dd>{data.lineUserId}</dd>

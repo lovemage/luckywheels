@@ -99,3 +99,47 @@ adminUsersRoutes.post('/api/admin/users/:id/points', requireAdmin, async (c) => 
   });
   return c.json({ points: updated.points });
 });
+
+const AccountTypeBody = z.object({
+  accountType: z.enum(['verified', 'test']),  // 'blacklisted' deliberately excluded
+});
+
+adminUsersRoutes.patch('/api/admin/users/:id/account-type', requireAdmin, async (c) => {
+  const userId = c.req.param('id');
+  let body: z.infer<typeof AccountTypeBody>;
+  try {
+    const raw = await c.req.json();
+    if (raw.accountType === 'blacklisted') {
+      throw new AppError('ACCOUNT_TYPE_BLACKLIST_DISALLOWED', 'use the blacklist endpoint', 400);
+    }
+    body = AccountTypeBody.parse(raw);
+  } catch (e) {
+    if (e instanceof AppError) throw e;
+    throw new AppError('ACCOUNT_TYPE_BODY_INVALID', 'invalid body', 400);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('USER_NOT_FOUND', 'no such user', 404);
+    if (user.accountType === 'blacklisted') {
+      throw new AppError('ACCOUNT_TYPE_BLACKLIST_DISALLOWED', 'unblacklist via the blacklist endpoint', 400);
+    }
+    if (user.accountType === body.accountType) return;             // no-op
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        accountType: body.accountType,
+        // demoting to a non-test type clears test settings
+        ...(body.accountType !== 'test' ? { testSkipCost: false, testForcePrizeId: null } : {}),
+      },
+    });
+    await audit(c, tx, {
+      event: 'user.account_type_change',
+      targetType: 'user',
+      targetId: userId,
+      payloadBefore: { accountType: user.accountType },
+      payloadAfter: { accountType: body.accountType },
+    });
+  });
+  return c.json({ ok: true });
+});
