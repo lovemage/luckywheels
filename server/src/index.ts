@@ -16,6 +16,7 @@ import { adminUsersRoutes } from './admin/routes/users.js';
 import { adminRedemptionsRoutes } from './admin/routes/redemptions.js';
 import { adminMeRoutes } from './admin/routes/me.js';
 import { adminActionLogsRoutes } from './admin/routes/action-logs.js';
+import { adminUploadsRoutes } from './admin/routes/uploads.js';
 import { bootstrapAdminIfRequested } from './admin/bootstrap.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -40,7 +41,7 @@ const app = new Hono();
 
 app.onError((err, c) => {
   const { status, body } = formatError(err);
-  return c.json(body, status as 400 | 401 | 403 | 404 | 409 | 422 | 500 | 502);
+  return c.json(body, status as 400 | 401 | 403 | 404 | 409 | 413 | 415 | 422 | 500 | 502);
 });
 
 app.get('/api/health', (c) => c.json({ ok: true }));
@@ -57,6 +58,7 @@ app.route('/', adminUsersRoutes);
 app.route('/', adminRedemptionsRoutes);
 app.route('/', adminMeRoutes);
 app.route('/', adminActionLogsRoutes);
+app.route('/', adminUploadsRoutes);
 
 app.use('/admin/assets/*', async (c, next) => {
   await next();
