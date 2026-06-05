@@ -61,3 +61,11 @@ export function setAccountType(id: string, accountType: 'verified' | 'test'): Pr
     body: JSON.stringify({ accountType }),
   });
 }
+
+export function updateTestSettings(id: string, body: { testSkipCost?: boolean; testForcePrizeId?: string | null }) {
+  return api<{ ok: true }>(`/api/admin/users/${id}/test-settings`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}

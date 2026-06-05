@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchUser, adjustPoints, setAccountType } from '../api/users.js';
+import { fetchUser, adjustPoints, setAccountType, updateTestSettings } from '../api/users.js';
 import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
 
@@ -71,10 +71,34 @@ export function MemberDetail() {
         }
       />
       {data.accountType === 'test' && (
-        <section>
+        <section style={{ marginTop: 24, padding: 12, border: '1px solid #ddd' }}>
           <h2>測試帳號設定</h2>
-          <p>testSkipCost：{String(data.testSkipCost)}</p>
-          <p>testForcePrizeId：{data.testForcePrizeId ?? '—'}</p>
+          <label style={{ display: 'block', marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              defaultChecked={data.testSkipCost}
+              onChange={(e) =>
+                updateTestSettings(id!, { testSkipCost: e.target.checked }).then(() =>
+                  qc.invalidateQueries({ queryKey: ['admin', 'users', id] }),
+                )
+              }
+            />
+            不扣積分（測試專用）
+          </label>
+          <label style={{ display: 'block' }}>
+            強制中獎 Prize ID（空白＝關閉）
+            <input
+              type="text"
+              defaultValue={data.testForcePrizeId ?? ''}
+              onBlur={(e) => {
+                const v = e.target.value.trim();
+                updateTestSettings(id!, { testForcePrizeId: v === '' ? null : v }).then(() =>
+                  qc.invalidateQueries({ queryKey: ['admin', 'users', id] }),
+                );
+              }}
+              style={{ width: '100%', marginTop: 4 }}
+            />
+          </label>
         </section>
       )}
     </section>

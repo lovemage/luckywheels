@@ -143,3 +143,45 @@ adminUsersRoutes.patch('/api/admin/users/:id/account-type', requireAdmin, async 
   });
   return c.json({ ok: true });
 });
+
+const TestSettingsBody = z.object({
+  testSkipCost: z.boolean().optional(),
+  testForcePrizeId: z.string().nullable().optional(),
+});
+
+adminUsersRoutes.patch('/api/admin/users/:id/test-settings', requireAdmin, async (c) => {
+  const userId = c.req.param('id');
+  let body: z.infer<typeof TestSettingsBody>;
+  try { body = TestSettingsBody.parse(await c.req.json()); }
+  catch { throw new AppError('TEST_SETTINGS_BODY_INVALID', 'invalid body', 400); }
+
+  if (body.testSkipCost === undefined && body.testForcePrizeId === undefined) {
+    throw new AppError('TEST_SETTINGS_NO_OP', 'no fields to update', 400);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('USER_NOT_FOUND', 'no such user', 404);
+    if (user.accountType !== 'test') {
+      throw new AppError('TEST_SETTINGS_REQUIRES_TEST_ACCOUNT', 'user is not a test account', 422);
+    }
+    if (body.testForcePrizeId) {
+      const prize = await tx.prize.findUnique({ where: { id: body.testForcePrizeId } });
+      if (!prize) throw new AppError('TEST_FORCE_PRIZE_NOT_FOUND', 'prize not found', 404);
+    }
+    const before = { testSkipCost: user.testSkipCost, testForcePrizeId: user.testForcePrizeId };
+    const after = {
+      testSkipCost: body.testSkipCost ?? user.testSkipCost,
+      testForcePrizeId: body.testForcePrizeId === undefined ? user.testForcePrizeId : body.testForcePrizeId,
+    };
+    await tx.user.update({ where: { id: userId }, data: after });
+    await audit(c, tx, {
+      event: 'user.test_settings_change',
+      targetType: 'user',
+      targetId: userId,
+      payloadBefore: before,
+      payloadAfter: after,
+    });
+  });
+  return c.json({ ok: true });
+});
