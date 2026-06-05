@@ -8,6 +8,7 @@ import { AppShell } from './components/AppShell.js';
 import { SessionExpiredModal } from './components/SessionExpiredModal.js';
 import { Login } from './routes/Login.js';
 import { Dashboard } from './routes/Dashboard.js';
+import { Members } from './routes/Members.js';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
@@ -30,6 +31,7 @@ export function App() {
           <Route element={<AuthGuard />}>
             <Route element={<AppShell />}>
               <Route index element={<Dashboard />} />
+              <Route path="users" element={<Members />} />
             </Route>
           </Route>
         </Routes>
