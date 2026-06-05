@@ -151,7 +151,7 @@ input:focus-visible {
 }
 
 .hero {
-  min-height: 238px;
+  min-height: 198px;
   padding: 30px 20px 0;
 }
 
@@ -175,10 +175,10 @@ input:focus-visible {
 
 .logo-image {
   display: block;
-  width: 248px;
+  width: 208px;
   max-width: 120%;
   height: auto;
-  margin-left: -24px;
+  margin-left: -20px;
   margin-top: -4px;
 }
 
@@ -223,10 +223,12 @@ h1 {
 
 .member-card {
   position: absolute;
-  top: 52px;
+  top: 46px;
   right: 12px;
   width: 172px;
   padding: 11px;
+  transform: scale(0.86);
+  transform-origin: top right;
   border: 1px solid rgba(226, 131, 255, 0.5);
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(116, 43, 133, 0.86), rgba(50, 12, 73, 0.86));
@@ -1191,13 +1193,13 @@ h1 {
   }
 
   .logo-image {
-    width: 224px;
-    margin-left: -22px;
+    width: 188px;
+    margin-left: -18px;
     margin-top: 2px;
   }
 
   .member-card {
-    top: 46px;
+    top: 40px;
     right: 9px;
     width: 168px;
   }
