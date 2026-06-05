@@ -13,7 +13,7 @@ export function Login() {
     setError(null);
     try {
       await api('/api/admin/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-      nav('/admin/');
+      nav('/');
     } catch (err) {
       const e = err as ApiError;
       if (e.code === 'LOGIN_RATE_LIMITED') setError('嘗試次數過多，請稍後再試');

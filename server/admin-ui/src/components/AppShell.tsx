@@ -2,11 +2,11 @@ import { NavLink, Outlet } from 'react-router';
 import { MemberSearch } from './MemberSearch.js';
 
 const sidebarLinks = [
-  { to: '/admin/', label: '首頁', end: true },
-  { to: '/admin/users', label: '會員列表' },
-  { to: '/admin/redemptions', label: '中獎紀錄' },
-  { to: '/admin/profile', label: '個人設定' },
-  { to: '/admin/logs', label: '歷史紀錄' },
+  { to: '/', label: '首頁', end: true },
+  { to: '/users', label: '會員列表' },
+  { to: '/redemptions', label: '中獎紀錄' },
+  { to: '/profile', label: '個人設定' },
+  { to: '/logs', label: '歷史紀錄' },
 ];
 
 export function AppShell() {

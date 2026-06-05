@@ -34,8 +34,8 @@ export function Redemptions() {
           rows={data.items}
           rowKey={(r) => r.id}
           columns={[
-            { header: 'Code', cell: (r) => <Link to={`/admin/redemptions/${r.id}`}><CodeChip code={r.code} /></Link> },
-            { header: '會員', cell: (r) => <Link to={`/admin/users/${r.user.id}`}>{r.user.nickname ?? r.user.displayName}</Link> },
+            { header: 'Code', cell: (r) => <Link to={`/redemptions/${r.id}`}><CodeChip code={r.code} /></Link> },
+            { header: '會員', cell: (r) => <Link to={`/users/${r.user.id}`}>{r.user.nickname ?? r.user.displayName}</Link> },
             { header: '類型', cell: (r) => r.tier === 'multi' ? '10 連抽' : '單抽' },
             { header: '狀態', cell: (r) => <StatusBadge status={r.status} /> },
             { header: '中獎金額', cell: (r) => r.totalWinAmount },

@@ -11,6 +11,6 @@ export function AuthGuard() {
     retry: false,
   });
   if (isLoading) return <p>載入中…</p>;
-  if (isError || !data) return <Navigate to="/admin/login" replace />;
+  if (isError || !data) return <Navigate to="/login" replace />;
   return <Outlet />;
 }

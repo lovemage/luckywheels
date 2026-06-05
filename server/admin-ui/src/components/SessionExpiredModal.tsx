@@ -10,7 +10,7 @@ export function SessionExpiredModal() {
   const close = () => {
     dismissExpired();
     qc.clear();
-    nav('/admin/login', { replace: true });
+    nav('/login', { replace: true });
   };
   return (
     <Modal open={expiredVisible} title="請先登入" onClose={close}>

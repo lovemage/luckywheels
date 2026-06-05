@@ -32,7 +32,7 @@ export function Members() {
           rows={data.items}
           rowKey={(u) => u.id}
           columns={[
-            { header: '暱稱', cell: (u) => <Link to={`/admin/users/${u.id}`}>{u.nickname ?? '(未填)'}</Link> },
+            { header: '暱稱', cell: (u) => <Link to={`/users/${u.id}`}>{u.nickname ?? '(未填)'}</Link> },
             { header: 'LINE 名', cell: (u) => u.displayName },
             { header: '娛樂城編號', cell: (u) => u.entertainmentMemberCode ?? '—' },
             { header: '帳號類型', cell: (u) => <AccountTypeBadge type={u.accountType} /> },

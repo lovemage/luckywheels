@@ -165,7 +165,7 @@ export function MemberDetail() {
             {
               header: 'Code',
               cell: (r) => (
-                <Link to={`/admin/redemptions/${r.redemption.id}`}>{r.redemption.code}</Link>
+                <Link to={`/redemptions/${r.redemption.id}`}>{r.redemption.code}</Link>
               ),
             },
             { header: '類型', cell: (r) => (r.redemption.tier === 'multi' ? '10 連抽' : '單抽') },

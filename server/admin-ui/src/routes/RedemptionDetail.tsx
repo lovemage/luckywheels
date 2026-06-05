@@ -64,7 +64,7 @@ export function RedemptionDetail() {
       <h1><CodeChip code={data.code} /> <StatusBadge status={data.status} /></h1>
       <dl>
         <dt>會員</dt>
-        <dd><Link to={`/admin/users/${data.user.id}`}>{data.user.nickname ?? data.user.displayName}</Link></dd>
+        <dd><Link to={`/users/${data.user.id}`}>{data.user.nickname ?? data.user.displayName}</Link></dd>
         <dt>類型</dt><dd>{data.tier === 'multi' ? '10 連抽' : '單抽'}</dd>
         <dt>中獎總額</dt><dd>{data.totalWinAmount}</dd>
         <dt>建立時間</dt><dd>{new Date(data.createdAt).toLocaleString()}</dd>
