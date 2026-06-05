@@ -46,9 +46,7 @@ input:focus-visible {
 .showcase {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(360px, 460px) minmax(640px, 1fr);
-  gap: clamp(22px, 3vw, 42px);
-  align-items: center;
+  place-items: center;
   padding: clamp(18px, 4vw, 42px);
   background:
     radial-gradient(circle at 14% 12%, rgba(255, 194, 72, 0.18), transparent 23%),
