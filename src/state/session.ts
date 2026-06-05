@@ -12,6 +12,7 @@ export interface MeProfile {
   accountType: 'verified' | 'test' | 'blacklisted';
   nickname: string | null;
   entertainmentMemberCode: string | null;
+  lifetimeDrawCount: number;
 }
 
 interface SessionState {

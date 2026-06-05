@@ -10,6 +10,15 @@ import { ConfirmModal } from '../components/ConfirmModal.js';
 type StatusFilter = 'pending' | 'delivered' | 'cancelled' | 'all';
 type QuickStatusAction = { row: RedemptionRow; action: 'claim' | 'unclaim' } | null;
 
+function SearchIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="9" cy="9" r="5.5" />
+      <path d="m13.5 13.5 3 3" />
+    </svg>
+  );
+}
+
 function nextStatusAction(row: RedemptionRow): QuickStatusAction {
   if (row.status === 'pending') return { row, action: 'claim' };
   if (row.status === 'delivered') return { row, action: 'unclaim' };
@@ -58,12 +67,18 @@ export function Redemptions() {
         {(['pending', 'delivered', 'cancelled', 'all'] as const).map((s) => (
           <button key={s} disabled={status === s} onClick={() => setStatus(s)}>{STATUS_LABELS[s]}</button>
         ))}
-        <input
-          placeholder="輸入兌換碼（可帶 LW- 前綴）"
-          value={code}
-          onChange={(e) => setCode(e.target.value.trim().toUpperCase())}
-          style={{ marginLeft: 16, minWidth: 200 }}
-        />
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 16, minWidth: 240 }}>
+          <span style={{ color: '#6b7280', display: 'inline-flex' }}>
+            <SearchIcon />
+          </span>
+          <input
+            aria-label="搜尋兌換碼"
+            placeholder="輸入兌換碼（可帶 LW- 前綴）"
+            value={code}
+            onChange={(e) => setCode(e.target.value.trim().toUpperCase())}
+            style={{ minWidth: 200 }}
+          />
+        </label>
       </div>
       {isLoading && <p>載入中…</p>}
       {data && (

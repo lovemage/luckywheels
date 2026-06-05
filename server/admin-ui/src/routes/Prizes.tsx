@@ -36,6 +36,9 @@ export function Prizes() {
   const [dragId, setDragId] = useState<string | null>(null);
 
   const items = data?.items ?? [];
+  const activeTotalWeight = items
+    .filter((p) => p.enabled && p.stock > 0)
+    .reduce((sum, p) => sum + p.weight, 0);
 
   function onDrop(targetId: string) {
     if (!dragId || dragId === targetId) {
@@ -68,6 +71,10 @@ export function Prizes() {
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h1 style={{ margin: 0 }}>獎品設定</h1>
       </header>
+      <p style={{ marginTop: -8, marginBottom: 16, color: '#6b7280' }}>
+        目前可中獎總權重：<strong style={{ color: '#111827' }}>{activeTotalWeight}</strong>
+        {' '}（只計算已啟用且庫存大於 0 的獎項）
+      </p>
       {isLoading && <p>載入中…</p>}
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>

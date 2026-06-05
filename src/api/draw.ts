@@ -48,3 +48,21 @@ export function postDraw(draws: number): Promise<DrawResponse> {
     body: JSON.stringify({ draws }),
   });
 }
+
+export interface WinHistoryEntry {
+  id: string;
+  code: string;
+  totalWinAmount: number;
+  status: 'pending' | 'delivered' | 'cancelled' | string;
+  createdAt: string;
+  draws: {
+    subIndex: number;
+    rankLabel: string;
+    prizeName: string;
+    winningCashAmount: number;
+  }[];
+}
+
+export function fetchWinHistory(): Promise<{ items: WinHistoryEntry[] }> {
+  return api('/api/me/redemptions');
+}

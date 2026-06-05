@@ -684,6 +684,9 @@ h1 {
 .bottom-tabs button {
   border: 0;
   display: grid;
+  grid-template-rows: 25px auto;
+  align-content: center;
+  justify-items: center;
   place-items: center;
   gap: 5px;
   background: transparent;
@@ -700,8 +703,17 @@ h1 {
 }
 
 .bottom-tabs svg {
+  display: block;
   width: 25px;
   height: 25px;
+  flex: 0 0 auto;
+  fill: currentColor;
+  color: inherit;
+  opacity: 1;
+}
+
+.bottom-tabs svg path {
+  fill: currentColor;
 }
 
 .result-modal {
@@ -1497,8 +1509,23 @@ h1 {
 }
 
 .win-history-head strong {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
   color: #fff2c3;
   font-size: 16px;
+}
+
+.win-history-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(61, 220, 151, 0.18);
+  color: #87ffd0;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .win-history-head span,
@@ -1508,11 +1535,32 @@ h1 {
 }
 
 .win-history-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   color: #ffe087;
   background: rgba(244, 203, 58, 0.12);
   border-radius: 10px;
   padding: 8px 10px;
   word-break: break-word;
+}
+
+.win-history-code span {
+  min-width: 0;
+}
+
+.win-history-code button {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 224, 135, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 224, 135, 0.1);
+  color: #ffe087;
+  cursor: pointer;
 }
 
 .win-history-draws {
