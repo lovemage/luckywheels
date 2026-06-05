@@ -33,3 +33,15 @@ export function fetchUsers(q: UsersListQuery): Promise<UsersListResponse> {
   }
   return api(`/api/admin/users?${params.toString()}`);
 }
+
+export interface AdminUserDetail extends AdminUserRow {
+  testSkipCost: boolean;
+  testForcePrizeId: string | null;
+  blacklistReason: string | null;
+  blacklistedByAdminUserId: string | null;
+  entertainmentCodeBoundAt: string | null;
+}
+
+export function fetchUser(id: string): Promise<AdminUserDetail> {
+  return api(`/api/admin/users/${id}`);
+}

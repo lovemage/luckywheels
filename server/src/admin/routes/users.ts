@@ -53,3 +53,10 @@ adminUsersRoutes.get('/api/admin/users', requireAdmin, async (c) => {
   }
   return c.json({ items, nextCursor });
 });
+
+adminUsersRoutes.get('/api/admin/users/:id', requireAdmin, async (c) => {
+  const id = c.req.param('id');
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new AppError('USER_NOT_FOUND', 'no such user', 404);
+  return c.json(user);
+});
