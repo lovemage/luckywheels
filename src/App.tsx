@@ -203,7 +203,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       playSound('wheelSpinning');
       const targetWheelPosition = res.draws[0]!.prize.wheelPosition;
       const segmentSize = 360 / prizes!.length;
-      const targetCenter = (targetWheelPosition * segmentSize) + (segmentSize / 2);
+      const targetCenter = targetWheelPosition * segmentSize;
       const next = rotation + 1440 + (360 - targetCenter);
       setRotation(next);
       window.setTimeout(() => {

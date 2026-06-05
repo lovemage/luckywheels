@@ -2,7 +2,7 @@ export function Dashboard() {
   return (
     <section>
       <h1>儀表板</h1>
-      <p>歡迎使用 Lucky Wheels Admin。請從左側選單進入各模組。</p>
+      <p>歡迎使用 Lucky Wheels Admin。請從導覽列進入各模組。</p>
     </section>
   );
 }

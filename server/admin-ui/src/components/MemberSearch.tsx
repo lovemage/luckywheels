@@ -25,27 +25,26 @@ export function MemberSearch() {
   });
 
   return (
-    <div style={{ position: 'relative', width: 360 }}>
+    <div className="member-search">
       <input
         role="textbox"
         placeholder="搜尋會員 / Redemption（LW-XXXX）"
         value={raw}
         onChange={(e) => setRaw(e.target.value)}
-        style={{ width: '100%' }}
       />
       {q && (users.data || redemptions.data) && (
-        <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', padding: 8, margin: 0, listStyle: 'none', zIndex: 50 }}>
+        <ul className="member-search-results">
           {users.data?.items.length === 0 && redemptions.data?.items.length === 0 && (
             <li>無結果</li>
           )}
           {users.data?.items.map((u) => (
-            <li key={`u-${u.id}`} onClick={() => { setRaw(''); navigate(`/admin/users/${u.id}`); }} style={{ cursor: 'pointer', padding: 4 }}>
-              👤 {u.nickname ?? u.displayName} <small>({u.entertainmentMemberCode ?? '無編號'})</small>
+            <li key={`u-${u.id}`} onClick={() => { setRaw(''); navigate(`/admin/users/${u.id}`); }}>
+              <strong>{u.nickname ?? u.displayName}</strong> <small>({u.entertainmentMemberCode ?? '無編號'})</small>
             </li>
           ))}
           {redemptions.data?.items.map((r) => (
-            <li key={`r-${r.id}`} onClick={() => { setRaw(''); navigate(`/admin/redemptions/${r.id}`); }} style={{ cursor: 'pointer', padding: 4 }}>
-              🎟 LW-{r.code} <small>({r.status})</small>
+            <li key={`r-${r.id}`} onClick={() => { setRaw(''); navigate(`/admin/redemptions/${r.id}`); }}>
+              <strong>LW-{r.code}</strong> <small>({r.status})</small>
             </li>
           ))}
         </ul>
