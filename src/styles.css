@@ -1281,3 +1281,79 @@ h1 {
   margin: 0;
 }
 
+/* ===== Onboarding ===== */
+.onboarding {
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 32px 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: radial-gradient(circle at 50% 20%, #3a1758, #18062a 70%);
+  color: #fff5d6;
+}
+
+.onboarding h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 2px;
+}
+
+.onboarding > p {
+  margin: 0;
+  color: #e8d6ff;
+  opacity: 0.85;
+}
+
+.onboarding form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.onboarding label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.onboarding input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 245, 214, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff5d6;
+  font-size: 16px;
+}
+
+.onboarding input:focus {
+  outline: none;
+  border-color: #f4cb3a;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.onboarding .error {
+  margin: 0;
+  color: #ff8a8a;
+  font-size: 13px;
+}
+
+.onboarding button[type='submit'] {
+  background: #f4cb3a;
+  color: #2a1430;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 0;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #7c4300;
+}
+
+.onboarding button[type='submit']:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
