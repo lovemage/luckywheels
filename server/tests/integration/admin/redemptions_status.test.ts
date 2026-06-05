@@ -73,19 +73,15 @@ describe('PATCH /api/admin/redemptions/:id/status', () => {
     expect((await bad.json()).error.code).toBe('REDEMPTION_TRANSITION_INVALID');
   });
 
-  it('unclaim: delivered → pending, requires reason, clears statusChangedAt + statusChangedByAdminUserId', async () => {
+  it('unclaim: delivered → pending, clears statusChangedAt + statusChangedByAdminUserId', async () => {
     const admin = await createAdmin();
     const u = await createUser();
     const red = await createRedemption({ userId: u.id, status: 'delivered' });
     // simulate previous delivery state
     await prisma.redemption.update({ where: { id: red.id }, data: { statusChangedAt: new Date(), statusChangedByAdminUserId: admin.id } });
     const headers = { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' };
-    const bad = await app.request(`/api/admin/redemptions/${red.id}/status`, { method: 'PATCH', headers, body: JSON.stringify({ action: 'unclaim' }) });
-    expect(bad.status).toBe(400);
-    expect((await bad.json()).error.code).toBe('REDEMPTION_UNCLAIM_REASON_REQUIRED');
-
     const ok = await app.request(`/api/admin/redemptions/${red.id}/status`, {
-      method: 'PATCH', headers, body: JSON.stringify({ action: 'unclaim', reason: 'misclick' }),
+      method: 'PATCH', headers, body: JSON.stringify({ action: 'unclaim' }),
     });
     expect(ok.status).toBe(200);
     const refreshed = await prisma.redemption.findUnique({ where: { id: red.id } });
@@ -93,6 +89,6 @@ describe('PATCH /api/admin/redemptions/:id/status', () => {
     expect(refreshed!.statusChangedAt).toBeNull();
     expect(refreshed!.statusChangedByAdminUserId).toBeNull();
     const log = await prisma.adminActionLog.findFirstOrThrow({ where: { event: 'redemption.unclaim' } });
-    expect(log.payloadAfter).toMatchObject({ reason: 'misclick' });
+    expect(log.payloadAfter).toMatchObject({ status: 'pending' });
   });
 });

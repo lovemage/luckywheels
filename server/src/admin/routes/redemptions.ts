@@ -104,9 +104,6 @@ adminRedemptionsRoutes.patch('/api/admin/redemptions/:id/status', requireAdmin, 
   if (body.action === 'void' && !body.reason) {
     throw new AppError('REDEMPTION_VOID_REASON_REQUIRED', 'reason required to void', 400);
   }
-  if (body.action === 'unclaim' && !body.reason) {
-    throw new AppError('REDEMPTION_UNCLAIM_REASON_REQUIRED', 'reason required to unclaim', 400);
-  }
 
   const adminUser = c.get('admin');
   const adminId = adminUser.id;

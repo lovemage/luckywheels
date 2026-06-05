@@ -34,7 +34,6 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
             </button>
           </div>
         ) : null}
-        {hasWin ? <p className="redemption-total">總中獎金額：{totalWinAmount}</p> : null}
         {!hasWin ? (
           <div className="win-single">
             <strong>謝謝參加</strong>
@@ -44,7 +43,6 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
           <div className="win-single">
             <strong>{winningDraws[0]!.prize.rankLabel}</strong>
             <span>{winningDraws[0]!.prize.name}</span>
-            <span>{winningDraws[0]!.winningCashAmount}</span>
           </div>
         ) : (
           <ol className="win-multi-list">
@@ -52,7 +50,7 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
               <li key={d.subIndex}>
                 <span>#{d.subIndex + 1}</span>
                 <span>{d.prize.rankLabel}</span>
-                <span>{d.winningCashAmount}</span>
+                <span>{d.prize.name}</span>
               </li>
             ))}
           </ol>

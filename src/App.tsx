@@ -229,8 +229,11 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       const segmentSize = 360 / prizes!.length;
       const resultPrizeId = res.draws[0]!.prize.id;
       const targetPrizeIndex = prizes!.findIndex((prize) => prize.id === resultPrizeId);
-      const targetCenter = (targetPrizeIndex >= 0 ? targetPrizeIndex : res.draws[0]!.prize.wheelPosition) * segmentSize;
-      const next = rotation + 1440 + (360 - targetCenter);
+      const resultIndex = targetPrizeIndex >= 0 ? targetPrizeIndex : res.draws[0]!.prize.wheelPosition;
+      const visualTargetIndex = prizes!.length - 1 - resultIndex;
+      const targetCenter = visualTargetIndex * segmentSize;
+      const targetRotation = (360 - targetCenter) % 360;
+      const next = Math.ceil(rotation / 360) * 360 + 1440 + targetRotation;
       setRotation(next);
       window.setTimeout(() => {
         stopSound('wheelSpinning');

@@ -67,7 +67,6 @@ export function Prizes() {
     <section>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h1 style={{ margin: 0 }}>獎品設定</h1>
-        <button onClick={() => setEditing({ mode: 'create' })}>新增獎品</button>
       </header>
       {isLoading && <p>載入中…</p>}
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -243,20 +242,26 @@ function PrizeEditModal({
           />
         </label>
         <label>
-          weight{' '}
+          中獎權重（weight）{' '}
           <input
             type="number"
             value={form.weight}
             onChange={(e) => setForm({ ...form, weight: Number(e.target.value) })}
           />
+          <small style={{ display: 'block', marginTop: 4, color: '#6b7280' }}>
+            權重會換算為中獎機率：本獎項權重 ÷ 所有可中獎獎項權重總和 × 100%。例如總權重 100、本獎項權重 6，機率約為 6%。
+          </small>
         </label>
         <label>
-          stock{' '}
+          庫存（stock）{' '}
           <input
             type="number"
             value={form.stock}
             onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
           />
+          <small style={{ display: 'block', marginTop: 4, color: '#6b7280' }}>
+            庫存為 0 時，前台輪盤仍會顯示並可轉動，但後端抽獎不會抽中此獎項。
+          </small>
         </label>
         <label>
           背景色{' '}
