@@ -1211,3 +1211,73 @@ h1 {
     font-size: 11px;
   }
 }
+
+/* ===== Login splash ===== */
+.login-splash {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 30%, #3a1758, #18062a 70%);
+  color: #fff5d6;
+}
+
+.login-splash h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 4px;
+}
+
+.login-splash p {
+  margin: 0;
+  color: #e8d6ff;
+  opacity: 0.85;
+}
+
+.login-decoration {
+  width: 200px;
+  max-width: 60vw;
+  opacity: 0.85;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.45));
+}
+
+.login-button {
+  background: #06c755;
+  color: #fff;
+  padding: 12px 32px;
+  border-radius: 999px;
+  border: 0;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #045d2a;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.login-button:hover {
+  transform: translateY(-1px);
+}
+
+.login-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 #045d2a;
+}
+
+/* shared splash for loading / blacklisted */
+.splash {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 30%, #3a1758, #18062a 70%);
+  color: #fff5d6;
+}
+
+.splash h1 {
+  margin: 0;
+}
+
