@@ -58,6 +58,11 @@ async function main() {
         data: { value: consolation.id },
       });
     }
+  } else {
+    // Re-enable any prize that was disabled (e.g. by integration tests that
+    // exercise the enabled=false path). Doesn't touch other fields so admin
+    // edits to weight / stock / cashAmount survive.
+    await prisma.prize.updateMany({ where: { enabled: false }, data: { enabled: true } });
   }
   console.log('seed done');
 }
