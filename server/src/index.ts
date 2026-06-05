@@ -17,6 +17,7 @@ import { adminRedemptionsRoutes } from './admin/routes/redemptions.js';
 import { adminMeRoutes } from './admin/routes/me.js';
 import { adminActionLogsRoutes } from './admin/routes/action-logs.js';
 import { adminPrizesRoutes } from './admin/routes/prizes.js';
+import { adminSettingsRoutes } from './admin/routes/settings.js';
 import { adminUploadsRoutes } from './admin/routes/uploads.js';
 import { bootstrapAdminIfRequested } from './admin/bootstrap.js';
 
@@ -60,6 +61,7 @@ app.route('/', adminRedemptionsRoutes);
 app.route('/', adminMeRoutes);
 app.route('/', adminActionLogsRoutes);
 app.route('/', adminPrizesRoutes);
+app.route('/', adminSettingsRoutes);
 app.route('/', adminUploadsRoutes);
 
 app.use('/admin/assets/*', async (c, next) => {
