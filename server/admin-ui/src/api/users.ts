@@ -46,7 +46,7 @@ export function fetchUser(id: string): Promise<AdminUserDetail> {
   return api(`/api/admin/users/${id}`);
 }
 
-export function adjustPoints(id: string, body: { delta: number; reason: string }): Promise<{ points: number }> {
+export function adjustPoints(id: string, body: { delta: number; reason?: string }): Promise<{ points: number }> {
   return api(`/api/admin/users/${id}/points`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

@@ -52,15 +52,17 @@ describe('POST /api/admin/users/:id/points', () => {
     expect((await r.json()).error.code).toBe('POINTS_DELTA_ZERO');
   });
 
-  it('reason missing → 400 POINTS_REASON_REQUIRED', async () => {
+  it('reason is optional — adjust without reason succeeds and audit records reason=null', async () => {
     const admin = await createAdmin();
-    const user = await createUser();
+    const user = await createUser({ points: 5 });
     const r = await app.request(`/api/admin/users/${user.id}/points`, {
       method: 'POST',
       headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
-      body: JSON.stringify({ delta: 1 }),
+      body: JSON.stringify({ delta: 3 }),
     });
-    expect(r.status).toBe(400);
-    expect((await r.json()).error.code).toBe('POINTS_REASON_REQUIRED');
+    expect(r.status).toBe(200);
+    expect((await r.json()).points).toBe(8);
+    const log = await prisma.adminActionLog.findFirstOrThrow({ where: { event: 'user.points_adjust' } });
+    expect(log.payloadAfter).toMatchObject({ delta: 3, before: 5, after: 8, reason: null });
   });
 });

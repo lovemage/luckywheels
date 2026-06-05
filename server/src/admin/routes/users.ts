@@ -65,20 +65,15 @@ adminUsersRoutes.get('/api/admin/users/:id', requireAdmin, async (c) => {
 
 const PointsAdjustBody = z.object({
   delta: z.number().int(),
-  reason: z.string().min(1).max(500),
+  reason: z.string().max(500).optional(),
 });
 
 adminUsersRoutes.post('/api/admin/users/:id/points', requireAdmin, async (c) => {
   const userId = c.req.param('id');
   let body: z.infer<typeof PointsAdjustBody>;
   try {
-    const raw = await c.req.json();
-    if (raw.reason === undefined || raw.reason === null || raw.reason === '') {
-      throw new AppError('POINTS_REASON_REQUIRED', 'reason is required', 400);
-    }
-    body = PointsAdjustBody.parse(raw);
-  } catch (e) {
-    if (e instanceof AppError) throw e;
+    body = PointsAdjustBody.parse(await c.req.json());
+  } catch {
     throw new AppError('POINTS_BODY_INVALID', 'invalid body', 400);
   }
   if (body.delta === 0) throw new AppError('POINTS_DELTA_ZERO', 'delta must be non-zero', 400);
@@ -94,7 +89,7 @@ adminUsersRoutes.post('/api/admin/users/:id/points', requireAdmin, async (c) => 
       event: 'user.points_adjust',
       targetType: 'user',
       targetId: userId,
-      payloadAfter: { delta: body.delta, before, after, reason: body.reason },
+      payloadAfter: { delta: body.delta, before, after, reason: body.reason ?? null },
     });
     return u;
   });

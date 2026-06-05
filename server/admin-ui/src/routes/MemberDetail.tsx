@@ -23,18 +23,20 @@ export function MemberDetail() {
     queryFn: () => fetchUser(id!),
     enabled: Boolean(id),
   });
-  const [pointsModal, setPointsModal] = useState<null | { delta: number }>(null);
+  const [pointsDelta, setPointsDelta] = useState('');
+  const [pointsError, setPointsError] = useState<string | null>(null);
   const [blacklistModal, setBlacklistModal] = useState<null | { mode: 'set' | 'clear' }>(null);
   const [codeModal, setCodeModal] = useState<null | { next: string | null }>(null);
   const [memberTab, setMemberTab] = useState<'overview' | 'history'>('overview');
   const qc = useQueryClient();
   const adjust = useMutation({
-    mutationFn: ({ delta, reason }: { delta: number; reason: string }) =>
-      adjustPoints(id!, { delta, reason }),
+    mutationFn: (delta: number) => adjustPoints(id!, { delta }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'users', id] });
-      setPointsModal(null);
+      setPointsDelta('');
+      setPointsError(null);
     },
+    onError: (e: Error) => setPointsError(e.message),
   });
   const blacklistMut = useMutation({
     mutationFn: (body: { blacklist: boolean; reason?: string }) => setBlacklist(id!, body),
@@ -115,14 +117,28 @@ export function MemberDetail() {
             <dt>積分</dt><dd>{data.points}</dd>
             <dt>累計抽獎</dt><dd>{data.lifetimeDrawCount}</dd>
           </dl>
-          <div style={{ marginTop: 16 }}>
-            <button onClick={() => setPointsModal({ delta: 6 })}>+6 積分</button>
-            <button onClick={() => setPointsModal({ delta: -1 })}>-1 積分</button>
-            <button onClick={() => {
-              const raw = window.prompt('輸入自訂積分變動（如 +5 或 -3）');
-              const n = raw ? Number(raw) : NaN;
-              if (Number.isInteger(n) && n !== 0) setPointsModal({ delta: n });
-            }}>其他</button>
+          <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="number"
+              value={pointsDelta}
+              onChange={(e) => { setPointsDelta(e.target.value); setPointsError(null); }}
+              placeholder="輸入正數或負數"
+              style={{ width: 140 }}
+            />
+            <button
+              onClick={() => {
+                const n = Number(pointsDelta);
+                if (!Number.isInteger(n) || n === 0) {
+                  setPointsError('請輸入非零整數');
+                  return;
+                }
+                adjust.mutate(n);
+              }}
+              disabled={adjust.isPending || pointsDelta.trim() === ''}
+            >
+              {adjust.isPending ? '處理中…' : pointsDelta.trim() && Number(pointsDelta) < 0 ? '扣除積分' : '新增積分'}
+            </button>
+            {pointsError && <span style={{ color: '#c00', fontSize: 12 }}>{pointsError}</span>}
           </div>
           {data.accountType === 'test' && (
             <section style={{ marginTop: 24, padding: 12, border: '1px solid #ddd' }}>
@@ -175,17 +191,6 @@ export function MemberDetail() {
           ]}
         />
       )}
-      <ConfirmModal
-        open={pointsModal !== null}
-        onClose={() => setPointsModal(null)}
-        title={`調整積分（${(pointsModal?.delta ?? 0) > 0 ? '+' : ''}${pointsModal?.delta ?? 0}）`}
-        description={`目前餘額：${data.points}`}
-        requireReason
-        busy={adjust.isPending}
-        onConfirm={(reason) =>
-          adjust.mutate({ delta: pointsModal!.delta, reason: reason! })
-        }
-      />
       <ConfirmModal
         open={blacklistModal !== null}
         onClose={() => setBlacklistModal(null)}
