@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Gift, LayoutList, RotateCw, Sparkles, Trophy } from 'lucide-react';
 import { ApiError, setUnauthorizedHandler } from './api/client.js';
 import { fetchMe } from './api/me.js';
@@ -35,6 +35,23 @@ function wheelGradient(prizes: PublicPrize[]) {
       return `${prize.segmentColor} ${start}% ${end}%`;
     })
     .join(', ');
+}
+
+const SOUND_SOURCES = {
+  enter: '/assets/sfx/game-enter.ogg',
+  wheelTap: '/assets/sfx/wheel-tap.ogg',
+  spinConfirm: '/assets/sfx/spin-confirm.ogg',
+  wheelSpinning: '/assets/sfx/wheel-spinning.ogg',
+  win: '/assets/sfx/win.ogg',
+} as const;
+
+type SoundKey = keyof typeof SOUND_SOURCES;
+
+function createAudio(src: string, loop = false) {
+  const audio = new Audio(src);
+  audio.preload = 'auto';
+  audio.loop = loop;
+  return audio;
 }
 
 export function App() {
@@ -81,6 +98,19 @@ export function App() {
 }
 
 function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalTab) => void }) {
+  type WinHistoryEntry = {
+    id: string;
+    code: string;
+    totalWinAmount: number;
+    createdAt: string;
+    draws: {
+      subIndex: number;
+      rankLabel: string;
+      prizeName: string;
+      winningCashAmount: number;
+    }[];
+  };
+
   const [view, setView] = useState<'wheel' | 'ranking' | 'rules' | 'mine'>('wheel');
   const [prizes, setPrizes] = useState<PublicPrize[] | null>(null);
   const [settings, setSettings] = useState<PublicSettings | null>(null);
@@ -88,7 +118,43 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<DrawResponse | null>(null);
+  const [winHistory, setWinHistory] = useState<WinHistoryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const soundsRef = useRef<Record<SoundKey, HTMLAudioElement> | null>(null);
+  const introPlayedRef = useRef(false);
+
+  function playSound(key: SoundKey) {
+    const audio = soundsRef.current?.[key];
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    void audio.play().catch(() => {});
+  }
+
+  function stopSound(key: SoundKey) {
+    const audio = soundsRef.current?.[key];
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+  }
+
+  useEffect(() => {
+    soundsRef.current = {
+      enter: createAudio(SOUND_SOURCES.enter),
+      wheelTap: createAudio(SOUND_SOURCES.wheelTap),
+      spinConfirm: createAudio(SOUND_SOURCES.spinConfirm),
+      wheelSpinning: createAudio(SOUND_SOURCES.wheelSpinning, true),
+      win: createAudio(SOUND_SOURCES.win),
+    };
+
+    return () => {
+      Object.values(soundsRef.current ?? {}).forEach((audio) => {
+        audio.pause();
+        audio.src = '';
+      });
+      soundsRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     Promise.all([fetchPrizes(), fetchSettings()])
@@ -98,6 +164,12 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       })
       .catch(() => setError('無法載入抽獎資料，請稍後再試'));
   }, []);
+
+  useEffect(() => {
+    if (!prizes || !settings || introPlayedRef.current) return;
+    introPlayedRef.current = true;
+    playSound('enter');
+  }, [prizes, settings]);
 
   if (!prizes || !settings) {
     return (
@@ -118,28 +190,59 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   })();
   const effectiveTierIndex = Math.min(selectedTierIndex, Math.max(maxAffordableIndex, 0));
   const selectedTier = settings.pointThresholds[effectiveTierIndex] ?? settings.pointThresholds[0]!;
-  const lastTier = settings.pointThresholds[settings.pointThresholds.length - 1];
-  const tier: 'single' | 'multi' = selectedTier === lastTier ? 'multi' : 'single';
-
   const spinDurationStyle = { '--spin-duration': `${settings.spinDurationMs}ms` } as React.CSSProperties;
 
   async function spin() {
     if (spinning) return;
+    playSound('wheelTap');
     setError(null);
     setSpinning(true);
     try {
-      const res = await postDraw(tier);
+      const res = await postDraw(selectedTier.draws);
+      playSound('spinConfirm');
+      playSound('wheelSpinning');
       const targetWheelPosition = res.draws[0]!.prize.wheelPosition;
       const segmentSize = 360 / prizes!.length;
-      const targetCenter = targetWheelPosition * segmentSize;
+      const targetCenter = (targetWheelPosition * segmentSize) + (segmentSize / 2);
       const next = rotation + 1440 + (360 - targetCenter);
       setRotation(next);
       window.setTimeout(() => {
+        stopSound('wheelSpinning');
         setSpinning(false);
         setResult(res);
+        const winningDraws = res.draws
+          .filter((draw) => draw.winningCashAmount > 0)
+          .map((draw) => ({
+            subIndex: draw.subIndex,
+            rankLabel: draw.prize.rankLabel,
+            prizeName: draw.prize.name,
+            winningCashAmount: draw.winningCashAmount,
+          }));
+        if (winningDraws.length > 0) {
+          setWinHistory((current) => [
+            {
+              id: res.redemption.id,
+              code: res.redemption.code,
+              totalWinAmount: winningDraws.reduce((sum, draw) => sum + draw.winningCashAmount, 0),
+              createdAt: new Date().toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              draws: winningDraws,
+            },
+            ...current,
+          ]);
+        }
+        if (res.draws.some((draw) => draw.winningCashAmount > 0 && !draw.gatedBy)) {
+          playSound('win');
+        }
         sessionStore.getState().setMe({ ...me, points: res.points });
       }, settings!.spinDurationMs);
     } catch (e) {
+      stopSound('wheelSpinning');
       setSpinning(false);
       const ae = e as ApiError;
       const messages: Record<string, string> = {
@@ -272,9 +375,35 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
 
         {view === 'mine' && (
           <section className="panel-screen">
-            <ScreenHeader icon={<Gift />} title="我的獎品" subtitle="建置中" />
+            <ScreenHeader icon={<Gift />} title="中獎紀錄" subtitle="每次中獎明細" />
             <div className="rule-list">
-              <p>個人中獎紀錄查詢功能建置中。</p>
+              {winHistory.length === 0 ? (
+                <p>目前尚無中獎紀錄。</p>
+              ) : (
+                <ol className="win-multi-list">
+                  {winHistory.map((entry, index) => (
+                    <li key={entry.id} className="win-history-item">
+                      <div className="win-history-head">
+                        <strong>第 {index + 1} 筆</strong>
+                        <span>{entry.createdAt}</span>
+                      </div>
+                      <div className="win-history-code">兌換碼：LW-{entry.code}</div>
+                      <div className="win-history-total">總中獎金額：{entry.totalWinAmount}</div>
+                      <ol className="win-history-draws">
+                        {entry.draws.map((draw) => (
+                          <li key={`${entry.id}-${draw.subIndex}`}>
+                            <span>#{draw.subIndex + 1}</span>
+                            <span>
+                              {draw.rankLabel} {draw.prizeName}
+                            </span>
+                            <span>{draw.winningCashAmount}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </div>
           </section>
         )}
@@ -283,7 +412,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           <TabButton active={view === 'wheel'} icon={<RotateCw />} label="輪盤" onClick={() => setView('wheel')} />
           <TabButton active={view === 'ranking'} icon={<Trophy />} label="排行榜" onClick={() => setView('ranking')} />
           <TabButton active={view === 'rules'} icon={<LayoutList />} label="活動規則" onClick={() => setView('rules')} />
-          <TabButton active={view === 'mine'} icon={<Gift />} label="我的獎品" onClick={() => setView('mine')} />
+          <TabButton active={view === 'mine'} icon={<Gift />} label="中獎紀錄" onClick={() => setView('mine')} />
         </nav>
 
         {result && <WinModal result={result} onClose={() => setResult(null)} />}

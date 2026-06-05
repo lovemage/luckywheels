@@ -1353,64 +1353,97 @@ h1 {
 .win-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(24, 10, 34, 0.42);
   display: grid;
   place-items: center;
   z-index: 1000;
   padding: 16px;
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
 }
 
 .win-modal {
-  background: #fff5d6;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 243, 0.98) 0%, rgba(255, 244, 214, 0.95) 100%);
   color: #2a1430;
   padding: 24px;
-  border-radius: 16px;
+  border-radius: 24px;
   min-width: 280px;
-  max-width: 360px;
+  max-width: 380px;
   width: 100%;
   max-height: 80vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  gap: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 28px 70px rgba(16, 5, 24, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .win-modal h2 {
   margin: 0;
   text-align: center;
   letter-spacing: 2px;
+  font-size: 24px;
+  line-height: 1.2;
+  color: #3f1752;
 }
 
 .win-modal .redemption-code {
   margin: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 18px;
-  background: #fff;
-  padding: 8px 12px;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 12px 14px;
+  border-radius: 14px;
   text-align: center;
   letter-spacing: 1px;
+  border: 1px solid rgba(91, 22, 120, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.win-modal .redemption-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.win-modal .copy-code-button {
+  flex: 0 0 auto;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f4cb3a;
+  color: #2a1430;
+  box-shadow: none;
+  font-weight: 700;
 }
 
 .win-modal .redemption-total {
   margin: 0;
   text-align: center;
-  font-weight: 600;
+  font-weight: 700;
+  color: #5b1678;
+  background: rgba(244, 203, 58, 0.14);
+  border-radius: 14px;
+  padding: 10px 12px;
 }
 
 .win-single {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   text-align: center;
-  padding: 12px;
-  background: rgba(244, 203, 58, 0.2);
-  border-radius: 8px;
+  padding: 16px 14px;
+  background: linear-gradient(180deg, rgba(244, 203, 58, 0.24) 0%, rgba(244, 203, 58, 0.1) 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(244, 203, 58, 0.26);
 }
 
 .win-single strong {
-  font-size: 20px;
+  font-size: 22px;
+  color: #4b175f;
 }
 
 .win-multi-list {
@@ -1419,18 +1452,76 @@ h1 {
   margin: 0;
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 .win-multi-list li {
   display: grid;
   grid-template-columns: 36px 1fr auto;
   gap: 8px;
-  padding: 6px 4px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 10px 12px;
+  border-bottom: 0;
   font-size: 14px;
+  background: rgba(255, 255, 255, 0.64);
+  border-radius: 14px;
+  border: 1px solid rgba(91, 22, 120, 0.08);
 }
 
 .win-multi-list li:last-child {
+  border-bottom: 0;
+}
+
+.win-history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.win-history-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.win-history-head strong {
+  font-size: 15px;
+}
+
+.win-history-head span,
+.win-history-code,
+.win-history-total {
+  font-size: 13px;
+  color: #5b3a2e;
+}
+
+.win-history-code,
+.win-history-total {
+  background: rgba(244, 203, 58, 0.14);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.win-history-draws {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.win-history-draws li {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 13px;
+}
+
+.win-history-draws li:last-child {
   border-bottom: 0;
 }
 
@@ -1439,6 +1530,7 @@ h1 {
   font-size: 12px;
   color: #5b3a2e;
   text-align: center;
+  line-height: 1.5;
 }
 
 .win-modal button {
@@ -1446,10 +1538,48 @@ h1 {
   color: #fff5d6;
   border: 0;
   border-radius: 999px;
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 12px 24px rgba(91, 22, 120, 0.24);
+}
+
+@media (max-width: 640px) {
+  .phone-shell {
+    padding-bottom: calc(184px + env(safe-area-inset-bottom));
+  }
+
+  .cta-row {
+    position: fixed;
+    left: 50%;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(calc(100vw - 20px), 430px);
+    padding: 0 10px;
+    box-sizing: border-box;
+    z-index: 30;
+  }
+
+  .bottom-tabs {
+    position: fixed;
+    left: 50%;
+    bottom: env(safe-area-inset-bottom);
+    transform: translateX(-50%);
+    width: min(calc(100vw - 20px), 430px);
+    z-index: 31;
+    border-radius: 20px 20px 0 0;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .win-modal .redemption-actions {
+    flex-direction: column;
+  }
+
+  .win-modal .copy-code-button {
+    width: 100%;
+  }
 }
 
 /* ===== Inline error under CTA row ===== */

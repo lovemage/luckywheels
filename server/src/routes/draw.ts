@@ -6,7 +6,7 @@ import { AppError } from '../errors.js';
 import { requireUser } from '../auth/middleware.js';
 import { prisma } from '../db.js';
 import { writeAdminActionLog } from '../audit/log.js';
-import { resolveThreshold, type Tier } from '../draw/tier.js';
+import { deriveTier, resolveThreshold, type Tier } from '../draw/tier.js';
 import {
   readDrawSettings,
   readSystemTotalsForUpdate,
@@ -17,7 +17,7 @@ import { evaluateGates } from '../draw/gates.js';
 import { pickPrize } from '../draw/pick.js';
 import { generateRedemptionCode } from '../draw/redemption-code.js';
 
-const BodySchema = z.object({ tier: z.union([z.literal('single'), z.literal('multi')]) });
+const BodySchema = z.object({ draws: z.number().int().positive() });
 
 export const drawRoutes = new Hono();
 
@@ -42,15 +42,24 @@ drawRoutes.post('/api/draw', requireUser, async (c) => {
   }
 
   // Body parse
-  let body: { tier: Tier };
+  let body: { draws: number };
   try { body = BodySchema.parse(await c.req.json()); }
-  catch { throw new AppError('TIER_INVALID', 'tier must be "single" or "multi"', 400); }
+  catch { throw new AppError('TIER_INVALID', 'draws must match a configured threshold', 400); }
+
+  const settings = await readDrawSettings();
+  let threshold;
+  try {
+    threshold = resolveThreshold(body.draws, settings.pointThresholds);
+  } catch {
+    throw new AppError('TIER_INVALID', 'draws must match a configured threshold', 400);
+  }
+  const tier = deriveTier(threshold);
 
   if (user.accountType === 'test') {
-    return handleTestDraw(c, user, body.tier);  // implemented in Task 22
+    return handleTestDraw(c, user, tier, threshold);  // implemented in Task 22
   }
 
-  return handleVerifiedDraw(c, user, body.tier);
+  return handleVerifiedDraw(c, user, tier, threshold);
 });
 
 // Build the JSON response body (new Rev 3 shape).
@@ -126,9 +135,8 @@ function replayBody(
   };
 }
 
-async function handleVerifiedDraw(c: Context, user: User, tier: Tier) {
+async function handleVerifiedDraw(c: Context, user: User, tier: Tier, threshold: { points: number; draws: number }) {
   const settings = await readDrawSettings();
-  const threshold = resolveThreshold(tier, settings.pointThresholds);
 
   // NOTE: no pre-tx precheck on user.points. The middleware-loaded user is
   // potentially stale; the `WHERE points: { gte: cost }` inside the tx is
@@ -278,9 +286,7 @@ async function handleVerifiedDraw(c: Context, user: User, tier: Tier) {
   }));
 }
 
-async function handleTestDraw(c: Context, user: User, tier: Tier) {
-  const settings = await readDrawSettings();
-  const threshold = resolveThreshold(tier, settings.pointThresholds);
+async function handleTestDraw(c: Context, user: User, tier: Tier, threshold: { points: number; draws: number }) {
 
   const idempotencyKey = c.req.header('idempotency-key') ?? null;
 

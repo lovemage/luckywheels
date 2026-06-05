@@ -1,6 +1,19 @@
 import type { DrawResponse } from '../api/draw.js';
 
 export function WinModal({ result, onClose }: { result: DrawResponse; onClose: () => void }) {
+  const winningDraws = result.draws.filter((draw) => draw.winningCashAmount > 0);
+  const totalWinAmount = winningDraws.reduce((sum, draw) => sum + draw.winningCashAmount, 0);
+  const hasWin = totalWinAmount > 0;
+
+  async function copyCode() {
+    if (!hasWin) return;
+    try {
+      await navigator.clipboard.writeText(`LW-${result.redemption.code}`);
+    } catch {
+      /* ignore */
+    }
+  }
+
   return (
     <div
       className="win-modal-backdrop"
@@ -10,18 +23,32 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
       aria-labelledby="win-modal-title"
     >
       <div className="win-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 id="win-modal-title">{result.tier === 'multi' ? `${result.tierDraws} 連抽結果` : '中獎了！'}</h2>
-        <p className="redemption-code">兌換碼：LW-{result.redemption.code}</p>
-        <p className="redemption-total">總中獎金額：{result.redemption.totalWinAmount}</p>
-        {result.tier === 'single' ? (
+        <h2 id="win-modal-title">
+          {hasWin ? (result.tier === 'multi' ? `${result.tierDraws} 連抽結果` : '中獎了！') : '感謝參與'}
+        </h2>
+        {hasWin ? (
+          <div className="redemption-actions">
+            <p className="redemption-code">兌換碼：LW-{result.redemption.code}</p>
+            <button type="button" className="copy-code-button" onClick={copyCode}>
+              複製
+            </button>
+          </div>
+        ) : null}
+        {hasWin ? <p className="redemption-total">總中獎金額：{totalWinAmount}</p> : null}
+        {!hasWin ? (
           <div className="win-single">
-            <strong>{result.draws[0]!.prize.rankLabel}</strong>
-            <span>{result.draws[0]!.prize.name}</span>
-            <span>{result.draws[0]!.winningCashAmount}</span>
+            <strong>謝謝參加</strong>
+            <span>這次沒有獲得獎金，歡迎再試一次。</span>
+          </div>
+        ) : result.tier === 'single' ? (
+          <div className="win-single">
+            <strong>{winningDraws[0]!.prize.rankLabel}</strong>
+            <span>{winningDraws[0]!.prize.name}</span>
+            <span>{winningDraws[0]!.winningCashAmount}</span>
           </div>
         ) : (
           <ol className="win-multi-list">
-            {result.draws.map((d) => (
+            {winningDraws.map((d) => (
               <li key={d.subIndex}>
                 <span>#{d.subIndex + 1}</span>
                 <span>{d.prize.rankLabel}</span>
@@ -30,8 +57,8 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
             ))}
           </ol>
         )}
-        <p className="hint">請將兌換碼截圖傳送給客服以進行領取。</p>
-        <button onClick={onClose}>關閉</button>
+        {hasWin ? <p className="hint">請將兌換碼截圖傳送給客服以進行領取。</p> : null}
+        <button type="button" onClick={onClose}>關閉</button>
       </div>
     </div>
   );

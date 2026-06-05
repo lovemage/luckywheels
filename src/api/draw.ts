@@ -41,9 +41,9 @@ export interface DrawResponse {
   isTest: boolean;
 }
 
-export function postDraw(tier: 'single' | 'multi'): Promise<DrawResponse> {
+export function postDraw(draws: number): Promise<DrawResponse> {
   return api('/api/draw', {
     method: 'POST',
-    body: JSON.stringify({ tier }),
+    body: JSON.stringify({ draws }),
   });
 }
