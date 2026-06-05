@@ -7,17 +7,17 @@ export function SessionExpiredModal() {
   const { expiredVisible, dismissExpired } = useSession();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const close = () => {
+    dismissExpired();
+    qc.clear();
+    nav('/admin/login', { replace: true });
+  };
   return (
-    <Modal
-      open={expiredVisible}
-      title="請先登入"
-      onClose={() => {
-        dismissExpired();
-        qc.clear();
-        nav('/admin/login', { replace: true });
-      }}
-    >
+    <Modal open={expiredVisible} title="請先登入" onClose={close}>
       <p>連線階段已過期或您尚未登入。請重新登入後繼續操作。</p>
+      <div style={{ marginTop: 16, textAlign: 'right' }}>
+        <button onClick={close}>確認</button>
+      </div>
     </Modal>
   );
 }
