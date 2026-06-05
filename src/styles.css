@@ -1614,29 +1614,62 @@ h1 {
 }
 
 @media (max-width: 640px) {
+  /* Single-screen layout: the shell is locked to the measured visible
+     height (--app-height) and everything stacks in one flex column, so the
+     wheel and the spin button share ONE coordinate system. No more
+     top-anchored wheel vs viewport-bottom-fixed buttons — that mismatch was
+     why the button crowded the wheel on open in the LINE in-app browser. */
   .phone-shell {
-    padding-bottom: calc(184px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    height: var(--app-height, 100dvh);
+    min-height: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .hero {
+    flex: 0 0 auto;
+  }
+
+  .wheel-screen {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-top: 0;
+    align-content: center;
+  }
+
+  .wheel-wrap {
+    /* Fallback for browsers without container query units: reserve the
+       stacked chrome (hero + cta-row + tabs + gaps) from the measured
+       viewport so the wheel scales down on short screens. The @supports
+       block below replaces this with 92cqh where available. */
+    --wheel-size: min(calc(100vw - 16px), calc(var(--app-height, 100dvh) - 430px), 410px);
+    margin-bottom: 0;
+  }
+
+  .panel-screen {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 16px;
   }
 
   .cta-row {
-    position: fixed;
-    left: 50%;
-    bottom: calc(88px + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    width: min(calc(100vw - 20px), 430px);
+    position: static;
+    transform: none;
+    flex: 0 0 auto;
+    width: min(79%, 324px);
+    margin: 0 auto 12px;
     padding: 0 10px;
     box-sizing: border-box;
-    z-index: 30;
   }
 
   .bottom-tabs {
-    position: fixed;
-    left: 50%;
-    bottom: env(safe-area-inset-bottom);
-    transform: translateX(-50%);
-    width: min(calc(100vw - 20px), 430px);
-    z-index: 31;
-    border-radius: 20px 20px 0 0;
+    position: static;
+    transform: none;
+    flex: 0 0 auto;
+    margin: 0 14px;
+    border-radius: 20px;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
@@ -1647,6 +1680,22 @@ h1 {
 
   .win-modal .copy-code-button {
     width: 100%;
+  }
+}
+
+/* Where container query units exist, size the wheel against the flex-allocated
+   height of .wheel-screen itself (92cqh leaves room for the 1.08x frame),
+   so the wheel/button gap stays constant as the LINE toolbar expands/collapses
+   — no magic reserve number needed. */
+@supports (height: 100cqh) {
+  @media (max-width: 640px) {
+    .wheel-screen {
+      container-type: size;
+    }
+
+    .wheel-wrap {
+      --wheel-size: min(92cqh, calc(100cqw - 16px), 410px);
+    }
   }
 }
 
