@@ -1,8 +1,7 @@
 export function Login() {
   return (
     <main className="login-splash">
-      <img src="/assets/wheel-frame.png" alt="" className="login-decoration" aria-hidden />
-      <h1>幸運轉盤</h1>
+      <img src="/assets/logo.png" alt="幸運輪盤" className="login-logo" />
       <p>請使用 LINE 帳號登入</p>
       <button
         className="login-button"

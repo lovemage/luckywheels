@@ -1224,23 +1224,17 @@ h1 {
   color: #fff5d6;
 }
 
-.login-splash h1 {
-  margin: 0;
-  font-size: 28px;
-  letter-spacing: 4px;
-}
-
 .login-splash p {
   margin: 0;
   color: #e8d6ff;
   opacity: 0.85;
 }
 
-.login-decoration {
-  width: 200px;
-  max-width: 60vw;
-  opacity: 0.85;
-  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.45));
+.login-logo {
+  width: 320px;
+  max-width: 80vw;
+  height: auto;
+  filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.55));
 }
 
 .login-button {
