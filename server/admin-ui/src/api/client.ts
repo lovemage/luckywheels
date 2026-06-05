@@ -27,5 +27,14 @@ export async function api<T>(input: string, init: RequestInit = {}): Promise<T> 
     throw new ApiError(body?.error?.code ?? 'INTERNAL', body?.error?.message ?? 'request failed', res.status);
   }
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  // Tolerate empty / non-JSON success bodies (e.g. early endpoints that
+  // returned c.body(null, 200)). Returning undefined is fine for callers
+  // that don't expect data.
+  const text = await res.text();
+  if (!text) return undefined as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return undefined as T;
+  }
 }

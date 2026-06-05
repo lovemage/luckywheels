@@ -63,7 +63,7 @@ adminAuthRoutes.post('/api/admin/auth/login', async (c) => {
     targetId: admin.id,
   });
 
-  return c.body(null, 200);
+  return c.json({ ok: true });
 });
 
 adminAuthRoutes.post('/api/admin/auth/logout', (c) => {
