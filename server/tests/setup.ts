@@ -27,14 +27,23 @@ if (process.env.TEST_DATABASE_URL) {
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 }
 
-// Loud warning if tests would mutate the live DB.
+// Hard abort if tests would mutate the live DB.
+// resetDb truncates every table including AdminUser; a test run against
+// Railway production wiped admin@luckyds.com once already (2026-06-05).
+// Refuse to start vitest unless TEST_DATABASE_URL routes us elsewhere or
+// the operator explicitly opts in via DANGEROUSLY_RUN_TESTS_ON_DATABASE_URL.
 if (
   process.env.DATABASE_URL &&
-  /railway\.(internal|app)|rlwy\.net/.test(process.env.DATABASE_URL)
+  /railway\.(internal|app)|rlwy\.net/.test(process.env.DATABASE_URL) &&
+  process.env.DANGEROUSLY_RUN_TESTS_ON_DATABASE_URL !== '1'
 ) {
-  console.warn(
-    '\n  ⚠  TESTS WILL MUTATE A RAILWAY DATABASE.\n' +
-    '     Set TEST_DATABASE_URL to a local/dedicated Postgres before running vitest.\n',
+  throw new Error(
+    '\n\n  ✗  REFUSING TO RUN TESTS AGAINST A RAILWAY DATABASE.\n' +
+    '     DATABASE_URL points at a Railway host. Tests truncate every table.\n' +
+    '     Fix one of:\n' +
+    '       1. Set TEST_DATABASE_URL to a local / dedicated Postgres (recommended)\n' +
+    '       2. Unset DATABASE_URL (tests/setup.ts will use the local default fallback)\n' +
+    '       3. Set DANGEROUSLY_RUN_TESTS_ON_DATABASE_URL=1 (last resort, will wipe prod)\n',
   );
 }
 
