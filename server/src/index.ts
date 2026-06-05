@@ -1,6 +1,6 @@
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,11 +19,20 @@ import { adminActionLogsRoutes } from './admin/routes/action-logs.js';
 import { bootstrapAdminIfRequested } from './admin/bootstrap.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ADMIN_DIST = join(__dirname, '..', 'admin-ui', 'dist');
+// In production __dirname is /app/server/dist/src and assets live at
+// /app/server/{admin-ui/dist,web-dist} — two levels up. In tsx-watch dev
+// __dirname is server/src — one level up. Probe both.
+function resolveAsset(...rel: string[]): string {
+  const candidates = [
+    join(__dirname, '..', '..', ...rel),
+    join(__dirname, '..', ...rel),
+  ];
+  return candidates.find((p) => existsSync(p)) ?? candidates[0]!;
+}
+const ADMIN_DIST = resolveAsset('admin-ui', 'dist');
 const ADMIN_INDEX_PATH = join(ADMIN_DIST, 'index.html');
 const FALLBACK_INDEX = '<!doctype html><html><body><div id="root">Admin UI not built yet. Run npm --prefix admin-ui run build.</div></body></html>';
-// Member SPA lives at server/web-dist/ in the docker image (copied from root dist/).
-const MEMBER_DIST = join(__dirname, '..', '..', 'web-dist');
+const MEMBER_DIST = resolveAsset('web-dist');
 const MEMBER_INDEX_PATH = join(MEMBER_DIST, 'index.html');
 const MEMBER_FALLBACK = '<!doctype html><html><body><div id="root">Member UI not built yet.</div></body></html>';
 
@@ -53,18 +62,25 @@ app.use('/admin/assets/*', async (c, next) => {
   await next();
   c.header('cache-control', 'public, max-age=31536000, immutable');
 });
-app.use('/admin/*', serveStatic({ root: './admin-ui/dist' }));
-app.get('/admin/*', (c) => {
+// admin-ui is built with vite base "/admin/", so HTML references /admin/assets/...
+// but the files sit at <ADMIN_DIST>/assets/... — strip the prefix.
+app.use(
+  '/admin/*',
+  serveStatic({ root: ADMIN_DIST, rewriteRequestPath: (p) => p.replace(/^\/admin/, '') || '/' })
+);
+const adminSpa = (c: Context) => {
   const html = existsSync(ADMIN_INDEX_PATH) ? readFileSync(ADMIN_INDEX_PATH, 'utf-8') : FALLBACK_INDEX;
   c.header('cache-control', 'no-store');
   return c.html(html);
-});
+};
+app.get('/admin', adminSpa);
+app.get('/admin/*', adminSpa);
 
 app.use('/assets/*', async (c, next) => {
   await next();
   c.header('cache-control', 'public, max-age=31536000, immutable');
 });
-app.use('/*', serveStatic({ root: './web-dist' }));
+app.use('/*', serveStatic({ root: MEMBER_DIST }));
 app.get('*', (c) => {
   const html = existsSync(MEMBER_INDEX_PATH) ? readFileSync(MEMBER_INDEX_PATH, 'utf-8') : MEMBER_FALLBACK;
   c.header('cache-control', 'no-store');
