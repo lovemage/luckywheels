@@ -122,6 +122,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const [winHistory, setWinHistory] = useState<WinHistoryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const soundsRef = useRef<Record<SoundKey, HTMLAudioElement> | null>(null);
+  const soundTimersRef = useRef<Partial<Record<SoundKey, number>>>({});
   const introPlayedRef = useRef(false);
 
   function playSound(key: SoundKey) {
@@ -134,9 +135,22 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
 
   function stopSound(key: SoundKey) {
     const audio = soundsRef.current?.[key];
+    const timer = soundTimersRef.current[key];
+    if (timer) {
+      window.clearTimeout(timer);
+      delete soundTimersRef.current[key];
+    }
     if (!audio) return;
     audio.pause();
     audio.currentTime = 0;
+  }
+
+  function playSoundForDuration(key: SoundKey, durationMs: number) {
+    stopSound(key);
+    playSound(key);
+    soundTimersRef.current[key] = window.setTimeout(() => {
+      stopSound(key);
+    }, durationMs);
   }
 
   useEffect(() => {
@@ -150,6 +164,10 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     };
 
     return () => {
+      Object.values(soundTimersRef.current).forEach((timer) => {
+        if (timer) window.clearTimeout(timer);
+      });
+      soundTimersRef.current = {};
       Object.values(soundsRef.current ?? {}).forEach((audio) => {
         audio.pause();
         audio.src = '';
@@ -202,10 +220,11 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     try {
       const res = await postDraw(selectedTier.draws);
       playSound('spinConfirm');
-      playSound('wheelSpinning');
-      const targetWheelPosition = res.draws[0]!.prize.wheelPosition;
+      playSoundForDuration('wheelSpinning', settings!.spinDurationMs);
       const segmentSize = 360 / prizes!.length;
-      const targetCenter = targetWheelPosition * segmentSize;
+      const resultPrizeId = res.draws[0]!.prize.id;
+      const targetPrizeIndex = prizes!.findIndex((prize) => prize.id === resultPrizeId);
+      const targetCenter = (targetPrizeIndex >= 0 ? targetPrizeIndex : res.draws[0]!.prize.wheelPosition) * segmentSize;
       const next = rotation + 1440 + (360 - targetCenter);
       setRotation(next);
       window.setTimeout(() => {
