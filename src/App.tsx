@@ -85,7 +85,16 @@ const SOUND_SOURCES = {
 } as const;
 const MULTI_SPIN_DURATION_MS = 8800;
 const MULTI_REVEAL_OFFSET_MS = 1000;
-const MULTI_STOP_AFTER_REVEAL_MS = 300;
+function getRotationFromTransform(transform: string): number | null {
+  if (!transform || transform === 'none') return null;
+  try {
+    const matrix = new DOMMatrixReadOnly(transform);
+    const angle = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI);
+    return Number.isFinite(angle) ? ((angle % 360) + 360) % 360 : null;
+  } catch {
+    return null;
+  }
+}
 
 type SoundKey = keyof typeof SOUND_SOURCES;
 
@@ -146,12 +155,14 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const [selectedTierIndex, setSelectedTierIndex] = useState(0);
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
+  const [isWheelFrozen, setIsWheelFrozen] = useState(false);
   const [result, setResult] = useState<DrawResponse | null>(null);
   const [winHistory, setWinHistory] = useState<WinHistoryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const soundsRef = useRef<Record<SoundKey, HTMLAudioElement> | null>(null);
   const soundTimersRef = useRef<Partial<Record<SoundKey, number>>>({});
   const introPlayedRef = useRef(false);
+  const wheelRef = useRef<HTMLDivElement>(null);
 
   function playSound(key: SoundKey) {
     const audio = soundsRef.current?.[key];
@@ -266,12 +277,10 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     selectedTier.draws > 1
       ? Math.max(0, spinAnimationDurationMs - MULTI_REVEAL_OFFSET_MS)
       : spinAnimationDurationMs;
-  const spinStopDelayMs =
-    selectedTier.draws > 1
-      ? revealDelayMs + MULTI_STOP_AFTER_REVEAL_MS
-      : spinAnimationDurationMs;
+  const isMultiDraw = selectedTier.draws > 1;
   const phoneShellStyle = {
     '--spin-duration': `${spinAnimationDurationMs}ms`,
+    ...(isMultiDraw ? { '--spin-easing': 'linear' } : {}),
     ...(settings.homeBackgroundUrl
       ? { '--home-bg': `url(${JSON.stringify(proxiedImageUrl(settings.homeBackgroundUrl) ?? settings.homeBackgroundUrl)})` }
       : {}),
@@ -282,10 +291,11 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     playSound('wheelTap');
     setError(null);
     setSpinning(true);
+    setIsWheelFrozen(false);
     try {
       const res = await postDraw(selectedTier.draws);
       playSound('spinConfirm');
-      playSoundForDuration('wheelSpinning', spinStopDelayMs);
+      playSoundForDuration('wheelSpinning', spinAnimationDurationMs);
       const segmentSize = 360 / prizes!.length;
       const resultPrizeId = res.draws[0]!.prize.id;
       const targetPrizeIndex = prizes!.findIndex((prize) => prize.id === resultPrizeId);
@@ -295,6 +305,16 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       const next = Math.ceil(rotation / 360) * 360 + 1440 + targetRotation;
       setRotation(next);
       const revealResult = () => {
+        if (isMultiDraw) {
+          const computedStyle = wheelRef.current ? window.getComputedStyle(wheelRef.current).transform : null;
+          const angle = computedStyle ? getRotationFromTransform(computedStyle) : null;
+          if (angle !== null) {
+            setRotation(angle);
+          }
+          setIsWheelFrozen(true);
+          stopSound('wheelSpinning');
+          setSpinning(false);
+        }
         setResult(res);
         const winningDraws = res.draws
           .filter((draw) => draw.winningCashAmount > 0)
@@ -333,10 +353,12 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
         });
       };
       window.setTimeout(revealResult, revealDelayMs);
-      window.setTimeout(() => {
-        stopSound('wheelSpinning');
-        setSpinning(false);
-      }, spinStopDelayMs);
+      if (!isMultiDraw) {
+        window.setTimeout(() => {
+          stopSound('wheelSpinning');
+          setSpinning(false);
+        }, spinAnimationDurationMs);
+      }
     } catch (e) {
       stopSound('wheelSpinning');
       setSpinning(false);
@@ -418,7 +440,13 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
         {view === 'wheel' && (
           <>
             <section className="wheel-screen">
-              <Wheel prizes={prizes} rotation={rotation} spinning={spinning} />
+              <Wheel
+                prizes={prizes}
+                rotation={rotation}
+                spinning={spinning}
+                wheelRef={wheelRef}
+                isFrozen={isMultiDraw && isWheelFrozen}
+              />
             </section>
             <div className="cta-row">
               <button
@@ -518,15 +546,23 @@ function Wheel({
   prizes,
   rotation,
   spinning,
+  wheelRef,
+  isFrozen,
 }: {
   prizes: PublicPrize[];
   rotation: number;
   spinning: boolean;
+  wheelRef: React.RefObject<HTMLDivElement | null>;
+  isFrozen: boolean;
 }) {
   return (
     <div className="wheel-wrap">
       <img className="wheel-frame" src="/assets/wheel-frame.png" alt="" aria-hidden="true" />
-      <div className="wheel" style={{ transform: `rotate(${rotation}deg)` }}>
+      <div
+        ref={wheelRef}
+        className={`wheel ${isFrozen ? 'is-frozen' : ''}`}
+        style={{ transform: `rotate(${rotation}deg)` }}
+      >
         <div
           className="wheel-face"
           style={{ '--segments': wheelGradient(prizes) } as React.CSSProperties}
@@ -536,7 +572,7 @@ function Wheel({
           const angle = (360 / prizes.length) * index;
           return (
             <div
-              className="prize-label"
+              className={`prize-label ${isFrozen ? 'is-frozen' : ''}`}
               key={prize.id}
               style={{
                 transform: `rotate(${angle}deg) translateY(var(--label-radius)) rotate(${-(angle + rotation)}deg)`,

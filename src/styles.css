@@ -327,8 +327,12 @@ h1 {
   width: calc(var(--wheel-size) * 0.76);
   height: calc(var(--wheel-size) * 0.76);
   border-radius: 50%;
-  transition: transform var(--spin-duration, 4300ms) linear;
+  transition: transform var(--spin-duration, 4300ms) var(--spin-easing, cubic-bezier(0.08, 0.86, 0.12, 1));
   transform-origin: center;
+}
+
+.wheel.is-frozen {
+  transition: none;
 }
 
 .wheel-face {
@@ -357,8 +361,12 @@ h1 {
   color: #5b1678;
   text-align: center;
   transform-origin: center;
-  transition: transform var(--spin-duration, 4300ms) linear;
+  transition: transform var(--spin-duration, 4300ms) var(--spin-easing, cubic-bezier(0.08, 0.86, 0.12, 1));
   pointer-events: none;
+}
+
+.prize-label.is-frozen {
+  transition: none;
 }
 
 .prize-content {
