@@ -51,45 +51,47 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
       aria-labelledby="win-modal-title"
     >
       <div className="win-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 id="win-modal-title">
-          {hasWin ? (result.tier === 'multi' ? `${result.tierDraws} 連抽結果` : '中獎了！') : '感謝參與'}
-        </h2>
-        {hasWin ? (
-          <div className="redemption-actions">
-            <p className="redemption-code">{redemptionCode}</p>
-            <button type="button" className="copy-code-button" onClick={copyCode} aria-label="複製兌換碼">
-              <Copy size={20} />
-            </button>
-          </div>
-        ) : null}
-        {!hasWin ? (
-          <div className="win-single">
-            <strong>謝謝參加</strong>
-            <span>這次沒有獲得獎金，歡迎再試一次。</span>
-          </div>
-        ) : result.tier === 'single' ? (
-          <div className="win-single">
-            <strong>{winningDraws[0]!.prize.rankLabel}</strong>
-            <span>{winningDraws[0]!.prize.name}</span>
-          </div>
-        ) : (
-          <div className="win-multi-grid">
-            {result.draws.map((draw) => (
-              <div
-                key={draw.subIndex}
-                className={`win-multi-cell ${draw.winningCashAmount > 0 ? 'is-winning' : 'is-not-winning'} ${
-                  result.tier === 'multi' && draw.subIndex < revealedDraws ? 'is-revealed' : ''
-                }`}
-              >
-                <span className="win-multi-icon">💰</span>
-                <span className="win-multi-rank">{draw.prize.rankLabel}</span>
-                <span className="win-multi-name">{draw.prize.name}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {hasWin ? <p className="hint">請將兌換碼截圖傳送給客服以進行領取。</p> : null}
-        <button type="button" onClick={onClose}>關閉</button>
+        <div className="win-modal-content-panel">
+          <h2 id="win-modal-title">
+            {hasWin ? (result.tier === 'multi' ? `${result.tierDraws} 連抽結果` : '中獎了！') : '感謝參與'}
+          </h2>
+          {hasWin ? (
+            <div className="redemption-actions">
+              <p className="redemption-code">{redemptionCode}</p>
+              <button type="button" className="copy-code-button" onClick={copyCode} aria-label="複製兌換碼">
+                <Copy size={20} />
+              </button>
+            </div>
+          ) : null}
+          {!hasWin ? (
+            <div className="win-single">
+              <strong>謝謝參加</strong>
+              <span>這次沒有獲得獎金，歡迎再試一次。</span>
+            </div>
+          ) : result.tier === 'single' ? (
+            <div className="win-single">
+              <strong>{winningDraws[0]!.prize.rankLabel}</strong>
+              <span>{winningDraws[0]!.prize.name}</span>
+            </div>
+          ) : (
+            <div className="win-multi-grid">
+              {result.draws.map((draw) => (
+                <div
+                  key={draw.subIndex}
+                  className={`win-multi-cell ${draw.winningCashAmount > 0 ? 'is-winning' : 'is-not-winning'} ${
+                    result.tier === 'multi' && draw.subIndex < revealedDraws ? 'is-revealed' : ''
+                  }`}
+                >
+                  <span className="win-multi-icon">💰</span>
+                  <span className="win-multi-rank">{draw.prize.rankLabel}</span>
+                  <span className="win-multi-name">{draw.prize.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {hasWin ? <p className="hint">請將兌換碼截圖傳送給客服以進行領取。</p> : null}
+          <button type="button" onClick={onClose}>關閉</button>
+        </div>
       </div>
     </div>
   );

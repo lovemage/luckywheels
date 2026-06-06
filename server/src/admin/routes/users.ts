@@ -130,6 +130,37 @@ adminUsersRoutes.post('/api/admin/users/:id/points', requireAdmin, async (c) => 
   return c.json({ points: updated.points });
 });
 
+adminUsersRoutes.get('/api/admin/users/:id/points-history', requireAdmin, async (c) => {
+  const userId = c.req.param('id');
+  const rows = await prisma.adminActionLog.findMany({
+    where: { event: 'user.points_adjust', targetType: 'user', targetId: userId },
+    take: 20,
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+  });
+  const adminIds = Array.from(new Set(rows.map((r) => r.adminUserId).filter((id): id is string => Boolean(id))));
+  const admins = adminIds.length
+    ? await prisma.adminUser.findMany({ where: { id: { in: adminIds } }, select: { id: true, email: true } })
+    : [];
+  const adminById = new Map(admins.map((a) => [a.id, a]));
+
+  const items = rows.map((row) => {
+    const after = row.payloadAfter && typeof row.payloadAfter === 'object' && !Array.isArray(row.payloadAfter)
+      ? row.payloadAfter as Record<string, unknown>
+      : {};
+    return {
+      id: row.id,
+      delta: typeof after.delta === 'number' ? after.delta : 0,
+      before: typeof after.before === 'number' ? after.before : null,
+      after: typeof after.after === 'number' ? after.after : null,
+      reason: typeof after.reason === 'string' ? after.reason : null,
+      adminUser: row.adminUserId ? adminById.get(row.adminUserId) ?? null : null,
+      createdAt: row.createdAt,
+    };
+  });
+
+  return c.json({ items });
+});
+
 const AccountTypeBody = z.object({
   accountType: z.enum(['verified', 'test']),  // 'blacklisted' deliberately excluded
 });

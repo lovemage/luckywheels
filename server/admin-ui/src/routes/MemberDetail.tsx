@@ -10,8 +10,10 @@ import {
   setEntertainmentCode,
   deleteUser,
   fetchDrawHistory,
+  fetchPointsHistory,
   approveUser,
   type DrawHistoryItem,
+  type PointsHistoryItem,
 } from '../api/users.js';
 import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
@@ -45,6 +47,7 @@ export function MemberDetail() {
   });
   const [pointsDelta, setPointsDelta] = useState('');
   const [pointsError, setPointsError] = useState<string | null>(null);
+  const [pointsSuccess, setPointsSuccess] = useState<string | null>(null);
   const [blacklistModal, setBlacklistModal] = useState<null | { mode: 'set' | 'clear' }>(null);
   const [codeModal, setCodeModal] = useState<null | { next: string | null }>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -52,12 +55,17 @@ export function MemberDetail() {
   const qc = useQueryClient();
   const adjust = useMutation({
     mutationFn: (delta: number) => adjustPoints(id!, { delta }),
-    onSuccess: () => {
+    onSuccess: (_res, delta) => {
       qc.invalidateQueries({ queryKey: ['admin', 'users', id] });
+      qc.invalidateQueries({ queryKey: ['admin', 'users', id, 'points-history'] });
       setPointsDelta('');
       setPointsError(null);
+      setPointsSuccess(delta > 0 ? '新增積分成功' : '扣除積分成功');
     },
-    onError: (e: Error) => setPointsError(e.message),
+    onError: (e: Error) => {
+      setPointsSuccess(null);
+      setPointsError(e.message);
+    },
   });
   const blacklistMut = useMutation({
     mutationFn: (body: { blacklist: boolean; reason?: string }) => setBlacklist(id!, body),
@@ -91,6 +99,11 @@ export function MemberDetail() {
     queryKey: ['admin', 'users', id, 'history'],
     queryFn: () => fetchDrawHistory(id!),
     enabled: memberTab === 'history' && Boolean(id),
+  });
+  const pointsHistory = useQuery({
+    queryKey: ['admin', 'users', id, 'points-history'],
+    queryFn: () => fetchPointsHistory(id!),
+    enabled: Boolean(id),
   });
   if (isLoading || !data) return <p>載入中…</p>;
   return (
@@ -189,7 +202,11 @@ export function MemberDetail() {
               <input
                 type="number"
                 value={pointsDelta}
-                onChange={(e) => { setPointsDelta(e.target.value); setPointsError(null); }}
+                onChange={(e) => {
+                  setPointsDelta(e.target.value);
+                  setPointsError(null);
+                  setPointsSuccess(null);
+                }}
                 placeholder="輸入正數或負數"
               />
               <button
@@ -206,7 +223,48 @@ export function MemberDetail() {
                 {adjust.isPending ? '處理中…' : pointsDelta.trim() && Number(pointsDelta) < 0 ? '扣除積分' : '新增積分'}
               </button>
             </div>
+            {pointsSuccess && <p className="admin-success-text">{pointsSuccess}</p>}
             {pointsError && <p className="member-detail-error">{pointsError}</p>}
+          </section>
+
+          <section className="member-detail-card member-detail-card--wide">
+            <h2>新增積分紀錄</h2>
+            {pointsHistory.isLoading && <p>載入中…</p>}
+            {pointsHistory.data && pointsHistory.data.items.length === 0 && (
+              <p className="admin-muted-text">尚無積分調整紀錄</p>
+            )}
+            {pointsHistory.data && pointsHistory.data.items.length > 0 && (
+              <Table<PointsHistoryItem>
+                rows={pointsHistory.data.items}
+                rowKey={(row) => row.id}
+                columns={[
+                  {
+                    header: '調整',
+                    cell: (row) => (
+                      <span className={row.delta > 0 ? 'points-delta-positive' : 'points-delta-negative'}>
+                        {row.delta > 0 ? `+${row.delta}` : row.delta}
+                      </span>
+                    ),
+                  },
+                  {
+                    header: '調整前',
+                    cell: (row) => row.before?.toLocaleString() ?? '—',
+                  },
+                  {
+                    header: '調整後',
+                    cell: (row) => row.after?.toLocaleString() ?? '—',
+                  },
+                  {
+                    header: '管理員',
+                    cell: (row) => row.adminUser?.email ?? '—',
+                  },
+                  {
+                    header: '時間',
+                    cell: (row) => new Date(row.createdAt).toLocaleString(),
+                  },
+                ]}
+              />
+            )}
           </section>
 
           {data.accountType === 'test' && (

@@ -573,6 +573,16 @@ th {
   font-weight: 800;
 }
 
+.points-delta-positive {
+  color: var(--admin-ok);
+  font-weight: 900;
+}
+
+.points-delta-negative {
+  color: var(--admin-danger);
+  font-weight: 900;
+}
+
 .admin-detail-list {
   display: grid;
   gap: 10px;

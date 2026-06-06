@@ -60,6 +60,20 @@ export function adjustPoints(id: string, body: { delta: number; reason?: string 
   });
 }
 
+export interface PointsHistoryItem {
+  id: string;
+  delta: number;
+  before: number | null;
+  after: number | null;
+  reason: string | null;
+  adminUser: { id: string; email: string } | null;
+  createdAt: string;
+}
+
+export function fetchPointsHistory(id: string): Promise<{ items: PointsHistoryItem[] }> {
+  return api(`/api/admin/users/${id}/points-history`);
+}
+
 export function setAccountType(id: string, accountType: 'verified' | 'test'): Promise<{ ok: true }> {
   return api(`/api/admin/users/${id}/account-type`, {
     method: 'PATCH',
