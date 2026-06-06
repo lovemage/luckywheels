@@ -83,6 +83,7 @@ const SOUND_SOURCES = {
   wheelSpinning: '/assets/sfx/spin-sound.mp3',
   win: '/assets/sfx/floraphonic-coin-payout-6-213526.mp3',
 } as const;
+const MULTI_SPIN_DURATION_MS = 8800;
 
 type SoundKey = keyof typeof SOUND_SOURCES;
 
@@ -258,8 +259,9 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   })();
   const effectiveTierIndex = Math.min(selectedTierIndex, Math.max(maxAffordableIndex, 0));
   const selectedTier = settings.pointThresholds[effectiveTierIndex] ?? settings.pointThresholds[0]!;
+  const spinAnimationDurationMs = selectedTier.draws > 1 ? MULTI_SPIN_DURATION_MS : settings.spinDurationMs;
   const phoneShellStyle = {
-    '--spin-duration': `${settings.spinDurationMs}ms`,
+    '--spin-duration': `${spinAnimationDurationMs}ms`,
     ...(settings.homeBackgroundUrl
       ? { '--home-bg': `url(${JSON.stringify(proxiedImageUrl(settings.homeBackgroundUrl) ?? settings.homeBackgroundUrl)})` }
       : {}),
@@ -273,7 +275,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     try {
       const res = await postDraw(selectedTier.draws);
       playSound('spinConfirm');
-      playSoundForDuration('wheelSpinning', settings!.spinDurationMs);
+      playSoundForDuration('wheelSpinning', spinAnimationDurationMs);
       const segmentSize = 360 / prizes!.length;
       const resultPrizeId = res.draws[0]!.prize.id;
       const targetPrizeIndex = prizes!.findIndex((prize) => prize.id === resultPrizeId);
@@ -321,7 +323,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           points: res.points,
           lifetimeDrawCount: me.lifetimeDrawCount + (res.isTest ? 0 : res.tierDraws),
         });
-      }, settings!.spinDurationMs);
+      }, spinAnimationDurationMs);
     } catch (e) {
       stopSound('wheelSpinning');
       setSpinning(false);
@@ -464,7 +466,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
                         <span>{entry.createdAt}</span>
                       </div>
                       <div className="win-history-code">
-                        <span>兌換碼：LW-{entry.code}</span>
+                        <span>LW-{entry.code}</span>
                         <button type="button" aria-label="複製兌換碼" onClick={() => copyCode(entry.code)}>
                           <CopyIcon />
                         </button>

@@ -4,6 +4,7 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
   const winningDraws = result.draws.filter((draw) => draw.winningCashAmount > 0);
   const totalWinAmount = winningDraws.reduce((sum, draw) => sum + draw.winningCashAmount, 0);
   const hasWin = totalWinAmount > 0;
+  const redemptionCode = `LW-${result.redemption.code}`;
 
   async function copyCode() {
     if (!hasWin) return;
@@ -28,7 +29,7 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
         </h2>
         {hasWin ? (
           <div className="redemption-actions">
-            <p className="redemption-code">兌換碼：LW-{result.redemption.code}</p>
+            <p className="redemption-code">{redemptionCode}</p>
             <button type="button" className="copy-code-button" onClick={copyCode}>
               複製
             </button>
