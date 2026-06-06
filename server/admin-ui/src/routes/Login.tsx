@@ -1,12 +1,42 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { api, ApiError } from '../api/client.js';
+import { fetchPublicSettings, type PublicSettings } from '../api/public-settings.js';
+
+function proxiedImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('/')) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.pathname.includes('/prize-images/')) {
+      return `/api/media-proxy?url=${encodeURIComponent(parsed.href)}`;
+    }
+  } catch {
+    return url;
+  }
+  return url;
+}
 
 export function Login() {
   const nav = useNavigate();
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [settings, setSettings] = useState<PublicSettings | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchPublicSettings()
+      .then((next) => {
+        if (alive) setSettings(next);
+      })
+      .catch(() => {
+        if (alive) setSettings(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -21,22 +51,30 @@ export function Login() {
     }
   }
 
+  const logoSrc = proxiedImageUrl(settings?.homeLogoUrl) || '/assets/logo.png';
+  const bgSrc = proxiedImageUrl(settings?.homeBackgroundUrl);
+  const pageStyle = {
+    ...(bgSrc ? { '--admin-login-bg': `url(${JSON.stringify(bgSrc)})` } : {}),
+  } as CSSProperties;
+
   return (
-    <main style={{ maxWidth: 360, margin: '10vh auto', fontFamily: 'sans-serif' }}>
-      <h1>Lucky Wheels Admin</h1>
-      <form onSubmit={onSubmit}>
+    <main className={`admin-login-page${bgSrc ? ' has-background' : ''}`} style={pageStyle}>
+      <form className="admin-login-card" onSubmit={onSubmit}>
+        <img className="admin-login-logo" src={logoSrc} alt="Lucky Wheels" />
+        <div>
+          <p className="admin-eyebrow">Admin Console</p>
+          <h1>管理後台登入</h1>
+        </div>
         <label>
           帳號
-          <input type="text" value={account} onChange={(e) => setAccount(e.target.value)} required
-                 style={{ width: '100%', display: 'block', marginBottom: 12 }} />
+          <input type="text" value={account} onChange={(e) => setAccount(e.target.value)} required />
         </label>
         <label>
           Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
-                 style={{ width: '100%', display: 'block', marginBottom: 12 }} />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
-        <button type="submit" style={{ width: '100%' }}>登入</button>
-        {error && <p role="alert" style={{ color: '#c00' }}>{error}</p>}
+        <button type="submit">登入</button>
+        {error && <p role="alert" className="member-detail-error">{error}</p>}
       </form>
     </main>
   );

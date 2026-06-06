@@ -38,6 +38,60 @@ body {
     var(--admin-bg);
 }
 
+.admin-login-page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(180deg, rgba(20, 35, 28, 0.08), transparent 260px),
+    var(--admin-bg);
+}
+
+.admin-login-page.has-background {
+  background:
+    linear-gradient(180deg, rgba(20, 35, 28, 0.28), rgba(20, 35, 28, 0.58)),
+    var(--admin-login-bg) center / cover no-repeat;
+}
+
+.admin-login-card {
+  display: grid;
+  width: min(100%, 390px);
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid rgba(220, 227, 218, 0.88);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 46px rgba(20, 35, 28, 0.18);
+  backdrop-filter: blur(16px);
+}
+
+.admin-login-logo {
+  display: block;
+  width: min(180px, 70%);
+  max-height: 100px;
+  object-fit: contain;
+}
+
+.admin-login-card h1 {
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.admin-login-card label {
+  display: grid;
+  gap: 6px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-login-card button {
+  width: 100%;
+}
+
 button,
 input,
 select,
