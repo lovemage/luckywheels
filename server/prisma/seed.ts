@@ -11,6 +11,9 @@ export const SETTINGS_KEYS = {
   costControlInterval: 'costControlInterval',
   rulesText: 'rulesText',
   consolationPrizeId: 'consolationPrizeId',
+  // 首頁外觀：會員前台 logo 與背景圖（空字串＝使用前端內建預設圖）
+  homeLogoUrl: 'homeLogoUrl',
+  homeBackgroundUrl: 'homeBackgroundUrl',
   // System totals — maintained atomically inside the draw transaction
   // (replaces SUM(User) aggregation; addresses Codex finding B1/D1).
   totalDrawCount: 'totalDrawCount',
@@ -41,6 +44,8 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
     '積分由管理員後台派發，會員不可自行修改。',
   ].join('\n'),
   [SETTINGS_KEYS.consolationPrizeId]: '',
+  [SETTINGS_KEYS.homeLogoUrl]: '',
+  [SETTINGS_KEYS.homeBackgroundUrl]: '',
   [SETTINGS_KEYS.totalDrawCount]: '0',
   [SETTINGS_KEYS.totalPayoutAmount]: '0',
   [SETTINGS_KEYS.totalPointsBurned]: '0',

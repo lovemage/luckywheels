@@ -62,3 +62,19 @@ export function setRedemptionStatus(id: string, body: { action: 'claim' | 'void'
     body: JSON.stringify(body),
   });
 }
+
+export interface ResetAllResult {
+  ok: true;
+  deletedRedemptions: number;
+  deletedDrawLogs: number;
+  usersReset: number;
+}
+
+/** Danger: wipes ALL redemptions + draw logs and zeroes every member's points/counters. */
+export function resetAllRedemptions(): Promise<ResetAllResult> {
+  return api('/api/admin/redemptions/reset', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ confirm: 'RESET' }),
+  });
+}

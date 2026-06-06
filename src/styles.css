@@ -72,9 +72,11 @@ input:focus-visible {
 .stage-bg {
   position: absolute;
   inset: 0;
+  /* --home-bg is injected by App.tsx when the admin sets a custom background;
+     falls back to the bundled image when unset. */
   background:
     linear-gradient(180deg, rgba(22, 0, 32, 0.14), rgba(22, 0, 32, 0.22)),
-    url('/assets/lucky-bg.png') center / cover no-repeat;
+    var(--home-bg, url('/assets/lucky-bg.png')) center / cover no-repeat;
 }
 
 .stage-bg::after {

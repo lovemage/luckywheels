@@ -67,6 +67,50 @@ describe('admin AppSetting edit', () => {
     expect(pubJson.pointThresholds).toEqual(DEFAULT_THRESHOLDS);
   });
 
+  it('GET returns empty homeLogoUrl / homeBackgroundUrl by default', async () => {
+    const admin = await createAdmin();
+    const r = await app.request('/api/admin/settings', {
+      headers: await adminHeaders(admin.id, admin.email),
+    });
+    const json = (await r.json()) as { homeLogoUrl: string; homeBackgroundUrl: string };
+    expect(json.homeLogoUrl).toBe('');
+    expect(json.homeBackgroundUrl).toBe('');
+  });
+
+  it('PATCH homeLogoUrl + homeBackgroundUrl persists + /api/settings/public reflects them', async () => {
+    const admin = await createAdmin();
+    const logo = 'https://storage.test.local/test-bucket/prize-images/logo.png';
+    const bg = 'https://storage.test.local/test-bucket/prize-images/bg.png';
+    const r = await app.request('/api/admin/settings', {
+      method: 'PATCH',
+      headers: { ...(await adminHeaders(admin.id, admin.email)), 'content-type': 'application/json' },
+      body: JSON.stringify({ homeLogoUrl: logo, homeBackgroundUrl: bg }),
+    });
+    expect(r.status).toBe(200);
+    const pub = await app.request('/api/settings/public');
+    const pubJson = (await pub.json()) as { homeLogoUrl: string; homeBackgroundUrl: string };
+    expect(pubJson.homeLogoUrl).toBe(logo);
+    expect(pubJson.homeBackgroundUrl).toBe(bg);
+  });
+
+  it('PATCH homeLogoUrl = "" clears it back to default (empty)', async () => {
+    const admin = await createAdmin();
+    await app.request('/api/admin/settings', {
+      method: 'PATCH',
+      headers: { ...(await adminHeaders(admin.id, admin.email)), 'content-type': 'application/json' },
+      body: JSON.stringify({ homeLogoUrl: 'https://storage.test.local/test-bucket/prize-images/logo.png' }),
+    });
+    const r = await app.request('/api/admin/settings', {
+      method: 'PATCH',
+      headers: { ...(await adminHeaders(admin.id, admin.email)), 'content-type': 'application/json' },
+      body: JSON.stringify({ homeLogoUrl: '' }),
+    });
+    expect(r.status).toBe(200);
+    const pub = await app.request('/api/settings/public');
+    const pubJson = (await pub.json()) as { homeLogoUrl: string };
+    expect(pubJson.homeLogoUrl).toBe('');
+  });
+
   it('PATCH pointThresholds: persisted + readable via /api/settings/public', async () => {
     const admin = await createAdmin();
     const next = [

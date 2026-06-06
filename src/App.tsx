@@ -244,7 +244,10 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   })();
   const effectiveTierIndex = Math.min(selectedTierIndex, Math.max(maxAffordableIndex, 0));
   const selectedTier = settings.pointThresholds[effectiveTierIndex] ?? settings.pointThresholds[0]!;
-  const spinDurationStyle = { '--spin-duration': `${settings.spinDurationMs}ms` } as React.CSSProperties;
+  const phoneShellStyle = {
+    '--spin-duration': `${settings.spinDurationMs}ms`,
+    ...(settings.homeBackgroundUrl ? { '--home-bg': `url(${JSON.stringify(settings.homeBackgroundUrl)})` } : {}),
+  } as React.CSSProperties;
 
   async function spin() {
     if (spinning) return;
@@ -343,7 +346,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
 
   return (
     <main className="showcase">
-      <section className="phone-shell" aria-label="會員抽獎前台" style={spinDurationStyle}>
+      <section className="phone-shell" aria-label="會員抽獎前台" style={phoneShellStyle}>
         <div className="stage-bg" />
         <div className="floating coin-a" />
         <div className="floating coin-b" />
@@ -354,7 +357,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           <div className="title-lockup">
             <img
               className="logo-image"
-              src="/assets/logo.png"
+              src={settings.homeLogoUrl || '/assets/logo.png'}
               alt="幸運輪盤"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';

@@ -8,6 +8,8 @@ export interface AdminSettings {
   costControlEnabled: boolean;
   costControlInterval: number;
   rulesText: string;
+  homeLogoUrl: string;
+  homeBackgroundUrl: string;
   totals: { drawCount: number; payoutAmount: number; pointsBurned: number };
   lowestCostPrize: { id: string; rankLabel: string; name: string; cashAmount: number } | null;
   consolationPrizeId: string;
@@ -23,6 +25,8 @@ export type SettingsUpdate = Partial<
     | 'costControlEnabled'
     | 'costControlInterval'
     | 'rulesText'
+    | 'homeLogoUrl'
+    | 'homeBackgroundUrl'
   >
 >;
 

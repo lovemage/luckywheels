@@ -17,6 +17,10 @@ export interface PublicSettings {
   spinDurationMs: number;
   pointThresholds: { points: number; draws: number }[];
   rulesText: string;
+  /** Admin-configurable home logo URL; empty string ⇒ use the bundled default. */
+  homeLogoUrl: string;
+  /** Admin-configurable home background URL; empty string ⇒ use the bundled default. */
+  homeBackgroundUrl: string;
 }
 
 export function fetchPrizes(): Promise<{ items: PublicPrize[] }> {

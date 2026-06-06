@@ -4,6 +4,7 @@ import { prisma } from '../../db.js';
 import { AppError } from '../../errors.js';
 import { requireAdmin } from '../auth/middleware.js';
 import { audit } from '../audit/helper.js';
+import { SETTINGS_KEYS } from '../../../prisma/seed.js';
 
 export const adminRedemptionsRoutes = new Hono();
 
@@ -49,6 +50,58 @@ adminRedemptionsRoutes.get('/api/admin/redemptions', requireAdmin, async (c) => 
     })),
     nextCursor,
   });
+});
+
+// 危險操作：清空所有兌換紀錄與抽獎明細，並把所有會員積分/累計與全站累計歸零。
+// 不可復原 — 必須帶 { confirm: "RESET" }（前台 DoubleConfirmModal 要求輸入 RESET）。
+const ResetBody = z.object({ confirm: z.literal('RESET') });
+
+adminRedemptionsRoutes.post('/api/admin/redemptions/reset', requireAdmin, async (c) => {
+  try {
+    ResetBody.parse(await c.req.json());
+  } catch {
+    throw new AppError('REDEMPTION_RESET_CONFIRM_REQUIRED', 'must POST { confirm: "RESET" }', 400);
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const deletedDrawLogs = await tx.drawLog.deleteMany({});
+    const deletedRedemptions = await tx.redemption.deleteMany({});
+    const usersReset = await tx.user.updateMany({
+      data: {
+        points: 0,
+        lifetimeDrawCount: 0,
+        lifetimePayoutAmount: 0,
+        totalBurnAmount: 0,
+        totalLuckAmount: 0,
+        lastWinDrawIndex: null,
+      },
+    });
+    // Global totals double as the cost-control counters → zero them too.
+    for (const key of [
+      SETTINGS_KEYS.totalDrawCount,
+      SETTINGS_KEYS.totalPayoutAmount,
+      SETTINGS_KEYS.totalPointsBurned,
+    ]) {
+      await tx.appSetting.upsert({ where: { key }, create: { key, value: '0' }, update: { value: '0' } });
+    }
+    await audit(c, tx, {
+      event: 'redemption.reset_all',
+      targetType: 'redemption',
+      payloadAfter: {
+        deletedRedemptions: deletedRedemptions.count,
+        deletedDrawLogs: deletedDrawLogs.count,
+        usersReset: usersReset.count,
+        clearedPoints: true,
+      },
+    });
+    return {
+      deletedRedemptions: deletedRedemptions.count,
+      deletedDrawLogs: deletedDrawLogs.count,
+      usersReset: usersReset.count,
+    };
+  });
+
+  return c.json({ ok: true, ...result });
 });
 
 adminRedemptionsRoutes.get('/api/admin/redemptions/:id', requireAdmin, async (c) => {

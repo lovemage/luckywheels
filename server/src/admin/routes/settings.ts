@@ -24,6 +24,9 @@ const Body = z.object({
   costControlEnabled: z.boolean().optional(),
   costControlInterval: z.union([z.literal(3), z.literal(4), z.literal(5)]).optional(),
   rulesText: z.string().min(1).max(2000).optional(),
+  // 首頁外觀：上傳後得到的圖片 URL；空字串＝清除、回退前端內建預設圖。
+  homeLogoUrl: z.string().max(2000).optional(),
+  homeBackgroundUrl: z.string().max(2000).optional(),
 });
 type BodyT = z.infer<typeof Body>;
 
@@ -87,6 +90,8 @@ adminSettingsRoutes.get('/api/admin/settings', requireAdmin, async (c) => {
     costControlEnabled: (m[SETTINGS_KEYS.costControlEnabled] ?? 'false') === 'true',
     costControlInterval: Number(m[SETTINGS_KEYS.costControlInterval] ?? '3'),
     rulesText: m[SETTINGS_KEYS.rulesText] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.rulesText],
+    homeLogoUrl: m[SETTINGS_KEYS.homeLogoUrl] ?? '',
+    homeBackgroundUrl: m[SETTINGS_KEYS.homeBackgroundUrl] ?? '',
     totals: {
       drawCount: Number(m[SETTINGS_KEYS.totalDrawCount] ?? '0'),
       payoutAmount: Number(m[SETTINGS_KEYS.totalPayoutAmount] ?? '0'),
@@ -129,6 +134,10 @@ adminSettingsRoutes.patch('/api/admin/settings', requireAdmin, async (c) => {
     updates.push({ key: SETTINGS_KEYS.costControlInterval, value: serialize(body.costControlInterval) });
   if (body.rulesText !== undefined)
     updates.push({ key: SETTINGS_KEYS.rulesText, value: serialize(body.rulesText) });
+  if (body.homeLogoUrl !== undefined)
+    updates.push({ key: SETTINGS_KEYS.homeLogoUrl, value: serialize(body.homeLogoUrl) });
+  if (body.homeBackgroundUrl !== undefined)
+    updates.push({ key: SETTINGS_KEYS.homeBackgroundUrl, value: serialize(body.homeBackgroundUrl) });
 
   if (updates.length === 0) {
     return c.json({ ok: true });
