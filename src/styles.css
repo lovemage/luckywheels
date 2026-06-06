@@ -1474,44 +1474,53 @@ h1 {
 }
 
 .win-multi-cell {
-  min-height: 84px;
-  display: grid;
-  align-content: start;
-  justify-items: center;
-  gap: 3px;
-  padding: 10px 8px;
-  text-align: center;
-  border-radius: 14px;
-  border: 1px solid rgba(91, 22, 120, 0.14);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.52));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  text-align: left;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .win-multi-cell.is-not-winning {
   opacity: 0.62;
 }
 
-.win-multi-cell strong {
+.win-multi-rank {
   color: #4b175f;
-  font-size: 13px;
-  line-height: 1;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
-.win-multi-cell span:nth-child(3),
-.win-multi-cell span:nth-child(4) {
-  font-size: 11px;
+.win-multi-name {
   color: #4b175f;
-  line-height: 1.15;
+  font-size: 12px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.win-multi-cell.is-not-winning .win-multi-name,
+.win-multi-cell.is-not-winning .win-multi-rank {
+  color: rgba(75, 23, 95, 0.62);
 }
 
 .win-multi-icon {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background: rgba(244, 203, 58, 0.2);
+  font-size: 13px;
+  flex: 0 0 auto;
 }
 
 .win-history-list {

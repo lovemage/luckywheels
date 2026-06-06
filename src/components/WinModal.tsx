@@ -53,9 +53,8 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
                 className={`win-multi-cell ${draw.winningCashAmount > 0 ? 'is-winning' : 'is-not-winning'}`}
               >
                 <span className="win-multi-icon">💰</span>
-                <strong>#{draw.subIndex + 1}</strong>
-                <span>{draw.prize.rankLabel}</span>
-                <span>{draw.prize.name}</span>
+                <span className="win-multi-rank">{draw.prize.rankLabel}</span>
+                <span className="win-multi-name">{draw.prize.name}</span>
               </div>
             ))}
           </div>
