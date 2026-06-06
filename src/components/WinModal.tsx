@@ -1,10 +1,36 @@
 import type { DrawResponse } from '../api/draw.js';
+import { useEffect, useState } from 'react';
 
 export function WinModal({ result, onClose }: { result: DrawResponse; onClose: () => void }) {
   const winningDraws = result.draws.filter((draw) => draw.winningCashAmount > 0);
   const totalWinAmount = winningDraws.reduce((sum, draw) => sum + draw.winningCashAmount, 0);
   const hasWin = totalWinAmount > 0;
   const redemptionCode = `LW-${result.redemption.code}`;
+  const [revealedDraws, setRevealedDraws] = useState(0);
+
+  useEffect(() => {
+    if (!hasWin || result.tier !== 'multi') {
+      setRevealedDraws(result.tier === 'multi' ? result.draws.length : 0);
+      return;
+    }
+
+    setRevealedDraws(1);
+    if (result.draws.length <= 1) return;
+
+    const intervalMs = 600;
+    const timer = window.setInterval(() => {
+      setRevealedDraws((current) => {
+        const next = current + 1;
+        if (next >= result.draws.length) {
+          window.clearInterval(timer);
+          return result.draws.length;
+        }
+        return next;
+      });
+    }, intervalMs);
+
+    return () => window.clearInterval(timer);
+  }, [hasWin, result.draws.length, result.tier, result.redemption.code]);
 
   async function copyCode() {
     if (!hasWin) return;
@@ -50,7 +76,9 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
             {result.draws.map((draw) => (
               <div
                 key={draw.subIndex}
-                className={`win-multi-cell ${draw.winningCashAmount > 0 ? 'is-winning' : 'is-not-winning'}`}
+                className={`win-multi-cell ${draw.winningCashAmount > 0 ? 'is-winning' : 'is-not-winning'} ${
+                  result.tier === 'multi' && draw.subIndex < revealedDraws ? 'is-revealed' : ''
+                }`}
               >
                 <span className="win-multi-icon">💰</span>
                 <span className="win-multi-rank">{draw.prize.rankLabel}</span>
