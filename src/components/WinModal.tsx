@@ -46,15 +46,19 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
             <span>{winningDraws[0]!.prize.name}</span>
           </div>
         ) : (
-          <ol className="win-multi-list">
-            {winningDraws.map((d) => (
-              <li key={d.subIndex}>
-                <span>#{d.subIndex + 1}</span>
-                <span>{d.prize.rankLabel}</span>
-                <span>{d.prize.name}</span>
-              </li>
+          <div className="win-multi-grid">
+            {result.draws.map((draw) => (
+              <div
+                key={draw.subIndex}
+                className={`win-multi-cell ${draw.winningCashAmount > 0 ? 'is-winning' : 'is-not-winning'}`}
+              >
+                <span className="win-multi-icon">💰</span>
+                <strong>#{draw.subIndex + 1}</strong>
+                <span>{draw.prize.rankLabel}</span>
+                <span>{draw.prize.name}</span>
+              </div>
             ))}
-          </ol>
+          </div>
         )}
         {hasWin ? <p className="hint">請將兌換碼截圖傳送給客服以進行領取。</p> : null}
         <button type="button" onClick={onClose}>關閉</button>

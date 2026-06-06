@@ -84,6 +84,7 @@ const SOUND_SOURCES = {
   win: '/assets/sfx/floraphonic-coin-payout-6-213526.mp3',
 } as const;
 const MULTI_SPIN_DURATION_MS = 8800;
+const MULTI_REVEAL_OFFSET_MS = 1000;
 
 type SoundKey = keyof typeof SOUND_SOURCES;
 
@@ -260,6 +261,10 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const effectiveTierIndex = Math.min(selectedTierIndex, Math.max(maxAffordableIndex, 0));
   const selectedTier = settings.pointThresholds[effectiveTierIndex] ?? settings.pointThresholds[0]!;
   const spinAnimationDurationMs = selectedTier.draws > 1 ? MULTI_SPIN_DURATION_MS : settings.spinDurationMs;
+  const revealDelayMs =
+    selectedTier.draws > 1
+      ? Math.max(0, spinAnimationDurationMs - MULTI_REVEAL_OFFSET_MS)
+      : spinAnimationDurationMs;
   const phoneShellStyle = {
     '--spin-duration': `${spinAnimationDurationMs}ms`,
     ...(settings.homeBackgroundUrl
@@ -284,9 +289,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       const targetRotation = (360 - targetCenter) % 360;
       const next = Math.ceil(rotation / 360) * 360 + 1440 + targetRotation;
       setRotation(next);
-      window.setTimeout(() => {
-        stopSound('wheelSpinning');
-        setSpinning(false);
+      const revealResult = () => {
         setResult(res);
         const winningDraws = res.draws
           .filter((draw) => draw.winningCashAmount > 0)
@@ -323,6 +326,11 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           points: res.points,
           lifetimeDrawCount: me.lifetimeDrawCount + (res.isTest ? 0 : res.tierDraws),
         });
+      };
+      window.setTimeout(revealResult, revealDelayMs);
+      window.setTimeout(() => {
+        stopSound('wheelSpinning');
+        setSpinning(false);
       }, spinAnimationDurationMs);
     } catch (e) {
       stopSound('wheelSpinning');
