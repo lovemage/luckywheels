@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Gift, LayoutList, Sparkles } from 'lucide-react';
+import { Gift, LayoutList } from 'lucide-react';
 import { ApiError, setUnauthorizedHandler } from './api/client.js';
 import { fetchMe } from './api/me.js';
 import {
@@ -474,7 +474,16 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
                 disabled={spinning || points < selectedTier.points}
               >
                 <Gift size={24} />
-                <span>{spinning ? '抽獎中' : selectedTier.draws === 1 ? '抽獎' : `${selectedTier.draws} 連抽`}</span>
+                <span className="primary-cta-label">
+                  {spinning ? (
+                    '抽獎中'
+                  ) : (
+                    <>
+                      <span>{selectedTier.draws === 1 ? '抽獎' : `${selectedTier.draws} 連抽`}</span>
+                      <span className="primary-cta-cost">(消耗{selectedTier.points}積分)</span>
+                    </>
+                  )}
+                </span>
               </button>
               <button
                 className="primary-cta primary-cta--cycle"
@@ -482,7 +491,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
                 disabled={spinning || availableDraws <= 1}
                 aria-label="切換連抽次數"
               >
-                <Sparkles size={22} />
+                <DrawTierIcon />
               </button>
             </div>
             {error && (
@@ -629,6 +638,15 @@ function CopyIcon() {
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
       <rect x="9" y="9" width="13" height="13" rx="2" />
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
+function DrawTierIcon() {
+  return (
+    <svg viewBox="0 0 20 20" width="24" height="24" fill="#000000" aria-hidden="true" focusable="false">
+      <path d="M10.75 10.818v2.614A3.1 3.1 0 0 0 11.888 13c.482-.315.612-.648.612-.875s-.13-.56-.612-.875a3.1 3.1 0 0 0-1.138-.432M8.33 8.62q.08.083.184.164c.208.16.46.284.736.363V6.603a2.5 2.5 0 0 0-.35.13q-.211.098-.386.233c-.377.292-.514.627-.514.909c0 .184.058.39.202.592q.056.077.128.152" />
+      <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0a8 8 0 0 1 16 0m-8-6a.75.75 0 0 1 .75.75v.316a3.8 3.8 0 0 1 1.653.713c.426.33.744.74.925 1.2a.75.75 0 0 1-1.395.55a1.35 1.35 0 0 0-.447-.563a2.2 2.2 0 0 0-.736-.363V9.3c.698.093 1.383.32 1.959.696c.787.514 1.29 1.27 1.29 2.13s-.504 1.616-1.29 2.13c-.576.377-1.261.603-1.96.696v.299a.75.75 0 1 1-1.5 0v-.3c-.697-.092-1.382-.318-1.958-.695c-.482-.315-.857-.717-1.078-1.188a.75.75 0 1 1 1.359-.636c.08.173.245.376.54.569c.313.205.706.353 1.138.432v-2.748a3.8 3.8 0 0 1-1.653-.713C6.9 9.433 6.5 8.681 6.5 7.875c0-.805.4-1.558 1.097-2.096a3.8 3.8 0 0 1 1.653-.713V4.75A.75.75 0 0 1 10 4" clipRule="evenodd" />
     </svg>
   );
 }

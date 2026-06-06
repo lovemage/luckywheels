@@ -545,10 +545,21 @@ h1 {
   height: 24px;
 }
 
-.primary-cta span {
+.primary-cta-label {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
   font-size: 19px;
   font-weight: 950;
   line-height: 1;
+}
+
+.primary-cta-cost {
+  font-size: 6px;
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .panel-screen {
