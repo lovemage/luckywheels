@@ -1,15 +1,18 @@
 import { NavLink, Outlet } from 'react-router';
 import { MemberSearch } from './MemberSearch.js';
 
-const sidebarLinks = [
-  { to: '/', label: '首頁', shortLabel: '首頁', end: true },
+type SidebarLink = {
+  to: string;
+  label: string;
+  shortLabel: string;
+  end?: boolean;
+};
+
+const sidebarLinks: SidebarLink[] = [
   { to: '/users', label: '會員列表', shortLabel: '會員' },
   { to: '/redemptions', label: '中獎紀錄', shortLabel: '中獎' },
   { to: '/prizes', label: '獎品設定', shortLabel: '獎品' },
-  { to: '/home', label: '首頁設定', shortLabel: '首頁' },
-  { to: '/settings', label: '遊戲規則', shortLabel: '規則' },
-  { to: '/profile', label: '個人設定', shortLabel: '個人' },
-  { to: '/logs', label: '歷史紀錄', shortLabel: '紀錄' },
+  { to: '/system', label: '系統設定', shortLabel: '設定' },
 ];
 
 export function AppShell() {

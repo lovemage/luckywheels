@@ -290,6 +290,52 @@ th {
   background: var(--admin-surface);
 }
 
+.system-settings {
+  display: grid;
+  gap: 16px;
+}
+
+.system-settings-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.system-settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 10px 24px rgba(20, 35, 28, 0.06);
+}
+
+.system-settings-tabs button {
+  flex: 1 1 140px;
+  min-height: 42px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--admin-muted);
+}
+
+.system-settings-tabs button.is-active {
+  border-color: rgba(59, 126, 89, 0.22);
+  background: #e7f2ec;
+  color: var(--admin-ink);
+  box-shadow: inset 0 0 0 1px rgba(59, 126, 89, 0.1);
+}
+
+.system-settings-panel {
+  min-width: 0;
+}
+
+.system-settings-panel > section {
+  margin: 0;
+}
+
 .member-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -532,7 +578,7 @@ th {
 
   .admin-nav ul {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 3px;
   }
 
