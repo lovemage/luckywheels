@@ -1484,15 +1484,14 @@ h1 {
 
 .win-multi-cell {
   min-height: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
-  text-align: left;
-  border-radius: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 10px 6px 12px;
+  text-align: center;
+  border-radius: 14px;
+  border: 1px solid rgba(244, 203, 58, 0.26);
+  background: linear-gradient(180deg, rgba(244, 203, 58, 0.24) 0%, rgba(244, 203, 58, 0.1) 100%);
 }
 
 .win-multi-cell.is-not-winning {
@@ -1505,16 +1504,18 @@ h1 {
   font-size: 12px;
   line-height: 1.1;
   white-space: nowrap;
+  width: 100%;
 }
 
 .win-multi-name {
   color: #4b175f;
-  font-size: 12px;
-  line-height: 1.1;
+  font-size: 11px;
+  line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  width: 100%;
 }
 
 .win-multi-cell.is-not-winning .win-multi-name,
@@ -1523,12 +1524,12 @@ h1 {
 }
 
 .win-multi-icon {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 24px;
   flex: 0 0 auto;
 }
 
