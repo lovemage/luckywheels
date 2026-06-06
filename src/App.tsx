@@ -480,7 +480,9 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
                   ) : (
                     <>
                       <span>{selectedTier.draws === 1 ? '抽獎' : `${selectedTier.draws} 連抽`}</span>
-                      <span className="primary-cta-cost">(消耗{selectedTier.points}積分)</span>
+                      <span className="primary-cta-cost">
+                        (消耗<span className="primary-cta-cost-value">{selectedTier.points}</span>積分)
+                      </span>
                     </>
                   )}
                 </span>

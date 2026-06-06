@@ -562,6 +562,10 @@ h1 {
   white-space: nowrap;
 }
 
+.primary-cta-cost-value {
+  font-size: 10px;
+}
+
 .panel-screen {
   min-height: 500px;
   padding: 30px 24px 120px;
@@ -716,7 +720,7 @@ h1 {
   position: absolute;
   left: 18px;
   right: 18px;
-  bottom: 18px;
+  bottom: 20px;
   height: 79px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1794,7 +1798,7 @@ h1 {
     position: static;
     transform: none;
     flex: 0 0 auto;
-    margin: 0 14px;
+    margin: 0 14px 20px;
     border-radius: 20px;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
