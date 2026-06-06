@@ -16,6 +16,7 @@ import { Profile } from './routes/Profile.js';
 import { Logs } from './routes/Logs.js';
 import { Prizes } from './routes/Prizes.js';
 import { Settings } from './routes/Settings.js';
+import { HomeSettings } from './routes/HomeSettings.js';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
@@ -46,6 +47,7 @@ export function App() {
               <Route path="logs" element={<Logs />} />
               <Route path="prizes" element={<Prizes />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="home" element={<HomeSettings />} />
             </Route>
           </Route>
         </Routes>
