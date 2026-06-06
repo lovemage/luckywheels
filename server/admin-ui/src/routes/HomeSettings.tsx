@@ -4,7 +4,7 @@ import { fetchSettings, updateSettings } from '../api/settings.js';
 import { ImageUploadInput } from '../components/ImageUploadInput.js';
 
 function Hint({ children }: { children: ReactNode }) {
-  return <small style={{ display: 'block', marginTop: 4, color: '#6b7280', lineHeight: 1.5 }}>{children}</small>;
+  return <small>{children}</small>;
 }
 
 export function HomeSettings() {
@@ -35,13 +35,16 @@ export function HomeSettings() {
   if (isLoading || !data) return <p>載入中…</p>;
 
   return (
-    <section>
-      <h1>首頁設定</h1>
-      <p style={{ marginTop: 0, color: '#6b7280' }}>
-        更換會員前台（抽獎首頁）的 LOGO 與背景圖。儲存後會員前台重新載入即可看到。留空（移除）＝使用系統內建預設圖。
-      </p>
+    <section className="member-detail-page">
+      <header className="member-detail-hero">
+        <div>
+          <p className="admin-eyebrow">Home</p>
+          <h1>首頁設定</h1>
+          <p>更換會員前台（抽獎首頁）的 LOGO 與背景圖。留空（移除）＝使用系統內建預設圖。</p>
+        </div>
+      </header>
 
-      <fieldset style={{ marginBottom: 16 }}>
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
         <legend>LOGO</legend>
         <ImageUploadInput value={logoUrl} onChange={setLogoUrl} />
         <Hint>
@@ -49,7 +52,7 @@ export function HomeSettings() {
         </Hint>
       </fieldset>
 
-      <fieldset style={{ marginBottom: 16 }}>
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
         <legend>背景圖</legend>
         <ImageUploadInput value={bgUrl} onChange={setBgUrl} />
         <Hint>
@@ -57,11 +60,13 @@ export function HomeSettings() {
         </Hint>
       </fieldset>
 
-      {error && <p style={{ color: '#c00' }}>{error}</p>}
-      {savedAt && <p style={{ color: '#0a0' }}>已儲存 ({new Date(savedAt).toLocaleTimeString()})</p>}
-      <button onClick={() => mut.mutate()} disabled={mut.isPending}>
-        {mut.isPending ? '儲存中…' : '儲存'}
-      </button>
+      {error && <p className="member-detail-error">{error}</p>}
+      {savedAt && <p className="admin-success-text">已儲存 ({new Date(savedAt).toLocaleTimeString()})</p>}
+      <div className="member-detail-actions">
+        <button onClick={() => mut.mutate()} disabled={mut.isPending}>
+          {mut.isPending ? '儲存中…' : '儲存'}
+        </button>
+      </div>
     </section>
   );
 }

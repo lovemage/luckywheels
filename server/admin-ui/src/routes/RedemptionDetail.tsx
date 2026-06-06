@@ -60,23 +60,16 @@ export function RedemptionDetail() {
   if (isLoading || !data) return <p>載入中…</p>;
   const copy = action ? ACTION_COPY[action] : null;
   return (
-    <section>
-      <h1><CodeChip code={data.code} /> <StatusBadge status={data.status} /></h1>
-      <dl>
-        <dt>會員</dt>
-        <dd><Link to={`/users/${data.user.id}`}>{data.user.nickname ?? data.user.displayName}</Link></dd>
-        <dt>類型</dt><dd>{data.tier === 'multi' ? '10 連抽' : '單抽'}</dd>
-        <dt>中獎總額</dt><dd>{data.totalWinAmount}</dd>
-        <dt>建立時間</dt><dd>{new Date(data.createdAt).toLocaleString()}</dd>
-        {data.statusChangedAt && (
-          <>
-            <dt>狀態變更時間</dt>
-            <dd>{new Date(data.statusChangedAt).toLocaleString()}（{data.statusChangedByAdminUser?.email ?? '—'}）</dd>
-          </>
-        )}
-        {data.cancelReason && <><dt>作廢原因</dt><dd>{data.cancelReason}</dd></>}
-      </dl>
-      <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+    <section className="member-detail-page">
+      <header className="member-detail-hero">
+        <div>
+          <Link to="/redemptions" className="member-detail-back">中獎紀錄</Link>
+          <h1><CodeChip code={data.code} /></h1>
+          <p>{data.user.nickname ?? data.user.displayName}</p>
+        </div>
+        <StatusBadge status={data.status} />
+      </header>
+      <div className="member-detail-actions">
         {data.status === 'pending' && (
           <>
             <button onClick={() => setAction('claim')}>標記為已派送</button>
@@ -87,14 +80,55 @@ export function RedemptionDetail() {
           <button onClick={() => setAction('unclaim')}>取消派送</button>
         )}
       </div>
-      <h2>抽獎明細</h2>
-      <ol>
-        {data.draws.map((d) => (
-          <li key={d.id}>
-            #{d.subIndex + 1} → {d.prize.name}　花費 {d.tierCost} 積分　中獎 {d.winningCashAmount}　{new Date(d.createdAt).toLocaleString()}
-          </li>
-        ))}
-      </ol>
+      <div className="member-detail-grid">
+        <section className="member-detail-card member-detail-card--wide">
+          <h2>兌換資訊</h2>
+          <dl className="member-detail-info-grid">
+            <div className="member-detail-info-item">
+              <dt>會員</dt>
+              <dd><span><Link to={`/users/${data.user.id}`}>{data.user.nickname ?? data.user.displayName}</Link></span></dd>
+            </div>
+            <div className="member-detail-info-item">
+              <dt>類型</dt>
+              <dd><span>{data.tier === 'multi' ? '10 連抽' : '單抽'}</span></dd>
+            </div>
+            <div className="member-detail-info-item">
+              <dt>中獎總額</dt>
+              <dd><span>{data.totalWinAmount}</span></dd>
+            </div>
+            <div className="member-detail-info-item">
+              <dt>建立時間</dt>
+              <dd><span>{new Date(data.createdAt).toLocaleString()}</span></dd>
+            </div>
+            {data.statusChangedAt && (
+              <div className="member-detail-info-item">
+                <dt>狀態變更時間</dt>
+                <dd><span>{new Date(data.statusChangedAt).toLocaleString()}（{data.statusChangedByAdminUser?.email ?? '—'}）</span></dd>
+              </div>
+            )}
+            {data.cancelReason && (
+              <div className="member-detail-info-item">
+                <dt>作廢原因</dt>
+                <dd><span>{data.cancelReason}</span></dd>
+              </div>
+            )}
+          </dl>
+        </section>
+        <section className="member-detail-card member-detail-card--wide">
+          <h2>抽獎明細</h2>
+          <ol className="admin-detail-list">
+            {data.draws.map((d) => (
+              <li key={d.id}>
+                <strong>#{d.subIndex + 1}</strong>
+                <span>{d.prize.name}</span>
+                <span>花費 {d.tierCost} 積分</span>
+                <span>中獎 {d.winningCashAmount}</span>
+                <time>{new Date(d.createdAt).toLocaleString()}</time>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
       {copy && action && (
         <DoubleConfirmModal
           open

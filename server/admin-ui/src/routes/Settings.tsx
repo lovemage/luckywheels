@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchSettings, updateSettings, type SettingsUpdate } from '../api/settings.js';
 
 function Hint({ children }: { children: ReactNode }) {
-  return <small style={{ display: 'block', marginTop: 4, color: '#6b7280', lineHeight: 1.5 }}>{children}</small>;
+  return <small>{children}</small>;
 }
 
 export function Settings() {
@@ -40,16 +40,22 @@ export function Settings() {
   const thresholds = form.pointThresholds ?? [];
 
   return (
-    <section>
-      <h1>遊戲規則</h1>
+    <section className="member-detail-page">
+      <header className="member-detail-hero">
+        <div>
+          <p className="admin-eyebrow">Rules</p>
+          <h1>遊戲規則</h1>
+          <p>管理抽獎積分、動畫、前台規則與成本控制設定。</p>
+        </div>
+      </header>
 
-      <fieldset style={{ marginBottom: 16 }}>
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
         <legend>積分門檻（單抽 → 連抽）</legend>
-        <p style={{ marginTop: 0, color: '#6b7280' }}>
+        <p className="admin-muted-text">
           設定會員消耗多少積分可抽幾次。前台會依會員目前積分，自動顯示可用的單抽或連抽方案。
         </p>
         {thresholds.map((t, i) => (
-          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
+          <div key={i} className="admin-inline-fields">
             <label>
               消耗積分{' '}
               <input
@@ -91,7 +97,7 @@ export function Settings() {
         </button>
       </fieldset>
 
-      <fieldset style={{ marginBottom: 16 }}>
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
         <legend>動畫設定</legend>
         <label>
           轉盤旋轉時間（spinDurationMs，毫秒 ms）{' '}
@@ -106,9 +112,9 @@ export function Settings() {
         </label>
       </fieldset>
 
-      <fieldset style={{ marginBottom: 16 }}>
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
         <legend>前台活動規則內容</legend>
-        <p style={{ marginTop: 0, color: '#6b7280' }}>
+        <p className="admin-muted-text">
           這段文字會顯示在會員前台「活動規則 / 使用須知」頁面。每一行會在前台顯示成一段規則。
         </p>
         <label>
@@ -123,12 +129,12 @@ export function Settings() {
         </label>
       </fieldset>
 
-      <fieldset style={{ marginBottom: 16 }}>
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
         <legend>成本控制門檻</legend>
-        <p style={{ marginTop: 0, color: '#6b7280' }}>
+        <p className="admin-muted-text">
           成本控制啟用後，系統會用全站累計抽獎次數判斷每一抽是否進入權重計算。只有命中指定倍數的抽獎才會依權重抽獎；其他抽獎一定派目前最低中獎金額獎項。連抽會逐筆子抽套用此規則。
         </p>
-        <p style={{ marginTop: 0, color: '#374151', fontWeight: 700 }}>
+        <p className="admin-strong-text">
           目前最低金額成本控制獎：
           {data.lowestCostPrize
             ? `${data.lowestCostPrize.rankLabel} ${data.lowestCostPrize.name}，中獎金額 ${data.lowestCostPrize.cashAmount}`
@@ -162,9 +168,9 @@ export function Settings() {
         </label>
       </fieldset>
 
-      <fieldset style={{ marginBottom: 16 }}>
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
         <legend>系統累計（唯讀）</legend>
-        <p style={{ marginTop: 0, color: '#6b7280' }}>以下資料由系統自動累計，供成本控管判斷與營運檢查使用，不能在此手動修改。</p>
+        <p className="admin-muted-text">以下資料由系統自動累計，供成本控管判斷與營運檢查使用，不能在此手動修改。</p>
         <p>累計抽獎次數：{data.totals.drawCount}</p>
         <p>累計派彩金額：{data.totals.payoutAmount}</p>
         <p>累計消耗積分：{data.totals.pointsBurned}</p>
@@ -176,11 +182,13 @@ export function Settings() {
         </p>
       </fieldset>
 
-      {error && <p style={{ color: '#c00' }}>{error}</p>}
-      {savedAt && <p style={{ color: '#0a0' }}>已儲存 ({new Date(savedAt).toLocaleTimeString()})</p>}
-      <button onClick={() => mut.mutate(form)} disabled={mut.isPending}>
-        {mut.isPending ? '儲存中…' : '儲存'}
-      </button>
+      {error && <p className="member-detail-error">{error}</p>}
+      {savedAt && <p className="admin-success-text">已儲存 ({new Date(savedAt).toLocaleTimeString()})</p>}
+      <div className="member-detail-actions">
+        <button onClick={() => mut.mutate(form)} disabled={mut.isPending}>
+          {mut.isPending ? '儲存中…' : '儲存'}
+        </button>
+      </div>
     </section>
   );
 }

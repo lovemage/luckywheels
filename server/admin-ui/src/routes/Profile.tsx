@@ -99,75 +99,82 @@ export function Profile() {
   }
 
   return (
-    <section style={{ maxWidth: 480 }}>
-      <h1>個人設定</h1>
-      <h2>變更帳號</h2>
-      <form onSubmit={onAccountSubmit} style={{ marginBottom: 28 }}>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>目前帳號</label>
-          <input
-            type="text"
-            value={account}
-            onChange={(e) => setAccount(e.target.value)}
-            required
-            minLength={7}
-            pattern="(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]+"
-            style={{ width: '100%', padding: 6 }}
-          />
-          <small style={{ color: '#6b7280' }}>需超過 6 個字元，且必須包含英文與數字。</small>
+    <section className="member-detail-page">
+      <header className="member-detail-hero">
+        <div>
+          <p className="admin-eyebrow">Profile</p>
+          <h1>個人設定</h1>
+          <p>更新管理員帳號與登入密碼。</p>
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>目前密碼</label>
-          <input
-            type="password"
-            value={accountPassword}
-            onChange={(e) => setAccountPassword(e.target.value)}
-            required
-            style={{ width: '100%', padding: 6 }}
-          />
-        </div>
-        <button type="submit" disabled={accountMut.isPending || me.isLoading}>
-          {accountMut.isPending ? '更新中…' : '更新帳號'}
-        </button>
-      </form>
-      <h2>變更密碼</h2>
-      <form onSubmit={onSubmit}>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>目前密碼</label>
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-            style={{ width: '100%', padding: 6 }}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>新密碼（至少 12 個字元）</label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            minLength={12}
-            style={{ width: '100%', padding: 6 }}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>再次輸入新密碼</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            minLength={12}
-            style={{ width: '100%', padding: 6 }}
-          />
-        </div>
-        <button type="submit" disabled={passwordMut.isPending}>{passwordMut.isPending ? '更新中…' : '更新密碼'}</button>
-      </form>
-      {okMsg && <p style={{ color: '#15803d', marginTop: 12 }}>{okMsg}</p>}
-      {errMsg && <p style={{ color: '#b91c1c', marginTop: 12 }}>{errMsg}</p>}
+      </header>
+      <div className="member-detail-grid">
+        <section className="member-detail-card">
+          <h2>變更帳號</h2>
+          <form onSubmit={onAccountSubmit} className="admin-form-grid">
+            <label>
+              <span>目前帳號</span>
+              <input
+                type="text"
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                required
+                minLength={7}
+                pattern="(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]+"
+              />
+              <small>需超過 6 個字元，且必須包含英文與數字。</small>
+            </label>
+            <label>
+              <span>目前密碼</span>
+              <input
+                type="password"
+                value={accountPassword}
+                onChange={(e) => setAccountPassword(e.target.value)}
+                required
+              />
+            </label>
+            <button type="submit" disabled={accountMut.isPending || me.isLoading}>
+              {accountMut.isPending ? '更新中…' : '更新帳號'}
+            </button>
+          </form>
+        </section>
+        <section className="member-detail-card">
+          <h2>變更密碼</h2>
+          <form onSubmit={onSubmit} className="admin-form-grid">
+            <label>
+              <span>目前密碼</span>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              <span>新密碼（至少 12 個字元）</span>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={12}
+              />
+            </label>
+            <label>
+              <span>再次輸入新密碼</span>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={12}
+              />
+            </label>
+            <button type="submit" disabled={passwordMut.isPending}>{passwordMut.isPending ? '更新中…' : '更新密碼'}</button>
+          </form>
+        </section>
+      </div>
+      {okMsg && <p className="admin-success-text">{okMsg}</p>}
+      {errMsg && <p className="member-detail-error">{errMsg}</p>}
     </section>
   );
 }

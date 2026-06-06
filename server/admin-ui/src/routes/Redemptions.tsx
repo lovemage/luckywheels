@@ -61,14 +61,20 @@ export function Redemptions() {
   const copy = quickAction ? actionCopy(quickAction) : null;
 
   return (
-    <section>
-      <h1>抽獎兌換碼</h1>
-      <div style={{ marginBottom: 16 }}>
+    <section className="member-detail-page">
+      <header className="member-detail-hero">
+        <div>
+          <p className="admin-eyebrow">Redemptions</p>
+          <h1>抽獎兌換碼</h1>
+          <p>查詢兌換碼、調整派送狀態與檢視中獎紀錄。</p>
+        </div>
+      </header>
+      <div className="member-detail-actions admin-toolbar">
         {(['pending', 'delivered', 'cancelled', 'all'] as const).map((s) => (
           <button key={s} disabled={status === s} onClick={() => setStatus(s)}>{STATUS_LABELS[s]}</button>
         ))}
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 16, minWidth: 240 }}>
-          <span style={{ color: '#6b7280', display: 'inline-flex' }}>
+        <label className="admin-search-field">
+          <span>
             <SearchIcon />
           </span>
           <input
@@ -76,40 +82,41 @@ export function Redemptions() {
             placeholder="輸入兌換碼（可帶 LW- 前綴）"
             value={code}
             onChange={(e) => setCode(e.target.value.trim().toUpperCase())}
-            style={{ minWidth: 200 }}
           />
         </label>
       </div>
       {isLoading && <p>載入中…</p>}
       {data && (
-        <Table<RedemptionRow>
-          rows={data.items}
-          rowKey={(r) => r.id}
-          columns={[
-            { header: '兌換碼', cell: (r) => <Link to={`/redemptions/${r.id}`}><CodeChip code={r.code} /></Link> },
-            { header: '會員', cell: (r) => <Link to={`/users/${r.user.id}`}>{r.user.nickname ?? r.user.displayName}</Link> },
-            { header: '類型', cell: (r) => r.tier === 'multi' ? '10 連抽' : '單抽' },
-            {
-              header: '狀態',
-              cell: (r) => {
-                const action = nextStatusAction(r);
-                if (!action) return <StatusBadge status={r.status} />;
-                return (
-                  <button
-                    type="button"
-                    onClick={() => setQuickAction(action)}
-                    style={{ border: 0, padding: 0, background: 'transparent', cursor: 'pointer' }}
-                    title="點擊調整狀態"
-                  >
-                    <StatusBadge status={r.status} />
-                  </button>
-                );
+        <section className="member-detail-card member-detail-card--wide admin-table-card">
+          <Table<RedemptionRow>
+            rows={data.items}
+            rowKey={(r) => r.id}
+            columns={[
+              { header: '兌換碼', cell: (r) => <Link to={`/redemptions/${r.id}`}><CodeChip code={r.code} /></Link> },
+              { header: '會員', cell: (r) => <Link to={`/users/${r.user.id}`}>{r.user.nickname ?? r.user.displayName}</Link> },
+              { header: '類型', cell: (r) => r.tier === 'multi' ? '10 連抽' : '單抽' },
+              {
+                header: '狀態',
+                cell: (r) => {
+                  const action = nextStatusAction(r);
+                  if (!action) return <StatusBadge status={r.status} />;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setQuickAction(action)}
+                      className="status-badge-button"
+                      title="點擊調整狀態"
+                    >
+                      <StatusBadge status={r.status} />
+                    </button>
+                  );
+                },
               },
-            },
-            { header: '中獎金額', cell: (r) => r.totalWinAmount },
-            { header: '建立時間', cell: (r) => new Date(r.createdAt).toLocaleString() },
-          ]}
-        />
+              { header: '中獎金額', cell: (r) => r.totalWinAmount },
+              { header: '建立時間', cell: (r) => new Date(r.createdAt).toLocaleString() },
+            ]}
+          />
+        </section>
       )}
       {quickAction && copy && (
         <ConfirmModal

@@ -27,11 +27,12 @@ export function SystemSettings() {
   };
 
   return (
-    <section className="system-settings">
-      <header className="system-settings-header">
+    <section className="member-detail-page system-settings">
+      <header className="member-detail-hero">
         <div>
           <p className="admin-eyebrow">System</p>
           <h1>系統設定</h1>
+          <p>集中管理歷史紀錄、個人設定、遊戲規則與首頁設定。</p>
         </div>
       </header>
       <div className="system-settings-tabs" role="tablist" aria-label="系統設定分頁">

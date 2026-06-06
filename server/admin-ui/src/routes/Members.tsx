@@ -21,9 +21,15 @@ export function Members() {
   });
 
   return (
-    <section>
-      <h1>會員列表</h1>
-      <div style={{ marginBottom: 16 }}>
+    <section className="member-detail-page">
+      <header className="member-detail-hero">
+        <div>
+          <p className="admin-eyebrow">Members</p>
+          <h1>會員列表</h1>
+          <p>管理會員狀態、審核申請與快速搜尋會員資料。</p>
+        </div>
+      </header>
+      <div className="member-detail-actions admin-toolbar">
         <button onClick={() => setTab('verified')} disabled={tab === 'verified'}>正式會員</button>
         <button onClick={() => setTab('pending')} disabled={tab === 'pending'}>審核中</button>
         <button onClick={() => setTab('test')} disabled={tab === 'test'}>測試會員</button>
@@ -31,34 +37,36 @@ export function Members() {
           placeholder="搜尋暱稱 / LINE 名 / lineUserId / 娛樂城編號 / Redemption code"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          style={{ marginLeft: 16, minWidth: 320 }}
+          className="admin-toolbar-search"
         />
       </div>
       {isLoading && <p>載入中…</p>}
       {data && (
-        <Table<AdminUserRow>
-          rows={data.items}
-          rowKey={(u) => u.id}
-          columns={[
-            { header: '暱稱', cell: (u) => <Link to={`/users/${u.id}`}>{u.nickname ?? '(未填)'}</Link> },
-            { header: 'LINE 名', cell: (u) => u.displayName },
-            { header: '娛樂城編號', cell: (u) => u.entertainmentMemberCode ?? '—' },
-            { header: '帳號類型', cell: (u) => <AccountTypeBadge type={u.accountType} /> },
-            { header: '積分', cell: (u) => u.points },
-            { header: '累計抽獎', cell: (u) => u.lifetimeDrawCount },
-            {
-              header: '操作',
-              cell: (u) =>
-                u.accountType === 'pending' ? (
-                  <button onClick={() => approve.mutate(u.id)} disabled={approve.isPending}>
-                    允許會員
-                  </button>
-                ) : (
-                  '—'
-                ),
-            },
-          ]}
-        />
+        <section className="member-detail-card member-detail-card--wide admin-table-card">
+          <Table<AdminUserRow>
+            rows={data.items}
+            rowKey={(u) => u.id}
+            columns={[
+              { header: '暱稱', cell: (u) => <Link to={`/users/${u.id}`}>{u.nickname ?? '(未填)'}</Link> },
+              { header: 'LINE 名', cell: (u) => u.displayName },
+              { header: '娛樂城編號', cell: (u) => u.entertainmentMemberCode ?? '—' },
+              { header: '帳號類型', cell: (u) => <AccountTypeBadge type={u.accountType} /> },
+              { header: '積分', cell: (u) => u.points },
+              { header: '累計抽獎', cell: (u) => u.lifetimeDrawCount },
+              {
+                header: '操作',
+                cell: (u) =>
+                  u.accountType === 'pending' ? (
+                    <button onClick={() => approve.mutate(u.id)} disabled={approve.isPending}>
+                      允許會員
+                    </button>
+                  ) : (
+                    '—'
+                  ),
+              },
+            ]}
+          />
+        </section>
       )}
     </section>
   );

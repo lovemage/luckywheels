@@ -70,85 +70,68 @@ export function Prizes() {
   }
 
   return (
-    <section>
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>獎品設定</h1>
+    <section className="member-detail-page">
+      <header className="member-detail-hero">
+        <div>
+          <p className="admin-eyebrow">Prizes</p>
+          <h1>獎品設定</h1>
+          <p>
+            目前可中獎總權重：<strong>{activeTotalWeightText}</strong>
+            {' '}（只計算已啟用且庫存大於 0 的獎項）
+          </p>
+        </div>
       </header>
-      <p style={{ marginTop: -8, marginBottom: 16, color: '#6b7280' }}>
-        目前可中獎總權重：<strong style={{ color: '#111827' }}>{activeTotalWeightText}</strong>
-        {' '}（只計算已啟用且庫存大於 0 的獎項）
-      </p>
       {isLoading && <p>載入中…</p>}
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
-            <th style={{ width: 24 }}></th>
-            <th>排名</th>
-            <th>名稱</th>
-            <th>中獎金額</th>
-            <th>權重</th>
-            <th>庫存</th>
-            <th>顏色</th>
-            <th>狀態</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((p) => (
-            <tr
-              key={p.id}
-              draggable
-              onDragStart={() => setDragId(p.id)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => onDrop(p.id)}
-              onDragEnd={() => setDragId(null)}
-              style={{
-                cursor: 'grab',
-                background: dragId === p.id ? '#f0f0f0' : 'transparent',
-                borderBottom: '1px solid #eee',
-              }}
-            >
-              <td style={{ color: '#999', userSelect: 'none' }}>⋮⋮</td>
-              <td>{p.rankLabel}</td>
-              <td>{p.name}</td>
-              <td>{p.cashAmount}</td>
-              <td>{p.weight}</td>
-              <td>{p.stock}</td>
-              <td>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: 18,
-                    height: 18,
-                    background: p.segmentColor,
-                    borderRadius: 4,
-                    border: '1px solid #ccc',
-                  }}
-                />
-              </td>
-              <td>
-                {p.isConsolation && (
-                  <span
-                    style={{
-                      background: '#e0e7ff',
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                      fontSize: 12,
-                      marginRight: 4,
-                    }}
-                  >
-                    安慰獎
-                  </span>
-                )}
-                {p.enabled ? '啟用' : '停用'}
-              </td>
-              <td>
-                <button onClick={() => setEditing({ mode: 'edit', prize: p })}>編輯</button>
-              </td>
+      <section className="member-detail-card member-detail-card--wide admin-table-card">
+        <table className="admin-prize-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>排名</th>
+              <th>名稱</th>
+              <th>中獎金額</th>
+              <th>權重</th>
+              <th>庫存</th>
+              <th>顏色</th>
+              <th>狀態</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {items.map((p) => (
+              <tr
+                key={p.id}
+                draggable
+                onDragStart={() => setDragId(p.id)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => onDrop(p.id)}
+                onDragEnd={() => setDragId(null)}
+                className={dragId === p.id ? 'is-dragging' : ''}
+              >
+                <td className="admin-drag-handle">⋮⋮</td>
+                <td>{p.rankLabel}</td>
+                <td>{p.name}</td>
+                <td>{p.cashAmount}</td>
+                <td>{p.weight}</td>
+                <td>{p.stock}</td>
+                <td>
+                  <span
+                    className="admin-color-swatch"
+                    style={{ background: p.segmentColor }}
+                  />
+                </td>
+                <td>
+                  {p.isConsolation && <span className="admin-soft-badge">安慰獎</span>}
+                  {p.enabled ? '啟用' : '停用'}
+                </td>
+                <td>
+                  <button onClick={() => setEditing({ mode: 'edit', prize: p })}>編輯</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
       {editing && (
         <PrizeEditModal
           initial={editing.mode === 'edit' ? editing.prize : EMPTY_PRIZE}
