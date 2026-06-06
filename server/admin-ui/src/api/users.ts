@@ -46,6 +46,12 @@ export function fetchUser(id: string): Promise<AdminUserDetail> {
   return api(`/api/admin/users/${id}`);
 }
 
+export function deleteUser(id: string): Promise<{ ok: true }> {
+  return api(`/api/admin/users/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export function adjustPoints(id: string, body: { delta: number; reason?: string }): Promise<{ points: number }> {
   return api(`/api/admin/users/${id}/points`, {
     method: 'POST',

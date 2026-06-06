@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router';
+import { useState, type ReactNode } from 'react';
+import { useNavigate, useParams, Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchUser,
@@ -8,17 +8,36 @@ import {
   updateTestSettings,
   setBlacklist,
   setEntertainmentCode,
+  deleteUser,
   fetchDrawHistory,
   approveUser,
   type DrawHistoryItem,
 } from '../api/users.js';
 import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
+import { DoubleConfirmModal } from '../components/DoubleConfirmModal.js';
 import { Table } from '../components/Table.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 
+function formatDateTime(value: string | null | undefined) {
+  return value ? new Date(value).toLocaleString() : '—';
+}
+
+function InfoItem({ label, value, action }: { label: string; value: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="member-detail-info-item">
+      <dt>{label}</dt>
+      <dd>
+        <span>{value ?? '—'}</span>
+        {action}
+      </dd>
+    </div>
+  );
+}
+
 export function MemberDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'users', id],
     queryFn: () => fetchUser(id!),
@@ -28,6 +47,7 @@ export function MemberDetail() {
   const [pointsError, setPointsError] = useState<string | null>(null);
   const [blacklistModal, setBlacklistModal] = useState<null | { mode: 'set' | 'clear' }>(null);
   const [codeModal, setCodeModal] = useState<null | { next: string | null }>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [memberTab, setMemberTab] = useState<'overview' | 'history'>('overview');
   const qc = useQueryClient();
   const adjust = useMutation({
@@ -60,6 +80,13 @@ export function MemberDetail() {
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
+  const deleteMut = useMutation({
+    mutationFn: () => deleteUser(id!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      navigate('/users');
+    },
+  });
   const history = useQuery({
     queryKey: ['admin', 'users', id, 'history'],
     queryFn: () => fetchDrawHistory(id!),
@@ -67,21 +94,24 @@ export function MemberDetail() {
   });
   if (isLoading || !data) return <p>載入中…</p>;
   return (
-    <section>
-      <h1>
-        {data.nickname ?? '(未填暱稱)'}　<AccountTypeBadge type={data.accountType} />
+    <section className="member-detail-page">
+      <header className="member-detail-hero">
+        <div>
+          <Link to="/users" className="member-detail-back">會員列表</Link>
+          <h1>{data.nickname ?? '(未填暱稱)'}</h1>
+          <p>{data.displayName}</p>
+        </div>
+        <AccountTypeBadge type={data.accountType} />
+      </header>
+
+      <div className="member-detail-actions">
         {data.accountType === 'pending' && (
-          <button
-            style={{ marginLeft: 12 }}
-            onClick={() => approveMut.mutate()}
-            disabled={approveMut.isPending}
-          >
+          <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending}>
             {approveMut.isPending ? '處理中…' : '允許會員'}
           </button>
         )}
         {data.accountType !== 'blacklisted' && data.accountType !== 'pending' && (
           <button
-            style={{ marginLeft: 12 }}
             onClick={() => {
               const next = data.accountType === 'test' ? 'verified' : 'test';
               if (window.confirm(`切換為「${next === 'test' ? '測試' : '正式'}」會員？`)) {
@@ -91,20 +121,18 @@ export function MemberDetail() {
               }
             }}
           >
-            切換為{data.accountType === 'test' ? '正式' : '測試'}會員
+            測試會員
           </button>
         )}
         {data.accountType === 'blacklisted' ? (
-          <button style={{ marginLeft: 8 }} onClick={() => setBlacklistModal({ mode: 'clear' })}>
-            解除黑名單
-          </button>
+          <button onClick={() => setBlacklistModal({ mode: 'clear' })}>解除黑名單</button>
         ) : (
-          <button style={{ marginLeft: 8 }} onClick={() => setBlacklistModal({ mode: 'set' })}>
-            加入黑名單
-          </button>
+          <button onClick={() => setBlacklistModal({ mode: 'set' })}>黑名單</button>
         )}
-      </h1>
-      <nav style={{ marginBottom: 12 }}>
+        <button className="danger" onClick={() => setDeleteModalOpen(true)}>刪除</button>
+      </div>
+
+      <nav className="member-detail-tabs">
         <button disabled={memberTab === 'overview'} onClick={() => setMemberTab('overview')}>
           會員資訊
         </button>
@@ -113,54 +141,78 @@ export function MemberDetail() {
         </button>
       </nav>
       {memberTab === 'overview' && (
-        <>
-          <dl>
-            <dt>LINE 名</dt><dd>{data.displayName}</dd>
-            <dt>lineUserId</dt><dd>{data.lineUserId}</dd>
-            <dt>娛樂城會員編號</dt>
-            <dd>
-              {data.entertainmentMemberCode ?? '—'}
-              <button
-                style={{ marginLeft: 8 }}
-                onClick={() => {
-                  const v = window.prompt('新編號（清空＝解除綁定）', data.entertainmentMemberCode ?? '');
-                  if (v === null) return;
-                  setCodeModal({ next: v.trim() === '' ? null : v.trim() });
-                }}
-              >
-                變更
-              </button>
-            </dd>
-            <dt>積分</dt><dd>{data.points}</dd>
-            <dt>累計抽獎</dt><dd>{data.lifetimeDrawCount}</dd>
-          </dl>
-          <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input
-              type="number"
-              value={pointsDelta}
-              onChange={(e) => { setPointsDelta(e.target.value); setPointsError(null); }}
-              placeholder="輸入正數或負數"
-              style={{ width: 140 }}
-            />
-            <button
-              onClick={() => {
-                const n = Number(pointsDelta);
-                if (!Number.isInteger(n) || n === 0) {
-                  setPointsError('請輸入非零整數');
-                  return;
+        <div className="member-detail-grid">
+          <section className="member-detail-card member-detail-card--wide">
+            <h2>基本資料</h2>
+            <dl className="member-detail-info-grid">
+              <InfoItem label="LINE 名" value={data.displayName} />
+              <InfoItem label="lineUserId" value={data.lineUserId} />
+              <InfoItem
+                label="娛樂城會員編號"
+                value={data.entertainmentMemberCode ?? '—'}
+                action={
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      const v = window.prompt('新編號（清空＝解除綁定）', data.entertainmentMemberCode ?? '');
+                      if (v === null) return;
+                      setCodeModal({ next: v.trim() === '' ? null : v.trim() });
+                    }}
+                  >
+                    變更
+                  </button>
                 }
-                adjust.mutate(n);
-              }}
-              disabled={adjust.isPending || pointsDelta.trim() === ''}
-            >
-              {adjust.isPending ? '處理中…' : pointsDelta.trim() && Number(pointsDelta) < 0 ? '扣除積分' : '新增積分'}
-            </button>
-            {pointsError && <span style={{ color: '#c00', fontSize: 12 }}>{pointsError}</span>}
-          </div>
+              />
+              <InfoItem label="建立時間" value={formatDateTime(data.createdAt)} />
+              <InfoItem label="綁定時間" value={formatDateTime(data.entertainmentCodeBoundAt)} />
+              <InfoItem label="帳號狀態" value={<AccountTypeBadge type={data.accountType} />} />
+            </dl>
+          </section>
+
+          <section className="member-detail-card">
+            <h2>活動數據</h2>
+            <div className="member-detail-metrics">
+              <article>
+                <span>目前積分</span>
+                <strong>{data.points.toLocaleString()}</strong>
+              </article>
+              <article>
+                <span>累計抽獎</span>
+                <strong>{data.lifetimeDrawCount.toLocaleString()}</strong>
+              </article>
+            </div>
+          </section>
+
+          <section className="member-detail-card">
+            <h2>積分調整</h2>
+            <div className="member-detail-points-tool">
+              <input
+                type="number"
+                value={pointsDelta}
+                onChange={(e) => { setPointsDelta(e.target.value); setPointsError(null); }}
+                placeholder="輸入正數或負數"
+              />
+              <button
+                onClick={() => {
+                  const n = Number(pointsDelta);
+                  if (!Number.isInteger(n) || n === 0) {
+                    setPointsError('請輸入非零整數');
+                    return;
+                  }
+                  adjust.mutate(n);
+                }}
+                disabled={adjust.isPending || pointsDelta.trim() === ''}
+              >
+                {adjust.isPending ? '處理中…' : pointsDelta.trim() && Number(pointsDelta) < 0 ? '扣除積分' : '新增積分'}
+              </button>
+            </div>
+            {pointsError && <p className="member-detail-error">{pointsError}</p>}
+          </section>
+
           {data.accountType === 'test' && (
-            <section style={{ marginTop: 24, padding: 12, border: '1px solid #ddd' }}>
+            <section className="member-detail-card member-detail-card--wide">
               <h2>測試帳號設定</h2>
-              <label style={{ display: 'block', marginBottom: 8 }}>
+              <label className="member-detail-check">
                 <input
                   type="checkbox"
                   defaultChecked={data.testSkipCost}
@@ -172,7 +224,7 @@ export function MemberDetail() {
                 />
                 不扣積分（測試專用）
               </label>
-              <label style={{ display: 'block' }}>
+              <label className="member-detail-field">
                 強制中獎 Prize ID（空白＝關閉）
                 <input
                   type="text"
@@ -183,12 +235,11 @@ export function MemberDetail() {
                       qc.invalidateQueries({ queryKey: ['admin', 'users', id] }),
                     );
                   }}
-                  style={{ width: '100%', marginTop: 4 }}
                 />
               </label>
             </section>
           )}
-        </>
+        </div>
       )}
       {memberTab === 'history' && history.data && (
         <Table<DrawHistoryItem>
@@ -228,6 +279,16 @@ export function MemberDetail() {
         requireReason
         busy={codeMut.isPending}
         onConfirm={(reason) => codeMut.mutate({ code: codeModal!.next, reason: reason! })}
+      />
+      <DoubleConfirmModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="刪除會員"
+        description={`此操作會刪除「${data.nickname ?? data.displayName}」與其抽獎/兌換紀錄，無法復原。`}
+        confirmLabel="刪除"
+        expectedConfirmText="刪除會員"
+        busy={deleteMut.isPending}
+        onConfirm={() => deleteMut.mutate()}
       />
     </section>
   );

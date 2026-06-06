@@ -66,6 +66,37 @@ adminUsersRoutes.get('/api/admin/users/:id', requireAdmin, async (c) => {
   return c.json(user);
 });
 
+adminUsersRoutes.delete('/api/admin/users/:id', requireAdmin, async (c) => {
+  const userId = c.req.param('id');
+
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('USER_NOT_FOUND', 'no such user', 404);
+
+    const snapshot = {
+      id: user.id,
+      lineUserId: user.lineUserId,
+      displayName: user.displayName,
+      nickname: user.nickname,
+      entertainmentMemberCode: user.entertainmentMemberCode,
+      accountType: user.accountType,
+      points: user.points,
+    };
+
+    await tx.drawLog.deleteMany({ where: { userId } });
+    await tx.redemption.deleteMany({ where: { userId } });
+    await tx.user.delete({ where: { id: userId } });
+    await audit(c, tx, {
+      event: 'user.deleted',
+      targetType: 'user',
+      targetId: userId,
+      payloadBefore: snapshot,
+    });
+  });
+
+  return c.json({ ok: true });
+});
+
 const PointsAdjustBody = z.object({
   delta: z.number().int(),
   reason: z.string().max(500).optional(),
