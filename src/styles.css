@@ -1274,15 +1274,31 @@ h1 {
 }
 
 /* ===== Login splash ===== */
+.auth-screen,
 .login-splash {
   display: grid;
   place-items: center;
-  min-height: 100vh;
+  min-height: 100dvh;
   gap: 16px;
   padding: 24px;
   text-align: center;
-  background: radial-gradient(circle at 50% 30%, #3a1758, #18062a 70%);
+  background:
+    linear-gradient(180deg, rgba(22, 0, 32, 0.2), rgba(22, 0, 32, 0.42)),
+    var(--auth-bg, url('/assets/lucky-bg.png')) center / cover no-repeat;
   color: #fff5d6;
+}
+
+.auth-card {
+  display: grid;
+  justify-items: center;
+  width: min(100%, 360px);
+  gap: 16px;
+  padding: 24px 18px;
+  border: 1px solid rgba(255, 224, 118, 0.22);
+  border-radius: 18px;
+  background: rgba(35, 7, 56, 0.54);
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(12px);
 }
 
 .login-splash p {
@@ -1291,10 +1307,13 @@ h1 {
   opacity: 0.85;
 }
 
-.login-logo {
+.login-logo,
+.auth-logo {
   width: 320px;
-  max-width: 80vw;
+  max-width: min(80vw, 100%);
+  max-height: 150px;
   height: auto;
+  object-fit: contain;
   filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.55));
 }
 
@@ -1338,14 +1357,6 @@ h1 {
 
 /* ===== Onboarding ===== */
 .onboarding {
-  max-width: 360px;
-  margin: 0 auto;
-  padding: 32px 16px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  background: radial-gradient(circle at 50% 20%, #3a1758, #18062a 70%);
   color: #fff5d6;
 }
 
@@ -1362,16 +1373,16 @@ h1 {
 }
 
 .onboarding form {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  width: 100%;
   gap: 16px;
 }
 
 .onboarding label {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 6px;
   font-size: 14px;
+  text-align: left;
 }
 
 .onboarding input {
@@ -1413,8 +1424,8 @@ h1 {
 }
 
 .pending-approval dl {
-  width: min(100%, 360px);
-  margin: 20px auto 0;
+  width: 100%;
+  margin: 4px auto 0;
   display: grid;
   gap: 12px;
 }

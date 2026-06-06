@@ -109,6 +109,7 @@ function createAudio(src: string, loop = false) {
 export function App() {
   const session = useSession();
   const [legalTab, setLegalTab] = useState<LegalTab | null>(null);
+  const [publicSettings, setPublicSettings] = useState<PublicSettings | null>(null);
   const openLegal = (tab: LegalTab) => setLegalTab(tab);
 
   useEffect(() => {
@@ -123,15 +124,29 @@ export function App() {
     })();
   }, []);
 
+  useEffect(() => {
+    let alive = true;
+    fetchSettings()
+      .then((settings) => {
+        if (alive) setPublicSettings(settings);
+      })
+      .catch(() => {
+        if (alive) setPublicSettings(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   let body: React.ReactNode;
   if (session.phase === 'loading') {
     body = <main className="splash"><p>載入中…</p></main>;
   } else if (session.phase === 'anonymous') {
-    body = <Login onShowLegal={openLegal} />;
+    body = <Login settings={publicSettings} onShowLegal={openLegal} />;
   } else if (session.phase === 'onboarding') {
-    body = <Onboarding />;
+    body = <Onboarding settings={publicSettings} />;
   } else if (session.phase === 'pending') {
-    body = <PendingApproval me={session.me!} />;
+    body = <PendingApproval me={session.me!} settings={publicSettings} />;
   } else if (session.phase === 'blacklisted') {
     body = (
       <main className="splash">
