@@ -83,7 +83,7 @@ const SOUND_SOURCES = {
   wheelSpinning: '/assets/sfx/spin-sound.mp3',
   win: '/assets/sfx/floraphonic-coin-payout-6-213526.mp3',
 } as const;
-const MULTI_SPIN_DURATION_MS = 8800;
+const MULTI_SPIN_DURATION_MS = 6000;
 const MULTI_REVEAL_OFFSET_MS = 1000;
 function getRotationFromTransform(transform: string): number | null {
   if (!transform || transform === 'none') return null;
