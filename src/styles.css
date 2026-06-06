@@ -327,7 +327,7 @@ h1 {
   width: calc(var(--wheel-size) * 0.76);
   height: calc(var(--wheel-size) * 0.76);
   border-radius: 50%;
-  transition: transform var(--spin-duration, 4300ms) cubic-bezier(0.08, 0.86, 0.12, 1);
+  transition: transform var(--spin-duration, 4300ms) linear;
   transform-origin: center;
 }
 
@@ -357,7 +357,7 @@ h1 {
   color: #5b1678;
   text-align: center;
   transform-origin: center;
-  transition: transform var(--spin-duration, 4300ms) cubic-bezier(0.08, 0.86, 0.12, 1);
+  transition: transform var(--spin-duration, 4300ms) linear;
   pointer-events: none;
 }
 

@@ -85,6 +85,7 @@ const SOUND_SOURCES = {
 } as const;
 const MULTI_SPIN_DURATION_MS = 8800;
 const MULTI_REVEAL_OFFSET_MS = 1000;
+const MULTI_STOP_AFTER_REVEAL_MS = 300;
 
 type SoundKey = keyof typeof SOUND_SOURCES;
 
@@ -265,6 +266,10 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     selectedTier.draws > 1
       ? Math.max(0, spinAnimationDurationMs - MULTI_REVEAL_OFFSET_MS)
       : spinAnimationDurationMs;
+  const spinStopDelayMs =
+    selectedTier.draws > 1
+      ? revealDelayMs + MULTI_STOP_AFTER_REVEAL_MS
+      : spinAnimationDurationMs;
   const phoneShellStyle = {
     '--spin-duration': `${spinAnimationDurationMs}ms`,
     ...(settings.homeBackgroundUrl
@@ -280,7 +285,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     try {
       const res = await postDraw(selectedTier.draws);
       playSound('spinConfirm');
-      playSoundForDuration('wheelSpinning', spinAnimationDurationMs);
+      playSoundForDuration('wheelSpinning', spinStopDelayMs);
       const segmentSize = 360 / prizes!.length;
       const resultPrizeId = res.draws[0]!.prize.id;
       const targetPrizeIndex = prizes!.findIndex((prize) => prize.id === resultPrizeId);
@@ -331,7 +336,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       window.setTimeout(() => {
         stopSound('wheelSpinning');
         setSpinning(false);
-      }, spinAnimationDurationMs);
+      }, spinStopDelayMs);
     } catch (e) {
       stopSound('wheelSpinning');
       setSpinning(false);
