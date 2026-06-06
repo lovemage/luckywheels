@@ -15,14 +15,17 @@ describe('createAdminAccount', () => {
     expect(await verifyPassword('pw-1234567890', row!.passwordHash)).toBe(true);
   });
 
-  it('rejects passwords shorter than 8 chars', async () => {
-    await expect(createAdminAccount({ account: 'short123', password: 'abc' }))
-      .rejects.toThrow(/at least 8/);
+  it('accepts short passwords', async () => {
+    await createAdminAccount({ account: 'short123', password: 'abc' });
+    const row = await prisma.adminUser.findUnique({ where: { email: 'short123' } });
+    expect(row).not.toBeNull();
+    expect(await verifyPassword('abc', row!.passwordHash)).toBe(true);
   });
 
-  it('rejects invalid account format', async () => {
-    await expect(createAdminAccount({ account: 'bad@email', password: 'pw-1234567890' }))
-      .rejects.toThrow(/account must/);
+  it('accepts unrestricted account format', async () => {
+    await createAdminAccount({ account: 'bad@email', password: 'pw-1234567890' });
+    const row = await prisma.adminUser.findUnique({ where: { email: 'bad@email' } });
+    expect(row).not.toBeNull();
   });
 
   it('throws if account already exists', async () => {

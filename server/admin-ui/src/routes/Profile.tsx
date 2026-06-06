@@ -3,10 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { changeMyAccount, changeMyPassword, fetchAdminMe } from '../api/me.js';
 import { ApiError } from '../api/client.js';
 
-function isValidAccount(value: string) {
-  return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]+$/.test(value) && value.length > 6;
-}
-
 export function Profile() {
   const qc = useQueryClient();
   const me = useQuery({ queryKey: ['admin', 'me'], queryFn: fetchAdminMe });
@@ -35,7 +31,7 @@ export function Profile() {
       setOkMsg(null);
       if (e instanceof ApiError) {
         const map: Record<string, string> = {
-          ADMIN_ACCOUNT_INVALID: '帳號需超過 6 個字元，且必須包含英文與數字',
+          ADMIN_ACCOUNT_INVALID: '請輸入帳號',
           ADMIN_ACCOUNT_TAKEN: '此帳號已被使用',
           CURRENT_PASSWORD_WRONG: '目前密碼錯誤',
         };
@@ -60,8 +56,6 @@ export function Profile() {
       if (e instanceof ApiError) {
         const map: Record<string, string> = {
           CURRENT_PASSWORD_WRONG: '目前密碼錯誤',
-          NEW_PASSWORD_TOO_SHORT: '新密碼長度需至少 12 個字元',
-          NEW_PASSWORD_SAME_AS_OLD: '新密碼不可與目前密碼相同',
           PASSWORD_BODY_INVALID: '欄位格式錯誤',
         };
         setErrMsg(map[e.code] ?? `更新失敗（${e.code}）`);
@@ -79,10 +73,6 @@ export function Profile() {
       setErrMsg('兩次輸入的新密碼不一致');
       return;
     }
-    if (newPassword.length < 12) {
-      setErrMsg('新密碼長度需至少 12 個字元');
-      return;
-    }
     passwordMut.mutate({ currentPassword, newPassword });
   }
 
@@ -91,8 +81,8 @@ export function Profile() {
     setOkMsg(null);
     setErrMsg(null);
     const nextAccount = account.trim();
-    if (!isValidAccount(nextAccount)) {
-      setErrMsg('帳號需超過 6 個字元，且必須包含英文與數字');
+    if (!nextAccount) {
+      setErrMsg('請輸入帳號');
       return;
     }
     accountMut.mutate({ currentPassword: accountPassword, account: nextAccount });
@@ -118,10 +108,8 @@ export function Profile() {
                 value={account}
                 onChange={(e) => setAccount(e.target.value)}
                 required
-                minLength={7}
-                pattern="(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]+"
               />
-              <small>需超過 6 個字元，且必須包含英文與數字。</small>
+              <small>帳號格式不限，可自由設定。</small>
             </label>
             <label>
               <span>目前密碼</span>
@@ -150,13 +138,12 @@ export function Profile() {
               />
             </label>
             <label>
-              <span>新密碼（至少 12 個字元）</span>
+              <span>新密碼</span>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                minLength={12}
               />
             </label>
             <label>
@@ -166,7 +153,6 @@ export function Profile() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={12}
               />
             </label>
             <button type="submit" disabled={passwordMut.isPending}>{passwordMut.isPending ? '更新中…' : '更新密碼'}</button>

@@ -5,7 +5,6 @@ import { AppError } from '../../errors.js';
 import { requireAdmin } from '../auth/middleware.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { audit } from '../audit/helper.js';
-import { AdminAccountSchema } from '../auth/account.js';
 
 export const adminMeRoutes = new Hono();
 
@@ -16,13 +15,13 @@ const PasswordBody = z.object({
 
 const AccountBody = z.object({
   currentPassword: z.string().min(1),
-  account: AdminAccountSchema,
+  account: z.string().min(1),
 });
 
 adminMeRoutes.patch('/api/admin/me/account', requireAdmin, async (c) => {
   let body: z.infer<typeof AccountBody>;
   try { body = AccountBody.parse(await c.req.json()); }
-  catch { throw new AppError('ADMIN_ACCOUNT_INVALID', 'account must be 7+ alphanumeric chars and include letters and numbers', 400); }
+  catch { throw new AppError('ADMIN_ACCOUNT_INVALID', 'account is required', 400); }
 
   const adminUser = c.get('admin');
   const adminId = adminUser.id;
@@ -60,9 +59,6 @@ adminMeRoutes.patch('/api/admin/me/password', requireAdmin, async (c) => {
   let body: z.infer<typeof PasswordBody>;
   try { body = PasswordBody.parse(await c.req.json()); }
   catch { throw new AppError('PASSWORD_BODY_INVALID', 'invalid body', 400); }
-
-  if (body.newPassword.length < 12) throw new AppError('NEW_PASSWORD_TOO_SHORT', 'min 12 chars', 400);
-  if (body.newPassword === body.currentPassword) throw new AppError('NEW_PASSWORD_SAME_AS_OLD', 'new password must differ', 400);
 
   const adminUser = c.get('admin');
   const adminId = adminUser.id;

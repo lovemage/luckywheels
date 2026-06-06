@@ -19,26 +19,26 @@ describe('PATCH /api/admin/me/password', () => {
     expect((await r.json()).error.code).toBe('CURRENT_PASSWORD_WRONG');
   });
 
-  it('rejects new password < 12 chars', async () => {
+  it('accepts short new passwords', async () => {
     const admin = await createAdminWithPassword('original-password-1');
     const r = await app.request('/api/admin/me/password', {
       method: 'PATCH',
       headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
       body: JSON.stringify({ currentPassword: 'original-password-1', newPassword: 'short' }),
     });
-    expect(r.status).toBe(400);
-    expect((await r.json()).error.code).toBe('NEW_PASSWORD_TOO_SHORT');
+    expect(r.status).toBe(200);
+    const refreshed = await prisma.adminUser.findUniqueOrThrow({ where: { id: admin.id } });
+    expect(await verifyPassword('short', refreshed.passwordHash)).toBe(true);
   });
 
-  it('rejects same-as-current', async () => {
+  it('accepts same-as-current passwords', async () => {
     const admin = await createAdminWithPassword('original-password-1');
     const r = await app.request('/api/admin/me/password', {
       method: 'PATCH',
       headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
       body: JSON.stringify({ currentPassword: 'original-password-1', newPassword: 'original-password-1' }),
     });
-    expect(r.status).toBe(400);
-    expect((await r.json()).error.code).toBe('NEW_PASSWORD_SAME_AS_OLD');
+    expect(r.status).toBe(200);
   });
 
   it('changes password, persists new hash, writes audit log (no password in payload!)', async () => {
@@ -63,15 +63,16 @@ describe('PATCH /api/admin/me/password', () => {
 describe('PATCH /api/admin/me/account', () => {
   beforeEach(resetDb);
 
-  it('rejects invalid account format', async () => {
+  it('accepts unrestricted account format', async () => {
     const admin = await createAdminWithPassword('original-password-1');
     const r = await app.request('/api/admin/me/account', {
       method: 'PATCH',
       headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
       body: JSON.stringify({ currentPassword: 'original-password-1', account: 'bad@email' }),
     });
-    expect(r.status).toBe(400);
-    expect((await r.json()).error.code).toBe('ADMIN_ACCOUNT_INVALID');
+    expect(r.status).toBe(200);
+    const refreshed = await prisma.adminUser.findUniqueOrThrow({ where: { id: admin.id } });
+    expect(refreshed.email).toBe('bad@email');
   });
 
   it('rejects wrong current password', async () => {

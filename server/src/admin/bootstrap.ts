@@ -1,19 +1,10 @@
 import { prisma } from '../db.js';
 import { hashPassword } from './auth/password.js';
-import { isValidAdminAccount } from './auth/account.js';
 
 export async function bootstrapAdminIfRequested(): Promise<void> {
   const account = process.env.ADMIN_BOOTSTRAP_ACCOUNT ?? process.env.ADMIN_BOOTSTRAP_EMAIL;
   const password = process.env.ADMIN_BOOTSTRAP_PASSWORD;
   if (!account || !password) return;
-  if (!isValidAdminAccount(account)) {
-    console.warn('[bootstrap] ADMIN_BOOTSTRAP_ACCOUNT must be 7+ alphanumeric chars and include letters and numbers, skipping');
-    return;
-  }
-  if (password.length < 6) {
-    console.warn('[bootstrap] ADMIN_BOOTSTRAP_PASSWORD too short (<6), skipping');
-    return;
-  }
   const existing = await prisma.adminUser.findFirst();
   if (existing) {
     console.log('[bootstrap] admin already exists, skipping bootstrap');
