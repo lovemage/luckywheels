@@ -197,6 +197,24 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     }, durationMs);
   }
 
+  function playWinSequence(times: number) {
+    if (times <= 0) return;
+    const intervalMs = 420;
+    let remaining = times;
+
+    const playOne = () => {
+      playSound('win');
+      remaining -= 1;
+      if (remaining > 0) {
+        soundTimersRef.current.win = window.setTimeout(playOne, intervalMs);
+      } else {
+        delete soundTimersRef.current.win;
+      }
+    };
+
+    playOne();
+  }
+
   useEffect(() => {
     soundsRef.current = {
       enter: createAudio(SOUND_SOURCES.enter),
@@ -324,6 +342,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
             prizeName: draw.prize.name,
             winningCashAmount: draw.winningCashAmount,
           }));
+        const winningCount = winningDraws.length;
         if (winningDraws.length > 0) {
           setWinHistory((current) => [
             {
@@ -343,8 +362,8 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
             ...current,
           ]);
         }
-        if (res.draws.some((draw) => draw.winningCashAmount > 0)) {
-          playSound('win');
+        if (winningCount > 0) {
+          playWinSequence(winningCount);
         }
         sessionStore.getState().setMe({
           ...me,
