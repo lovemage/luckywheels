@@ -9,7 +9,7 @@ import { audit } from '../audit/helper.js';
 export const adminUsersRoutes = new Hono();
 
 const ListQuery = z.object({
-  tab: z.enum(['verified', 'test']).default('verified'),
+  tab: z.enum(['verified', 'test', 'pending']).default('verified'),
   q: z.string().optional(),
   take: z.coerce.number().int().min(1).max(50).default(25),
   cursor: z.string().optional(),
@@ -20,9 +20,12 @@ adminUsersRoutes.get('/api/admin/users', requireAdmin, async (c) => {
   try { query = ListQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
   catch { throw new AppError('LIST_QUERY_INVALID', 'invalid query parameters', 400); }
 
-  const tabFilter = query.tab === 'test'
-    ? { accountType: 'test' as const }
-    : { accountType: { in: ['verified' as const, 'blacklisted' as const] } };
+  const tabFilter =
+    query.tab === 'test'
+      ? { accountType: 'test' as const }
+      : query.tab === 'pending'
+        ? { accountType: 'pending' as const }
+        : { accountType: { in: ['verified' as const, 'blacklisted' as const] } };
 
   const where = {
     ...tabFilter,
@@ -135,6 +138,31 @@ adminUsersRoutes.patch('/api/admin/users/:id/account-type', requireAdmin, async 
       targetId: userId,
       payloadBefore: { accountType: user.accountType },
       payloadAfter: { accountType: body.accountType },
+    });
+  });
+  return c.json({ ok: true });
+});
+
+adminUsersRoutes.patch('/api/admin/users/:id/approve', requireAdmin, async (c) => {
+  const userId = c.req.param('id');
+
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('USER_NOT_FOUND', 'no such user', 404);
+    if (user.accountType !== 'pending') return;
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        accountType: 'verified',
+        verifiedAt: new Date(),
+      },
+    });
+    await audit(c, tx, {
+      event: 'user.approved',
+      targetType: 'user',
+      targetId: userId,
+      payloadBefore: { accountType: user.accountType },
+      payloadAfter: { accountType: 'verified' },
     });
   });
   return c.json({ ok: true });

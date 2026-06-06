@@ -29,17 +29,23 @@ describe('POST /api/onboarding/profile', () => {
       body: JSON.stringify({ nickname: '小明', code: 'EM_654321' }),
     });
     expect(r.status).toBe(200);
-    expect(await r.json()).toMatchObject({ nickname: '小明', entertainmentMemberCode: 'EM_654321' });
+    expect(await r.json()).toMatchObject({
+      nickname: '小明',
+      entertainmentMemberCode: 'EM_654321',
+      accountType: 'pending',
+    });
 
     const me = await app.request('/api/me', { headers: await H(u.id) });
     const body = await me.json();
     expect(body.nickname).toBe('小明');
     expect(body.entertainmentMemberCode).toBe('EM_654321');
+    expect(body.accountType).toBe('pending');
 
     const fresh = await prisma.user.findUnique({ where: { id: u.id } });
     expect(fresh?.nickname).toBe('小明');
     expect(fresh?.entertainmentMemberCode).toBe('EM_654321');
     expect(fresh?.entertainmentCodeBoundAt).not.toBeNull();
+    expect(fresh?.accountType).toBe('pending');
   });
 
   it('400 NICKNAME_INVALID on bad nickname', async () => {
@@ -102,5 +108,6 @@ describe('POST /api/onboarding/profile', () => {
 
     const fresh = await prisma.user.findUnique({ where: { id: u.id } });
     expect(fresh?.nickname).toBe('新名');
+    expect(fresh?.accountType).toBe('verified');
   });
 });

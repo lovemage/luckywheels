@@ -61,3 +61,22 @@ describe('PATCH /api/admin/users/:id/account-type', () => {
     expect((await r.json()).error.code).toBe('ACCOUNT_TYPE_BLACKLIST_DISALLOWED');
   });
 });
+
+describe('PATCH /api/admin/users/:id/approve', () => {
+  beforeEach(resetDb);
+
+  it('approves a pending user into verified and writes audit log', async () => {
+    const admin = await createAdmin();
+    const user = await createUser({ accountType: 'pending' });
+    const r = await app.request(`/api/admin/users/${user.id}/approve`, {
+      method: 'PATCH',
+      headers: await adminHeaders(admin.id, admin.email),
+    });
+    expect(r.status).toBe(200);
+    const u = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(u!.accountType).toBe('verified');
+    const log = await prisma.adminActionLog.findFirstOrThrow({ where: { event: 'user.approved' } });
+    expect(log.payloadBefore).toMatchObject({ accountType: 'pending' });
+    expect(log.payloadAfter).toMatchObject({ accountType: 'verified' });
+  });
+});

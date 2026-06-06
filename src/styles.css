@@ -1412,6 +1412,35 @@ h1 {
   cursor: not-allowed;
 }
 
+.pending-approval dl {
+  width: min(100%, 360px);
+  margin: 20px auto 0;
+  display: grid;
+  gap: 12px;
+}
+
+.pending-approval dl div {
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 224, 118, 0.24);
+  border-radius: 14px;
+  background: rgba(35, 7, 56, 0.58);
+  text-align: left;
+}
+
+.pending-approval dt {
+  color: #d9bce8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pending-approval dd {
+  margin: 4px 0 0;
+  color: #fff2c4;
+  font-size: 20px;
+  font-weight: 950;
+  word-break: break-word;
+}
+
 /* ===== WinModal ===== */
 .win-modal-backdrop {
   position: fixed;

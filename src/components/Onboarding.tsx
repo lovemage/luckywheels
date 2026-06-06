@@ -22,7 +22,7 @@ export function Onboarding() {
       const map: Record<string, string> = {
         NICKNAME_INVALID: '暱稱需為 2-12 字',
         ENTERTAINMENT_CODE_INVALID: '會員編號需為 6-20 字（英數字 _ -）',
-        ENTERTAINMENT_CODE_TAKEN: '此會員編號已被綁定',
+        ENTERTAINMENT_CODE_TAKEN: '此編號已申請註冊',
         ENTERTAINMENT_CODE_REASON_REQUIRED: '系統錯誤，請聯絡客服',
       };
       setErr(map[ae.code] ?? ae.message);
@@ -34,7 +34,7 @@ export function Onboarding() {
   return (
     <main className="onboarding">
       <h1>完成註冊</h1>
-      <p>請填寫您的暱稱與娛樂城會員編號以開始抽獎</p>
+      <p>請填寫您的暱稱與娛樂城會員編號，送出後等待管理員開啟會員</p>
       <form onSubmit={submit}>
         <label>
           暱稱

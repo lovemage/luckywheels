@@ -40,6 +40,10 @@ drawRoutes.post('/api/draw', requireUser, async (c) => {
     throw new AppError('ONBOARDING_REQUIRED', 'must complete onboarding (nickname + entertainment code) before drawing', 403);
   }
 
+  if (user.accountType === 'pending') {
+    throw new AppError('ACCOUNT_PENDING_APPROVAL', 'member approval is pending', 403);
+  }
+
   // Body parse
   let body: { draws: number };
   try { body = BodySchema.parse(await c.req.json()); }

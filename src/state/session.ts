@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 
-export type Phase = 'loading' | 'anonymous' | 'onboarding' | 'ready' | 'blacklisted';
+export type Phase = 'loading' | 'anonymous' | 'onboarding' | 'pending' | 'ready' | 'blacklisted';
 
 export interface MeProfile {
   id: string;
@@ -9,7 +9,7 @@ export interface MeProfile {
   pictureUrl: string | null;
   vipLevel: number;
   points: number;
-  accountType: 'verified' | 'test' | 'blacklisted';
+  accountType: 'pending' | 'verified' | 'test' | 'blacklisted';
   nickname: string | null;
   entertainmentMemberCode: string | null;
   lifetimeDrawCount: number;
@@ -26,6 +26,7 @@ interface SessionState {
 function derivePhase(me: MeProfile): Phase {
   if (me.accountType === 'blacklisted') return 'blacklisted';
   if (!me.nickname || !me.entertainmentMemberCode) return 'onboarding';
+  if (me.accountType === 'pending') return 'pending';
   return 'ready';
 }
 

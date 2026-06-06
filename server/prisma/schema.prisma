@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum AccountType {
+  pending
   verified
   test
   blacklisted

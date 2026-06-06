@@ -17,6 +17,7 @@ describe('GET /api/admin/users', () => {
     await createUser({ nickname: 'A', accountType: 'verified' });
     await createUser({ nickname: 'B', accountType: 'test' });
     await createUser({ nickname: 'C', accountType: 'blacklisted' });
+    await createUser({ nickname: 'D', accountType: 'pending' });
     const r = await app.request('/api/admin/users', { headers: await adminHeaders(admin.id, admin.email) });
     const body = await r.json();
     const nicks = body.items.map((u: { nickname: string }) => u.nickname).sort();
@@ -28,6 +29,16 @@ describe('GET /api/admin/users', () => {
     await createUser({ nickname: 'A', accountType: 'verified' });
     await createUser({ nickname: 'B', accountType: 'test' });
     const r = await app.request('/api/admin/users?tab=test', { headers: await adminHeaders(admin.id, admin.email) });
+    const body = await r.json();
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0].nickname).toBe('B');
+  });
+
+  it('returns only pending users on tab=pending', async () => {
+    const admin = await createAdmin();
+    await createUser({ nickname: 'A', accountType: 'verified' });
+    await createUser({ nickname: 'B', accountType: 'pending' });
+    const r = await app.request('/api/admin/users?tab=pending', { headers: await adminHeaders(admin.id, admin.email) });
     const body = await r.json();
     expect(body.items).toHaveLength(1);
     expect(body.items[0].nickname).toBe('B');

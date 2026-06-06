@@ -16,6 +16,7 @@ import { sessionStore, type MeProfile } from './state/session.js';
 import { useSession } from './hooks/useMe.js';
 import { Login } from './components/Login.js';
 import { Onboarding } from './components/Onboarding.js';
+import { PendingApproval } from './components/PendingApproval.js';
 import { WinModal } from './components/WinModal.js';
 import { Legal, type LegalTab } from './components/Legal.js';
 
@@ -129,6 +130,8 @@ export function App() {
     body = <Login onShowLegal={openLegal} />;
   } else if (session.phase === 'onboarding') {
     body = <Onboarding />;
+  } else if (session.phase === 'pending') {
+    body = <PendingApproval me={session.me!} />;
   } else if (session.phase === 'blacklisted') {
     body = (
       <main className="splash">
@@ -385,6 +388,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       const messages: Record<string, string> = {
         INSUFFICIENT_POINTS: '積分不足，無法進行此次抽獎',
         ONBOARDING_REQUIRED: '請先完成註冊',
+        ACCOUNT_PENDING_APPROVAL: '會員審核中，請將待審核畫面截圖給管理員',
         USER_BLACKLISTED: '帳號已停用',
         TIER_INVALID: '抽獎類型不正確',
       };

@@ -7,7 +7,7 @@ export interface AdminUserRow {
   pictureUrl: string | null;
   lineUserId: string;
   entertainmentMemberCode: string | null;
-  accountType: 'verified' | 'test' | 'blacklisted';
+  accountType: 'pending' | 'verified' | 'test' | 'blacklisted';
   points: number;
   lifetimeDrawCount: number;
   blacklistedAt: string | null;
@@ -20,7 +20,7 @@ export interface UsersListResponse {
 }
 
 export interface UsersListQuery {
-  tab?: 'verified' | 'test';
+  tab?: 'verified' | 'test' | 'pending';
   q?: string;
   take?: number;
   cursor?: string;
@@ -59,6 +59,12 @@ export function setAccountType(id: string, accountType: 'verified' | 'test'): Pr
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ accountType }),
+  });
+}
+
+export function approveUser(id: string): Promise<{ ok: true }> {
+  return api(`/api/admin/users/${id}/approve`, {
+    method: 'PATCH',
   });
 }
 

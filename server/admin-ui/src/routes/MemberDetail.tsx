@@ -9,6 +9,7 @@ import {
   setBlacklist,
   setEntertainmentCode,
   fetchDrawHistory,
+  approveUser,
   type DrawHistoryItem,
 } from '../api/users.js';
 import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
@@ -52,6 +53,13 @@ export function MemberDetail() {
       setCodeModal(null);
     },
   });
+  const approveMut = useMutation({
+    mutationFn: () => approveUser(id!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users', id] });
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+  });
   const history = useQuery({
     queryKey: ['admin', 'users', id, 'history'],
     queryFn: () => fetchDrawHistory(id!),
@@ -62,7 +70,16 @@ export function MemberDetail() {
     <section>
       <h1>
         {data.nickname ?? '(未填暱稱)'}　<AccountTypeBadge type={data.accountType} />
-        {data.accountType !== 'blacklisted' && (
+        {data.accountType === 'pending' && (
+          <button
+            style={{ marginLeft: 12 }}
+            onClick={() => approveMut.mutate()}
+            disabled={approveMut.isPending}
+          >
+            {approveMut.isPending ? '處理中…' : '允許會員'}
+          </button>
+        )}
+        {data.accountType !== 'blacklisted' && data.accountType !== 'pending' && (
           <button
             style={{ marginLeft: 12 }}
             onClick={() => {
