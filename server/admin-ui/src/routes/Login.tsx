@@ -4,7 +4,7 @@ import { api, ApiError } from '../api/client.js';
 
 export function Login() {
   const nav = useNavigate();
-  const [email, setEmail] = useState('');
+  const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -12,7 +12,7 @@ export function Login() {
     e.preventDefault();
     setError(null);
     try {
-      await api('/api/admin/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      await api('/api/admin/auth/login', { method: 'POST', body: JSON.stringify({ account, password }) });
       nav('/');
     } catch (err) {
       const e = err as ApiError;
@@ -26,8 +26,8 @@ export function Login() {
       <h1>Lucky Wheels Admin</h1>
       <form onSubmit={onSubmit}>
         <label>
-          Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+          帳號
+          <input type="text" value={account} onChange={(e) => setAccount(e.target.value)} required
                  style={{ width: '100%', display: 'block', marginBottom: 12 }} />
         </label>
         <label>

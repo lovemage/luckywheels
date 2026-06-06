@@ -17,9 +17,10 @@ import {
 import { audit } from '../audit/helper.js';
 
 const LoginSchema = z.object({
-  email: z.string().email(),
+  account: z.string().min(1).optional(),
+  email: z.string().min(1).optional(),
   password: z.string().min(1),
-});
+}).refine((v) => v.account || v.email);
 
 export const adminAuthRoutes = new Hono();
 
@@ -32,9 +33,10 @@ adminAuthRoutes.post('/api/admin/auth/login', async (c) => {
 
   let body: z.infer<typeof LoginSchema>;
   try { body = LoginSchema.parse(await c.req.json()); }
-  catch { throw new AppError('LOGIN_INVALID', 'email + password required', 400); }
+  catch { throw new AppError('LOGIN_INVALID', 'account + password required', 400); }
 
-  const admin = await prisma.adminUser.findUnique({ where: { email: body.email } });
+  const account = body.account ?? body.email!;
+  const admin = await prisma.adminUser.findUnique({ where: { email: account } });
   const okPassword = admin ? await verifyPassword(body.password, admin.passwordHash) : false;
 
   if (!admin || !okPassword) {
@@ -43,9 +45,9 @@ adminAuthRoutes.post('/api/admin/auth/login', async (c) => {
       event: 'admin.login_failed',
       targetType: 'admin',
       targetId: admin?.id ?? null,
-      payloadAfter: { emailTried: body.email },
+      payloadAfter: { accountTried: account },
     });
-    throw new AppError('BAD_CREDENTIALS', 'invalid email or password', 401);
+    throw new AppError('BAD_CREDENTIALS', 'invalid account or password', 401);
   }
 
   const token = await signAdminSession({ adminUserId: admin.id, email: admin.email });
@@ -75,6 +77,7 @@ adminAuthRoutes.get('/api/admin/me', requireAdmin, (c) => {
   const a = c.get('admin');
   return c.json({
     id: a.id,
+    account: a.email,
     email: a.email,
     role: a.role,
     lastLoginAt: a.lastLoginAt,

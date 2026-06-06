@@ -8,21 +8,26 @@ describe('createAdminAccount', () => {
   beforeEach(resetDb);
 
   it('creates an admin row with hashed password', async () => {
-    await createAdminAccount({ email: 'first@example.com', password: 'pw-1234567890' });
-    const row = await prisma.adminUser.findUnique({ where: { email: 'first@example.com' } });
+    await createAdminAccount({ account: 'first123', password: 'pw-1234567890' });
+    const row = await prisma.adminUser.findUnique({ where: { email: 'first123' } });
     expect(row).not.toBeNull();
     expect(row?.passwordHash).not.toBe('pw-1234567890');
     expect(await verifyPassword('pw-1234567890', row!.passwordHash)).toBe(true);
   });
 
   it('rejects passwords shorter than 8 chars', async () => {
-    await expect(createAdminAccount({ email: 'short@example.com', password: 'abc' }))
+    await expect(createAdminAccount({ account: 'short123', password: 'abc' }))
       .rejects.toThrow(/at least 8/);
   });
 
-  it('throws if email already exists', async () => {
-    await createAdminAccount({ email: 'dup@example.com', password: 'pw-1234567890' });
-    await expect(createAdminAccount({ email: 'dup@example.com', password: 'pw-1234567890' }))
+  it('rejects invalid account format', async () => {
+    await expect(createAdminAccount({ account: 'bad@email', password: 'pw-1234567890' }))
+      .rejects.toThrow(/account must/);
+  });
+
+  it('throws if account already exists', async () => {
+    await createAdminAccount({ account: 'dupuser1', password: 'pw-1234567890' });
+    await expect(createAdminAccount({ account: 'dupuser1', password: 'pw-1234567890' }))
       .rejects.toThrow(/already exists/);
   });
 });

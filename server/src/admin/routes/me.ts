@@ -5,12 +5,55 @@ import { AppError } from '../../errors.js';
 import { requireAdmin } from '../auth/middleware.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { audit } from '../audit/helper.js';
+import { AdminAccountSchema } from '../auth/account.js';
 
 export const adminMeRoutes = new Hono();
 
 const PasswordBody = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(1),
+});
+
+const AccountBody = z.object({
+  currentPassword: z.string().min(1),
+  account: AdminAccountSchema,
+});
+
+adminMeRoutes.patch('/api/admin/me/account', requireAdmin, async (c) => {
+  let body: z.infer<typeof AccountBody>;
+  try { body = AccountBody.parse(await c.req.json()); }
+  catch { throw new AppError('ADMIN_ACCOUNT_INVALID', 'account must be 7+ alphanumeric chars and include letters and numbers', 400); }
+
+  const adminUser = c.get('admin');
+  const adminId = adminUser.id;
+  const me = await prisma.adminUser.findUniqueOrThrow({ where: { id: adminId } });
+  if (!await verifyPassword(body.currentPassword, me.passwordHash)) {
+    throw new AppError('CURRENT_PASSWORD_WRONG', 'current password is wrong', 401);
+  }
+  if (body.account === me.email) return c.json({ ok: true, account: me.email });
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.adminUser.update({
+        where: { id: adminId },
+        data: { email: body.account },
+      });
+      await audit(c, tx, {
+        event: 'admin.account_change',
+        targetType: 'admin_user',
+        targetId: adminId,
+        payloadBefore: { account: me.email },
+        payloadAfter: { account: body.account },
+      });
+    });
+  } catch (err) {
+    if ((err as { code?: string })?.code === 'P2002') {
+      throw new AppError('ADMIN_ACCOUNT_TAKEN', 'account already exists', 409);
+    }
+    throw err;
+  }
+
+  return c.json({ ok: true, account: body.account });
 });
 
 adminMeRoutes.patch('/api/admin/me/password', requireAdmin, async (c) => {

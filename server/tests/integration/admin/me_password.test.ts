@@ -59,3 +59,44 @@ describe('PATCH /api/admin/me/password', () => {
     expect(payload).not.toHaveProperty('passwordHash');
   });
 });
+
+describe('PATCH /api/admin/me/account', () => {
+  beforeEach(resetDb);
+
+  it('rejects invalid account format', async () => {
+    const admin = await createAdminWithPassword('original-password-1');
+    const r = await app.request('/api/admin/me/account', {
+      method: 'PATCH',
+      headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
+      body: JSON.stringify({ currentPassword: 'original-password-1', account: 'bad@email' }),
+    });
+    expect(r.status).toBe(400);
+    expect((await r.json()).error.code).toBe('ADMIN_ACCOUNT_INVALID');
+  });
+
+  it('rejects wrong current password', async () => {
+    const admin = await createAdminWithPassword('original-password-1');
+    const r = await app.request('/api/admin/me/account', {
+      method: 'PATCH',
+      headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
+      body: JSON.stringify({ currentPassword: 'wrong', account: 'newadmin1' }),
+    });
+    expect(r.status).toBe(401);
+    expect((await r.json()).error.code).toBe('CURRENT_PASSWORD_WRONG');
+  });
+
+  it('changes account and writes audit log', async () => {
+    const admin = await createAdminWithPassword('original-password-1');
+    const r = await app.request('/api/admin/me/account', {
+      method: 'PATCH',
+      headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
+      body: JSON.stringify({ currentPassword: 'original-password-1', account: 'newadmin1' }),
+    });
+    expect(r.status).toBe(200);
+    const refreshed = await prisma.adminUser.findUniqueOrThrow({ where: { id: admin.id } });
+    expect(refreshed.email).toBe('newadmin1');
+    const log = await prisma.adminActionLog.findFirstOrThrow({ where: { event: 'admin.account_change' } });
+    expect(log.payloadBefore).toMatchObject({ account: admin.email });
+    expect(log.payloadAfter).toMatchObject({ account: 'newadmin1' });
+  });
+});
