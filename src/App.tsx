@@ -518,9 +518,9 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
         )}
 
         {view === 'mine' && (
-          <section className="panel-screen">
+          <section className="panel-screen panel-screen--history">
             <ScreenHeader icon={<Gift />} title="中獎紀錄" />
-            <div className="rule-list">
+            <div className="rule-list rule-list--scroll">
               {winHistory.length === 0 ? (
                 <p>目前尚無中獎紀錄。</p>
               ) : (

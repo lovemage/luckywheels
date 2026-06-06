@@ -567,6 +567,19 @@ h1 {
   padding: 30px 24px 120px;
 }
 
+.panel-screen--history {
+  position: absolute;
+  top: 185px;
+  right: 0;
+  bottom: 115px;
+  left: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
 .screen-header {
   display: grid;
   grid-template-columns: 54px 1fr;
@@ -646,6 +659,14 @@ h1 {
 .rule-list {
   display: grid;
   gap: 14px;
+}
+
+.rule-list--scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
 }
 
 .rule-list > p,
@@ -1750,6 +1771,12 @@ h1 {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    padding-bottom: 16px;
+  }
+
+  .panel-screen--history {
+    position: static;
+    overflow: hidden;
     padding-bottom: 16px;
   }
 
