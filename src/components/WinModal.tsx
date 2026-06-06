@@ -58,8 +58,7 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
           <div className="redemption-actions">
             <p className="redemption-code">{redemptionCode}</p>
             <button type="button" className="copy-code-button" onClick={copyCode} aria-label="複製兌換碼">
-              <Copy size={16} />
-              <span>兌換馬</span>
+              <Copy size={20} />
             </button>
           </div>
         ) : null}
