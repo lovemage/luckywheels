@@ -1,4 +1,5 @@
 import type { DrawResponse } from '../api/draw.js';
+import { Copy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function WinModal({ result, onClose }: { result: DrawResponse; onClose: () => void }) {
@@ -56,8 +57,9 @@ export function WinModal({ result, onClose }: { result: DrawResponse; onClose: (
         {hasWin ? (
           <div className="redemption-actions">
             <p className="redemption-code">{redemptionCode}</p>
-            <button type="button" className="copy-code-button" onClick={copyCode}>
-              複製
+            <button type="button" className="copy-code-button" onClick={copyCode} aria-label="複製兌換碼">
+              <Copy size={16} />
+              <span>兌換馬</span>
             </button>
           </div>
         ) : null}

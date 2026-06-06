@@ -1382,10 +1382,10 @@ h1 {
   inset: 0;
   background: rgba(24, 10, 34, 0.42);
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: center;
   z-index: 1000;
-  padding: 0;
+  padding: 16px;
   backdrop-filter: blur(14px) saturate(1.15);
   -webkit-backdrop-filter: blur(14px) saturate(1.15);
 }
@@ -1394,20 +1394,21 @@ h1 {
   background:
     linear-gradient(180deg, rgba(255, 252, 243, 0.98) 0%, rgba(255, 244, 214, 0.95) 100%);
   color: #2a1430;
-  padding: clamp(14px, 3.2vh, 24px) env(safe-area-inset-right) clamp(14px, 3.2vh, 24px) env(safe-area-inset-left);
-  padding-top: max(env(safe-area-inset-top), clamp(14px, 3.2vh, 24px));
-  padding-bottom: max(env(safe-area-inset-bottom), clamp(14px, 3.2vh, 24px));
-  border-radius: 0;
-  width: 100%;
-  max-width: none;
-  height: 100%;
-  max-height: none;
+  padding: clamp(14px, 3.2vh, 24px);
+  width: min(680px, calc(100vw - 28px));
+  max-width: 680px;
+  max-height: calc(100vh - 32px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 14px;
+  text-align: center;
   border: 0;
-  box-shadow: none;
+  border-radius: 18px;
+  box-shadow:
+    0 28px 70px rgba(16, 5, 24, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .win-modal h2 {
@@ -1436,14 +1437,19 @@ h1 {
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: center;
 }
 
 .win-modal .copy-code-button {
   flex: 0 0 auto;
   padding: 12px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border-radius: 14px;
   background: #f4cb3a;
   color: #2a1430;
+  border: 1px solid rgba(91, 22, 120, 0.2);
   box-shadow: none;
   font-weight: 700;
 }
