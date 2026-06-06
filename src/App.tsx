@@ -19,6 +19,20 @@ import { Onboarding } from './components/Onboarding.js';
 import { WinModal } from './components/WinModal.js';
 import { Legal, type LegalTab } from './components/Legal.js';
 
+function proxiedImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('/')) return url;
+  try {
+    const u = new URL(url);
+    if (u.pathname.includes('/prize-images/')) {
+      return `/api/media-proxy?url=${encodeURIComponent(u.href)}`;
+    }
+  } catch {
+    return url;
+  }
+  return url;
+}
+
 function availableDrawsFor(points: number, thresholds: { points: number; draws: number }[]): number {
   let draws = 0;
   for (const t of thresholds) {
@@ -246,7 +260,9 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const selectedTier = settings.pointThresholds[effectiveTierIndex] ?? settings.pointThresholds[0]!;
   const phoneShellStyle = {
     '--spin-duration': `${settings.spinDurationMs}ms`,
-    ...(settings.homeBackgroundUrl ? { '--home-bg': `url(${JSON.stringify(settings.homeBackgroundUrl)})` } : {}),
+    ...(settings.homeBackgroundUrl
+      ? { '--home-bg': `url(${JSON.stringify(proxiedImageUrl(settings.homeBackgroundUrl) ?? settings.homeBackgroundUrl)})` }
+      : {}),
   } as React.CSSProperties;
 
   async function spin() {
@@ -357,7 +373,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           <div className="title-lockup">
             <img
               className="logo-image"
-              src={settings.homeLogoUrl || '/assets/logo.png'}
+              src={proxiedImageUrl(settings.homeLogoUrl) || '/assets/logo.png'}
               alt="幸運輪盤"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
@@ -512,10 +528,10 @@ function Wheel({
                 color: prize.textColor,
               }}
             >
-              <div className="prize-content">
+            <div className="prize-content">
                 <strong>{prize.rankLabel}</strong>
                 <span>{prize.name}</span>
-                {prize.imageUrl ? <img src={prize.imageUrl} alt="" /> : <b>💰</b>}
+                {prize.imageUrl ? <img src={proxiedImageUrl(prize.imageUrl) ?? prize.imageUrl} alt="" /> : <b>💰</b>}
               </div>
             </div>
           );

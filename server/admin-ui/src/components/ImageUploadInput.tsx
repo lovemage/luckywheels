@@ -7,6 +7,19 @@ interface Props {
   onChange: (url: string | null) => void;
 }
 
+function proxiedImageUrl(url: string | null): string {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    if (parsed.pathname.includes('/prize-images/')) {
+      return `/api/media-proxy?url=${encodeURIComponent(parsed.href)}`;
+    }
+  } catch {
+    return url;
+  }
+  return url;
+}
+
 export function ImageUploadInput({ value, onChange }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +44,7 @@ export function ImageUploadInput({ value, onChange }: Props) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       {value && (
         <img
-          src={value}
+          src={proxiedImageUrl(value)}
           alt=""
           style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid #ddd' }}
         />

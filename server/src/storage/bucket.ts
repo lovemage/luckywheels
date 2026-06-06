@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { env } from '../env.js';
 import { AppError } from '../errors.js';
 
@@ -55,6 +55,12 @@ export interface UploadInput {
   contentType: string;
 }
 
+export interface ObjectData {
+  body: unknown;
+  contentType?: string | null;
+  contentLength?: number | null;
+}
+
 export async function putObject(input: UploadInput): Promise<{ key: string; url: string }> {
   const c = getClient();
   const cfg = resolveConfig();
@@ -68,6 +74,22 @@ export async function putObject(input: UploadInput): Promise<{ key: string; url:
     }),
   );
   return { key: input.key, url: publicUrl(input.key) };
+}
+
+export async function getObject(key: string): Promise<ObjectData> {
+  const c = getClient();
+  const cfg = resolveConfig();
+  const response = await c.send(
+    new GetObjectCommand({
+      Bucket: cfg.bucket,
+      Key: key,
+    }),
+  );
+  return {
+    body: response.Body,
+    contentType: response.ContentType ?? null,
+    contentLength: response.ContentLength ?? null,
+  };
 }
 
 export async function deleteObject(key: string): Promise<void> {
