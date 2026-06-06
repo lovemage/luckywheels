@@ -88,6 +88,7 @@ export function Prizes() {
             <tr>
               <th></th>
               <th>排名</th>
+              <th>Prize ID</th>
               <th>名稱</th>
               <th>中獎金額</th>
               <th>權重</th>
@@ -110,6 +111,17 @@ export function Prizes() {
               >
                 <td className="admin-drag-handle">⋮⋮</td>
                 <td>{p.rankLabel}</td>
+                <td>
+                  <div className="admin-prize-id">
+                    <code>{p.id}</code>
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(p.id).catch(() => {})}
+                    >
+                      複製
+                    </button>
+                  </div>
+                </td>
                 <td>{p.name}</td>
                 <td>{p.cashAmount}</td>
                 <td>{p.weight}</td>

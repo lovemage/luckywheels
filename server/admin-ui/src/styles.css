@@ -479,6 +479,29 @@ th {
   user-select: none;
 }
 
+.admin-prize-id {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-prize-id code {
+  max-width: 180px;
+  overflow: hidden;
+  color: var(--admin-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-prize-id button {
+  min-height: 28px;
+  padding: 4px 8px;
+  color: var(--admin-accent-strong);
+  font-size: 12px;
+  background: #fffaf0;
+}
+
 .admin-color-swatch {
   display: inline-block;
   width: 18px;
