@@ -22,7 +22,9 @@ const Body = z.object({
   payoutCapEnabled: z.boolean().optional(),
   payoutCapRatio: z.number().min(0).max(1).optional(),
   costControlEnabled: z.boolean().optional(),
-  costControlInterval: z.union([z.literal(3), z.literal(4), z.literal(5)]).optional(),
+  costControlInterval: z
+    .union([z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7)])
+    .optional(),
   rulesText: z.string().min(1).max(2000).optional(),
   // 首頁外觀：上傳後得到的圖片 URL；空字串＝清除、回退前端內建預設圖。
   homeLogoUrl: z.string().max(2000).optional(),

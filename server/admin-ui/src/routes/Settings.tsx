@@ -140,15 +140,22 @@ export function Settings() {
             ? `${data.lowestCostPrize.rankLabel} ${data.lowestCostPrize.name}，中獎金額 ${data.lowestCostPrize.cashAmount}`
             : '尚無啟用且金額大於 0 的獎項'}
         </p>
-        <label>
+        <label className="admin-toggle">
           <input
             type="checkbox"
+            role="switch"
             checked={form.costControlEnabled ?? false}
             onChange={(e) => setForm({ ...form, costControlEnabled: e.target.checked })}
-          />{' '}
-          啟用全站倍數成本控制（costControlEnabled）
-          <Hint>關閉時，每一抽都依權重計算；開啟時，只有指定倍數抽獎依權重計算，其餘派最低金額獎。</Hint>
+          />
+          <span className="admin-toggle-track" aria-hidden="true" />
+          <span className="admin-toggle-label">
+            啟用全站倍數成本控制（costControlEnabled）
+          </span>
         </label>
+        <Hint>關閉時，每一抽都依權重計算；開啟時，只有指定倍數抽獎依權重計算，其餘派最低金額獎。</Hint>
+        {form.costControlEnabled !== data.costControlEnabled && (
+          <span className="admin-dirty-hint">尚未儲存</span>
+        )}
         <br />
         <label>
           權重計算倍數（costControlInterval）{' '}
@@ -156,7 +163,7 @@ export function Settings() {
             value={form.costControlInterval ?? 3}
             onChange={(e) => setForm({ ...form, costControlInterval: Number(e.target.value) })}
           >
-            {[3, 4, 5].map((n) => (
+            {[3, 4, 5, 6, 7].map((n) => (
               <option key={n} value={n}>
                 每 {n} 抽
               </option>
