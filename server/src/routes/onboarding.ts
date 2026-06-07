@@ -7,7 +7,7 @@ import { prisma } from '../db.js';
 const NicknameSchema = z.string().min(2).max(12).refine((v) => v.trim().length > 0, {
   message: 'nickname must contain non-whitespace',
 });
-const CodeSchema = z.string().regex(/^[A-Za-z0-9_-]{6,20}$/);
+const CodeSchema = z.string().min(1);
 
 const BodySchema = z.object({
   nickname: NicknameSchema,
@@ -28,7 +28,7 @@ onboardingRoutes.post('/api/onboarding/profile', requireUser, async (c) => {
     if (failedFields.has('nickname')) {
       throw new AppError('NICKNAME_INVALID', 'nickname must be 2–12 chars and not all whitespace', 400);
     }
-    throw new AppError('ENTERTAINMENT_CODE_INVALID', 'code must be 6–20 chars: A-Z, 0-9, _, -', 400);
+    throw new AppError('ENTERTAINMENT_CODE_INVALID', 'code must not be empty', 400);
   }
 
   if (user.entertainmentMemberCode && user.entertainmentMemberCode !== body.code) {

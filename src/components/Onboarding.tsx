@@ -36,7 +36,7 @@ export function Onboarding({ settings }: { settings: PublicSettings | null }) {
       const ae = e as ApiError;
       const map: Record<string, string> = {
         NICKNAME_INVALID: '暱稱需為 2-12 字',
-        ENTERTAINMENT_CODE_INVALID: '會員編號需為 6-20 字（英數字 _ -）',
+        ENTERTAINMENT_CODE_INVALID: '請輸入會員編號',
         ENTERTAINMENT_CODE_TAKEN: '此編號已申請註冊',
         ENTERTAINMENT_CODE_REASON_REQUIRED: '系統錯誤，請聯絡客服',
       };
@@ -75,7 +75,6 @@ export function Onboarding({ settings }: { settings: PublicSettings | null }) {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
-              pattern="[A-Za-z0-9_-]{6,20}"
             />
           </label>
           {err && (
