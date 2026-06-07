@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { randomBytes } from 'node:crypto';
 import { env } from '../env.js';
@@ -16,10 +16,13 @@ import { signSession } from '../auth/jwt.js';
 import {
   STATE_COOKIE,
   NONCE_COOKIE,
+  RETRY_COOKIE,
   setSessionCookie,
   clearSessionCookie,
   setStateCookie,
   setNonceCookie,
+  setRetryCookie,
+  clearRetryCookie,
   clearOauthCookies,
 } from '../auth/cookies.js';
 
@@ -34,6 +37,17 @@ authRoutes.get('/api/auth/line/start', async (c) => {
   return c.redirect(buildAuthorizeUrl({ state: stateToken, nonce }));
 });
 
+function handleStateMismatch(c: Context) {
+  const retried = getCookie(c, RETRY_COOKIE) === '1';
+  clearOauthCookies(c);
+  if (retried) {
+    clearRetryCookie(c);
+    return c.redirect(env.PUBLIC_FRONTEND_ORIGIN + '/?login_error=expired');
+  }
+  setRetryCookie(c);
+  return c.redirect('/api/auth/line/start');
+}
+
 authRoutes.get('/api/auth/line/callback', async (c) => {
   const code = c.req.query('code');
   const stateQuery = c.req.query('state');
@@ -41,19 +55,20 @@ authRoutes.get('/api/auth/line/callback', async (c) => {
   const nonce = getCookie(c, NONCE_COOKIE);
 
   if (!code || !stateQuery || !stateCookie || stateQuery !== stateCookie) {
-    throw new AppError('OAUTH_STATE_MISMATCH', 'invalid or expired state', 400);
+    return handleStateMismatch(c);
   }
   let stateValue: string;
   try {
     stateValue = await verifyState(stateCookie);
   } catch {
-    throw new AppError('OAUTH_STATE_MISMATCH', 'state signature invalid', 400);
+    return handleStateMismatch(c);
   }
-  if (!stateValue) throw new AppError('OAUTH_STATE_MISMATCH', 'state empty', 400);
+  if (!stateValue) return handleStateMismatch(c);
 
   if (!nonce) throw new AppError('OAUTH_NONCE_MISSING', 'nonce cookie missing', 400);
 
   clearOauthCookies(c);
+  clearRetryCookie(c);
 
   const token = await exchangeCodeForToken(code);
   if (!token.id_token) throw new AppError('LINE_ID_TOKEN_INVALID', 'id_token missing', 502);

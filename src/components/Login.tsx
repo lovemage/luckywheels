@@ -1,5 +1,10 @@
+import { useEffect, useState } from 'react';
 import type { LegalTab } from './Legal.js';
 import type { PublicSettings } from '../api/draw.js';
+
+const LOGIN_ERROR_MESSAGES: Record<string, string> = {
+  expired: 'LINE 登入逾時或工作階段已失效,請重新登入。',
+};
 
 function proxiedImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -22,6 +27,16 @@ export function Login({
   settings: PublicSettings | null;
   onShowLegal: (tab: LegalTab) => void;
 }) {
+  const [loginError, setLoginError] = useState<string | null>(null);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get('login_error');
+    if (!code) return;
+    setLoginError(LOGIN_ERROR_MESSAGES[code] ?? '登入發生問題,請重新登入。');
+    url.searchParams.delete('login_error');
+    window.history.replaceState({}, '', url.pathname + (url.search || '') + url.hash);
+  }, []);
+
   const logoSrc = proxiedImageUrl(settings?.homeLogoUrl) || '/assets/logo.png';
   const bgSrc = proxiedImageUrl(settings?.homeBackgroundUrl);
   const style = {
@@ -33,6 +48,11 @@ export function Login({
       <section className="auth-card">
         <img src={logoSrc} alt="幸運輪盤" className="login-logo auth-logo" />
         <p>請使用 LINE 帳號登入</p>
+        {loginError && (
+          <p role="alert" className="error">
+            {loginError}
+          </p>
+        )}
         <button
           className="login-button"
           onClick={() => {

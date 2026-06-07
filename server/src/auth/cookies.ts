@@ -4,6 +4,7 @@ import { setCookie, deleteCookie } from 'hono/cookie';
 export const SESSION_COOKIE = 'lw_session';
 export const STATE_COOKIE = 'lw_oauth_state';
 export const NONCE_COOKIE = 'lw_oauth_nonce';
+export const RETRY_COOKIE = 'lw_oauth_retry';
 
 const isProductionLike = (): boolean =>
   process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'development';
@@ -28,7 +29,7 @@ export function setStateCookie(c: Context, value: string): void {
     sameSite: 'Lax',
     secure: isProductionLike(),
     path: '/',
-    maxAge: 600,
+    maxAge: 1800,
   });
 }
 
@@ -38,8 +39,22 @@ export function setNonceCookie(c: Context, value: string): void {
     sameSite: 'Lax',
     secure: isProductionLike(),
     path: '/',
-    maxAge: 600,
+    maxAge: 1800,
   });
+}
+
+export function setRetryCookie(c: Context): void {
+  setCookie(c, RETRY_COOKIE, '1', {
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: isProductionLike(),
+    path: '/',
+    maxAge: 300,
+  });
+}
+
+export function clearRetryCookie(c: Context): void {
+  deleteCookie(c, RETRY_COOKIE, { path: '/' });
 }
 
 export function clearOauthCookies(c: Context): void {
