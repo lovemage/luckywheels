@@ -2,7 +2,6 @@ import { Hono, type Context } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { randomBytes } from 'node:crypto';
 import { env } from '../env.js';
-import { AppError } from '../errors.js';
 import {
   buildAuthorizeUrl,
   exchangeCodeForToken,
@@ -37,64 +36,66 @@ authRoutes.get('/api/auth/line/start', async (c) => {
   return c.redirect(buildAuthorizeUrl({ state: stateToken, nonce }));
 });
 
-function handleStateMismatch(c: Context) {
+function handleOauthFailure(c: Context) {
   const retried = getCookie(c, RETRY_COOKIE) === '1';
   clearOauthCookies(c);
   if (retried) {
     clearRetryCookie(c);
-    return c.redirect(env.PUBLIC_FRONTEND_ORIGIN + '/?login_error=expired');
+    return c.redirect(env.PUBLIC_FRONTEND_ORIGIN + '/');
   }
   setRetryCookie(c);
   return c.redirect('/api/auth/line/start');
 }
 
 authRoutes.get('/api/auth/line/callback', async (c) => {
-  const code = c.req.query('code');
-  const stateQuery = c.req.query('state');
-  const stateCookie = getCookie(c, STATE_COOKIE);
-  const nonce = getCookie(c, NONCE_COOKIE);
-
-  if (!code || !stateQuery || !stateCookie || stateQuery !== stateCookie) {
-    return handleStateMismatch(c);
-  }
-  let stateValue: string;
   try {
-    stateValue = await verifyState(stateCookie);
-  } catch {
-    return handleStateMismatch(c);
+    const code = c.req.query('code');
+    const stateQuery = c.req.query('state');
+    const stateCookie = getCookie(c, STATE_COOKIE);
+    const nonce = getCookie(c, NONCE_COOKIE);
+
+    if (!code || !stateQuery || !stateCookie || stateQuery !== stateCookie) {
+      return handleOauthFailure(c);
+    }
+    let stateValue: string;
+    try {
+      stateValue = await verifyState(stateCookie);
+    } catch {
+      return handleOauthFailure(c);
+    }
+    if (!stateValue) return handleOauthFailure(c);
+    if (!nonce) return handleOauthFailure(c);
+
+    clearOauthCookies(c);
+
+    const token = await exchangeCodeForToken(code);
+    if (!token.id_token) return handleOauthFailure(c);
+    const claims = await verifyLineIdToken(token.id_token, { nonce });
+
+    const profile = await fetchLineProfile(token.access_token);
+    if (profile.userId !== claims.sub) return handleOauthFailure(c);
+
+    const user = await prisma.user.upsert({
+      where: { lineUserId: profile.userId },
+      create: {
+        lineUserId: profile.userId,
+        displayName: profile.displayName,
+        pictureUrl: profile.pictureUrl,
+      },
+      update: {
+        displayName: profile.displayName,
+        pictureUrl: profile.pictureUrl,
+      },
+    });
+
+    const jwt = await signSession({ userId: user.id });
+    setSessionCookie(c, jwt);
+    clearRetryCookie(c);
+    return c.redirect(env.PUBLIC_FRONTEND_ORIGIN + '/');
+  } catch (err) {
+    console.error('[line/callback] unexpected failure', err);
+    return handleOauthFailure(c);
   }
-  if (!stateValue) return handleStateMismatch(c);
-
-  if (!nonce) throw new AppError('OAUTH_NONCE_MISSING', 'nonce cookie missing', 400);
-
-  clearOauthCookies(c);
-  clearRetryCookie(c);
-
-  const token = await exchangeCodeForToken(code);
-  if (!token.id_token) throw new AppError('LINE_ID_TOKEN_INVALID', 'id_token missing', 502);
-  const claims = await verifyLineIdToken(token.id_token, { nonce });
-
-  const profile = await fetchLineProfile(token.access_token);
-  if (profile.userId !== claims.sub) {
-    throw new AppError('LINE_ID_TOKEN_INVALID', 'profile sub mismatch', 502);
-  }
-
-  const user = await prisma.user.upsert({
-    where: { lineUserId: profile.userId },
-    create: {
-      lineUserId: profile.userId,
-      displayName: profile.displayName,
-      pictureUrl: profile.pictureUrl,
-    },
-    update: {
-      displayName: profile.displayName,
-      pictureUrl: profile.pictureUrl,
-    },
-  });
-
-  const jwt = await signSession({ userId: user.id });
-  setSessionCookie(c, jwt);
-  return c.redirect(env.PUBLIC_FRONTEND_ORIGIN + '/');
 });
 
 authRoutes.post('/api/logout', (c) => {
