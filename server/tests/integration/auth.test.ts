@@ -70,7 +70,7 @@ describe('LINE OAuth flow', () => {
 
     const user = await prisma.user.findUnique({ where: { lineUserId: 'U_mocked' } });
     expect(user?.displayName).toBe('Mocked Member');
-    expect(user?.accountType).toBe('verified'); // default per spec (no pending review gate)
+    expect(user?.accountType).toBe('pending');
   });
 
   it('rejects mismatched state', async () => {

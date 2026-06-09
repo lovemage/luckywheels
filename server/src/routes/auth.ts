@@ -81,6 +81,7 @@ authRoutes.get('/api/auth/line/callback', async (c) => {
         lineUserId: profile.userId,
         displayName: profile.displayName,
         pictureUrl: profile.pictureUrl,
+        accountType: 'pending',
       },
       update: {
         displayName: profile.displayName,

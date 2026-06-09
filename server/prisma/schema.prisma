@@ -33,7 +33,7 @@ model User {
   // 積分制 entry currency (sole balance)
   points                   Int          @default(0)
 
-  accountType              AccountType  @default(verified)
+  accountType              AccountType  @default(pending)
   verifiedAt               DateTime     @default(now())
 
   testSkipCost             Boolean      @default(false)
