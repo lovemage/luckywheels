@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from 'react-router';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSuperadminMe, logout } from '../api/me.js';
 import { SiteBadge } from './SiteBadge.js';
@@ -21,6 +21,10 @@ export function AppShell() {
           <span className="sa-eyebrow">Superadmin</span>
           <strong>跨站會員審核台</strong>
         </Link>
+        <nav className="sa-nav" aria-label="主導覽">
+          <NavLink to="/" end className={({ isActive }) => `sa-navlink${isActive ? ' is-active' : ''}`}>會員審核</NavLink>
+          <NavLink to="/stats" className={({ isActive }) => `sa-navlink${isActive ? ' is-active' : ''}`}>統計</NavLink>
+        </nav>
         <div className="sa-topbar-right">
           <div className="sa-site-legend">
             {me?.sites.map((s) => (

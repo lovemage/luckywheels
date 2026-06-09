@@ -9,6 +9,7 @@ import { superadminEnv } from './env.js';
 import { disconnectAll } from './clients.js';
 import { superadminAuthRoutes } from './routes/auth.js';
 import { superadminUsersRoutes } from './routes/users.js';
+import { superadminStatsRoutes } from './routes/stats.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Prod: __dirname is /app/server/dist/src/superadmin, the SPA is at
@@ -38,6 +39,7 @@ app.get('/api/healthz', (c) => c.json({ ok: true }));
 
 app.route('/', superadminAuthRoutes);
 app.route('/', superadminUsersRoutes);
+app.route('/', superadminStatsRoutes);
 
 app.use('/assets/*', async (c, next) => {
   await next();
