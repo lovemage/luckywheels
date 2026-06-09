@@ -19,6 +19,15 @@ function SearchIcon() {
   );
 }
 
+function CopyIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
 function nextStatusAction(row: RedemptionRow): QuickStatusAction {
   if (row.status === 'pending') return { row, action: 'claim' };
   if (row.status === 'delivered') return { row, action: 'unclaim' };
@@ -94,6 +103,26 @@ export function Redemptions() {
             columns={[
               { header: '兌換碼', cell: (r) => <Link to={`/redemptions/${r.id}`}><CodeChip code={r.code} /></Link> },
               { header: '會員', cell: (r) => <Link to={`/users/${r.user.id}`}>{r.user.nickname ?? r.user.displayName}</Link> },
+              {
+                header: '娛樂成帳號',
+                cell: (r) => {
+                  const code = r.user.entertainmentMemberCode;
+                  if (!code) return '—';
+                  return (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <code>{code}</code>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText(code).catch(() => {})}
+                        aria-label="複製娛樂成帳號"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', color: 'inherit' }}
+                      >
+                        <CopyIcon />
+                      </button>
+                    </span>
+                  );
+                }
+              },
               { header: '類型', cell: (r) => r.tier === 'multi' ? '10 連抽' : '單抽' },
               {
                 header: '狀態',

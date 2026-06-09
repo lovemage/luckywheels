@@ -9,7 +9,7 @@ export interface RedemptionRow {
   statusChangedAt: string | null;
   isTest: boolean;
   totalWinAmount: number;
-  user: { id: string; nickname: string | null; displayName: string };
+  user: { id: string; nickname: string | null; displayName: string; entertainmentMemberCode: string | null };
 }
 
 export interface RedemptionsListQuery {
