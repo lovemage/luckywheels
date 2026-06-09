@@ -5,7 +5,7 @@ import { ApiError } from '../api/client.js';
 import type { Site } from '../api/me.js';
 import {
   fetchUser, approveUser, deleteUser, adjustPoints, setAccountType,
-  setBlacklist, setEntertainmentCode, updateTestSettings,
+  setBlacklist, setEntertainmentCode, updateTestSettings, migrateMember,
   fetchPointsHistory, fetchDrawHistory,
 } from '../api/users.js';
 import { SiteBadge, AccountBadge } from '../components/SiteBadge.js';
@@ -25,6 +25,7 @@ export function MemberDetail() {
   const id = params.id ?? '';
 
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [migrating, setMigrating] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['superadmin', 'user', site, id],
@@ -141,6 +142,32 @@ export function MemberDetail() {
         {u.accountType === 'test' && (
           <TestSettingsCard site={site} id={id} skipCost={u.testSkipCost} forcePrizeId={u.testForcePrizeId} run={run} />
         )}
+
+        <Card title="搬遷會員">
+          <p className="sa-sub">
+            把此會員（含 <strong>{u.points}</strong> 積分）搬到「{cs.otherSiteLabel}」，
+            並<strong>刪除來源帳號</strong>。若對方站已有同一人會被擋下。
+          </p>
+          <button type="button" className="sa-btn" disabled={migrating}
+            onClick={async () => {
+              if (!window.confirm(
+                `確定把「${u.nickname || u.displayName}」從「${u.siteLabel}」搬到「${cs.otherSiteLabel}」？\n` +
+                `會帶走 ${u.points} 積分，並刪除「${u.siteLabel}」的來源帳號（含抽獎紀錄）。`,
+              )) return;
+              setMigrating(true);
+              setMsg(null);
+              try {
+                const r = await migrateMember(site, id);
+                qc.invalidateQueries({ queryKey: ['superadmin', 'users'] });
+                nav('/', { replace: true, state: { flash: `已搬遷到 ${cs.otherSiteLabel}（${r.points} 積分）` } });
+              } catch (e) {
+                setMsg({ kind: 'err', text: (e as ApiError)?.message || '搬遷失敗' });
+                setMigrating(false);
+              }
+            }}>
+            {migrating ? '搬遷中…' : `搬遷到「${cs.otherSiteLabel}」`}
+          </button>
+        </Card>
 
         <Card title="刪除會員" danger>
           <p className="sa-sub">會連同抽獎紀錄一併刪除，無法復原。</p>

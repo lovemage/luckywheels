@@ -1,6 +1,8 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { AppError } from '../../errors.js';
+import { writeAdminActionLog } from '../../audit/log.js';
 import {
   actorFrom,
   type AuditActor,
@@ -48,6 +50,9 @@ const ListQuery = z.object({
   tab: z.enum(['verified', 'test', 'pending']).default('pending'),
   q: z.string().optional(),
   take: z.coerce.number().int().min(1).max(50).default(25),
+  // Optional site filter: when set, only that site is queried (used by the
+  // 全部/一站/二站 toggle in the console). Omitted ⇒ both sites merged.
+  site: z.enum(['A', 'B']).optional(),
   cursorA: z.string().optional(),
   cursorB: z.string().optional(),
 });
@@ -59,9 +64,10 @@ superadminUsersRoutes.get('/api/superadmin/users', requireSuperadmin, async (c) 
 
   const cfg = superadminEnv();
   const cursors: Record<Site, string | undefined> = { A: query.cursorA, B: query.cursorB };
+  const sitesToQuery: readonly Site[] = query.site ? [query.site] : SITES;
 
   const perSite = await Promise.all(
-    SITES.map(async (site) => {
+    sitesToQuery.map(async (site) => {
       const { items, nextCursor } = await listUsersOp(clientFor(site), {
         tab: query.tab, q: query.q, take: query.take, cursor: cursors[site],
       });
@@ -229,4 +235,102 @@ superadminUsersRoutes.patch('/api/superadmin/users/:site/:id/entertainment-code'
   }
   await setEntertainmentCodeOp(clientFor(site), c.req.param('id'), body, superActor(c));
   return c.json({ ok: true });
+});
+
+// ---- migrate a member to the OTHER site (carries points) ------------------
+// Semantics (chosen by operator): destination must NOT already have this LINE
+// member (otherwise blocked); the member's identity + points + status are
+// copied to the destination, then the SOURCE member (and its draw history) is
+// deleted. Cross-DB and therefore NOT a single transaction — we create on the
+// destination FIRST, then delete the source, so a mid-failure leaves a
+// recoverable duplicate (no point loss) rather than dropping points.
+
+async function migrateMember(fromSite: Site, userId: string, actor: AuditActor) {
+  const toSite: Site = fromSite === 'A' ? 'B' : 'A';
+  const from = clientFor(fromSite);
+  const to = clientFor(toSite);
+
+  const src = await from.user.findUnique({ where: { id: userId } });
+  if (!src) throw new AppError('USER_NOT_FOUND', 'no such user', 404);
+
+  // Block (don't merge) if the destination already has this person, or the same
+  // 娛樂城編號 on someone else — operator resolves manually first.
+  if (await to.user.findUnique({ where: { lineUserId: src.lineUserId } })) {
+    throw new AppError('MIGRATE_DEST_HAS_MEMBER', 'destination site already has this LINE member — resolve manually first', 409);
+  }
+  if (src.entertainmentMemberCode &&
+      await to.user.findUnique({ where: { entertainmentMemberCode: src.entertainmentMemberCode } })) {
+    throw new AppError('MIGRATE_DEST_CODE_TAKEN', 'destination already has this 娛樂城編號 on another member — resolve manually first', 409);
+  }
+
+  const isBlacklisted = src.accountType === 'blacklisted';
+
+  // 1) Create on destination (carries identity + points + status). Activity
+  //    stats and test settings are reset — draw history is not migrated and
+  //    testForcePrizeId would reference a source-only prize.
+  let created;
+  try {
+    created = await to.$transaction(async (tx) => {
+      const u = await tx.user.create({
+        data: {
+          lineUserId: src.lineUserId,
+          displayName: src.displayName,
+          pictureUrl: src.pictureUrl,
+          vipLevel: src.vipLevel,
+          nickname: src.nickname,
+          entertainmentMemberCode: src.entertainmentMemberCode,
+          entertainmentCodeBoundAt: src.entertainmentCodeBoundAt,
+          points: src.points,
+          accountType: src.accountType,
+          verifiedAt: src.verifiedAt,
+          blacklistedAt: isBlacklisted ? src.blacklistedAt : null,
+          blacklistedByAdminUserId: isBlacklisted ? actor.adminUserId : null,
+          blacklistReason: isBlacklisted ? src.blacklistReason : null,
+        },
+      });
+      await writeAdminActionLog(tx, {
+        ...actor,
+        event: 'user.migrated_in',
+        targetType: 'user',
+        targetId: u.id,
+        payloadAfter: { fromSite, toSite, lineUserId: src.lineUserId, points: src.points, sourceUserId: src.id },
+      });
+      return u;
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      throw new AppError('MIGRATE_DEST_CONFLICT', 'destination already has this member or code — resolve manually first', 409);
+    }
+    throw e;
+  }
+
+  // 2) Delete the source member + its draw history.
+  try {
+    await from.$transaction(async (tx) => {
+      await tx.drawLog.deleteMany({ where: { userId } });
+      await tx.redemption.deleteMany({ where: { userId } });
+      await tx.user.delete({ where: { id: userId } });
+      await writeAdminActionLog(tx, {
+        ...actor,
+        event: 'user.migrated_out',
+        targetType: 'user',
+        targetId: userId,
+        payloadBefore: { toSite, lineUserId: src.lineUserId, points: src.points },
+        payloadAfter: { destUserId: created.id },
+      });
+    });
+  } catch {
+    // Created on destination but source delete failed → member now exists on
+    // BOTH sites. No point loss; operator must delete the source manually.
+    throw new AppError('MIGRATE_SOURCE_CLEANUP_FAILED',
+      `migrated to site ${toSite} (id ${created.id}) but failed to delete the source — delete the source member manually`, 500);
+  }
+
+  return { toSite, toUserId: created.id, points: src.points };
+}
+
+superadminUsersRoutes.post('/api/superadmin/users/:site/:id/migrate', requireSuperadmin, async (c) => {
+  const site = siteParam(c);
+  const result = await migrateMember(site, c.req.param('id'), superActor(c));
+  return c.json({ ok: true, ...result });
 });

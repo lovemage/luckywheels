@@ -28,6 +28,7 @@ export interface UsersListQuery {
   tab?: 'verified' | 'test' | 'pending';
   q?: string;
   take?: number;
+  site?: Site;
   cursorA?: string;
   cursorB?: string;
 }
@@ -76,6 +77,18 @@ export function approveUser(site: Site, id: string): Promise<{ ok: true }> {
 
 export function deleteUser(site: Site, id: string): Promise<{ ok: true }> {
   return api(`/api/superadmin/users/${site}/${id}`, { method: 'DELETE' });
+}
+
+export interface MigrateResult {
+  ok: true;
+  toSite: Site;
+  toUserId: string;
+  points: number;
+}
+
+// Move a member (and their points) to the OTHER site; deletes the source.
+export function migrateMember(site: Site, id: string): Promise<MigrateResult> {
+  return api(`/api/superadmin/users/${site}/${id}/migrate`, { method: 'POST' });
 }
 
 export function adjustPoints(site: Site, id: string, body: { delta: number; reason?: string }): Promise<{ points: number }> {
