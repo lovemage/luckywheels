@@ -37,7 +37,7 @@ adminRedemptionsRoutes.get('/api/admin/redemptions', requireAdmin, async (c) => 
     take: q.take + 1,
     ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
     orderBy: { createdAt: 'desc' },
-    include: { user: { select: { id: true, nickname: true, displayName: true } } },
+    include: { user: { select: { id: true, nickname: true, displayName: true, entertainmentMemberCode: true } } },
   });
   let nextCursor: string | null = null;
   if (items.length > q.take) nextCursor = items.pop()!.id;
