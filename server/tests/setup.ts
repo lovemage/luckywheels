@@ -29,7 +29,7 @@ if (process.env.TEST_DATABASE_URL) {
 
 // Hard abort if tests would mutate the live DB.
 // resetDb truncates every table including AdminUser; a test run against
-// Railway production wiped admin@luckyds.com once already (2026-06-05).
+// Railway production was wiped once already (2026-06-05).
 // Refuse to start vitest unless TEST_DATABASE_URL routes us elsewhere or
 // the operator explicitly opts in via DANGEROUSLY_RUN_TESTS_ON_DATABASE_URL.
 if (

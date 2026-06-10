@@ -18,8 +18,8 @@ deployed as **multiple Railway services**.
 
 This repo is deployed **several times in one Railway project**:
 
-- **Two member/admin "sites"** — each its own service + its own PostgreSQL DB + its own domain
-  (e.g. `luckyds.com` / `ds-lucky.com`). **Same Prisma schema, two separate datasets.** Both share
+- **Two member/admin "sites"** — each its own service + its own PostgreSQL DB + its own domain.
+  **Same Prisma schema, two separate datasets.** Both share
   the **same LINE channel**, so a person has the same `lineUserId` but a *separate* `User` row per DB
   (⇒ `entertainmentMemberCode` is unique only *within* one DB, not across sites).
 - **One superadmin service** (`Dockerfile.superadmin`) that connects to **both** DBs at once to

@@ -476,7 +476,7 @@ Commit: `feat(admin): wire Prizes + Settings routes in shell`
 1. `cd server && npm test` — full suite green against TEST_DATABASE_URL
 2. `cd server && npm run build` — admin-ui + backend dist generated
 3. Deploy via `git push origin main`
-4. Login to https://luckyds.com/admin, click 獎品設定, edit a prize, save, verify on https://luckyds.com that the wheel reflects the change
+4. Login to the production admin URL, click 獎品設定, edit a prize, save, verify on the production member URL that the wheel reflects the change
 5. Upload a test image via 獎品設定 → ImageUploadInput; verify image visible on member-facing wheel
 
 No commit if all green.
