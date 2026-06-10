@@ -445,6 +445,22 @@ th {
   box-shadow: none;
 }
 
+.admin-log-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-log-cell code {
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.admin-log-cell span {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .admin-prize-table {
   width: 100%;
   border-collapse: collapse;

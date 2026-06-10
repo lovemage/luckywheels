@@ -3,6 +3,65 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchLogs, type ActionLogRow } from '../api/logs.js';
 import { Table } from '../components/Table.js';
 
+const ACTION_LABELS: Record<string, string> = {
+  'admin.account_change': '管理員更新帳號資料',
+  'admin.password_change': '管理員更新密碼',
+  'admin.login_failed': '管理員登入失敗',
+  'admin.login_succeeded': '管理員登入成功',
+  'admin.upload': '管理員上傳檔案',
+  'app_settings.update': '更新系統設定',
+  'draw_blocked_blacklist': '黑名單會員被阻擋抽獎',
+  'prize.created': '建立獎項',
+  'prize.updated': '更新獎項',
+  'prize.deleted': '刪除獎項',
+  'prize.reordered': '調整獎項順序',
+  'redemption.claim': '標記兌獎為已派送',
+  'redemption.void': '作廢兌獎紀錄',
+  'redemption.unclaim': '取消已派送狀態',
+  'redemption.reset_all': '重設全部兌獎狀態',
+  'superadmin.login_failed': '超級管理員登入失敗',
+  'superadmin.login_succeeded': '超級管理員登入成功',
+  'user.deleted': '刪除會員',
+  'user.points_adjust': '調整會員點數',
+  'user.account_type_change': '變更會員帳號類型',
+  'user.approved': '核准會員帳號',
+  'user.test_settings_change': '修改會員測試設定',
+  'user.blacklist_set': '加入會員黑名單',
+  'user.blacklist_clear': '移除會員黑名單',
+  'user.entertainment_code_change': '修改會員娛樂城代碼',
+  'user.migrated_in': '會員移入本站',
+  'user.migrated_out': '會員移出本站',
+};
+
+const TARGET_TYPE_LABELS: Record<string, string> = {
+  admin: '管理員登入事件',
+  admin_user: '管理員帳號',
+  app_settings: '系統設定',
+  prize: '獎項資料',
+  redemption: '兌獎紀錄',
+  upload: '上傳檔案',
+  user: '會員資料',
+};
+
+function renderActionCell(action: string) {
+  return (
+    <div className="admin-log-cell">
+      <code>{action}</code>
+      <span>{ACTION_LABELS[action] ?? '未定義的操作類型'}</span>
+    </div>
+  );
+}
+
+function renderTargetCell(targetType: string | null, targetId: string | null) {
+  if (!targetType) return '—';
+  return (
+    <div className="admin-log-cell">
+      <code>{`${targetType}:${targetId ?? ''}`}</code>
+      <span>{TARGET_TYPE_LABELS[targetType] ?? '未定義的目標類型'}</span>
+    </div>
+  );
+}
+
 export function Logs() {
   const [action, setAction] = useState('');
   const [targetType, setTargetType] = useState('');
@@ -50,8 +109,8 @@ export function Logs() {
               columns={[
                 { header: '時間', cell: (r) => new Date(r.createdAt).toLocaleString() },
                 { header: 'Admin', cell: (r) => r.adminUser?.email ?? '—' },
-                { header: 'Action', cell: (r) => r.action },
-                { header: 'Target', cell: (r) => r.targetType ? `${r.targetType}:${r.targetId ?? ''}` : '—' },
+                { header: 'Action', cell: (r) => renderActionCell(r.action) },
+                { header: 'Target', cell: (r) => renderTargetCell(r.targetType, r.targetId) },
                 { header: 'IP', cell: (r) => r.ip ?? '—' },
                 { header: 'Payload', cell: (r) => <details><summary>view</summary><pre>{JSON.stringify(r.payload, null, 2)}</pre></details> },
               ]}
