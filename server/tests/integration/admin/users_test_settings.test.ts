@@ -26,6 +26,25 @@ describe('PATCH /api/admin/users/:id/test-settings', () => {
     expect(log.payloadAfter).toMatchObject({ testSkipCost: true, testForcePrizeId: prize.id });
   });
 
+  it('updates testForcePrizeIds + cycle mode and logs both sides', async () => {
+    const admin = await createAdmin();
+    const user = await createUser({ accountType: 'test' });
+    const p1 = await createPrize();
+    const p2 = await createPrize();
+    const r = await app.request(`/api/admin/users/${user.id}/test-settings`, {
+      method: 'PATCH',
+      headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
+      body: JSON.stringify({ testForcePrizeIds: [p1.id, p2.id], testForcePrizeMode: 'cycle' }),
+    });
+    expect(r.status).toBe(200);
+    const u = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(u!.testForcePrizeIds).toEqual([p1.id, p2.id]);
+    expect(u!.testForcePrizeMode).toBe('cycle');
+    const log = await prisma.adminActionLog.findFirstOrThrow({ where: { event: 'user.test_settings_change' } });
+    expect(log.payloadBefore).toMatchObject({ testForcePrizeIds: [], testForcePrizeMode: 'random' });
+    expect(log.payloadAfter).toMatchObject({ testForcePrizeIds: [p1.id, p2.id], testForcePrizeMode: 'cycle' });
+  });
+
   it('clears testForcePrizeId when null', async () => {
     const admin = await createAdmin();
     const prize = await createPrize();
@@ -58,6 +77,19 @@ describe('PATCH /api/admin/users/:id/test-settings', () => {
       method: 'PATCH',
       headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
       body: JSON.stringify({ testForcePrizeId: 'does_not_exist' }),
+    });
+    expect(r.status).toBe(404);
+    expect((await r.json()).error.code).toBe('TEST_FORCE_PRIZE_NOT_FOUND');
+  });
+
+  it('rejects disabled prize ids (TEST_FORCE_PRIZE_NOT_FOUND 404)', async () => {
+    const admin = await createAdmin();
+    const user = await createUser({ accountType: 'test' });
+    const disabled = await createPrize({ enabled: false });
+    const r = await app.request(`/api/admin/users/${user.id}/test-settings`, {
+      method: 'PATCH',
+      headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
+      body: JSON.stringify({ testForcePrizeIds: [disabled.id] }),
     });
     expect(r.status).toBe(404);
     expect((await r.json()).error.code).toBe('TEST_FORCE_PRIZE_NOT_FOUND');

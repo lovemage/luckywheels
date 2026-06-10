@@ -17,7 +17,7 @@ describe('POST /api/draw — test account', () => {
   it('charges tier cost when testSkipCost = false', async () => {
     const u = await createUser({ accountType: 'test', testSkipCost: false, points: 50 });
     await createPrize({ weight: 1, cashAmount: 100 });
-    const r = await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'single' }) });
+    const r = await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 1 }) });
     expect(r.status).toBe(200);
     expect((await prisma.user.findUnique({ where: { id: u.id } }))?.points).toBe(44);
   });
@@ -25,17 +25,17 @@ describe('POST /api/draw — test account', () => {
   it('skips cost when testSkipCost = true', async () => {
     const u = await createUser({ accountType: 'test', testSkipCost: true, points: 50 });
     await createPrize({ weight: 1, cashAmount: 100 });
-    const r = await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'single' }) });
+    const r = await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 1 }) });
     expect(r.status).toBe(200);
     expect((await prisma.user.findUnique({ where: { id: u.id } }))?.points).toBe(50);
   });
 
-  it('forces prize via testForcePrizeId — even for multi, every sub-draw is the forced prize', async () => {
+  it('keeps legacy testForcePrizeId behavior: multi repeats the forced prize', async () => {
     const forced = await createPrize({ weight: 1, cashAmount: 999 });
     await createPrize({ weight: 99, cashAmount: 100 });
     const u = await createUser({ accountType: 'test', testForcePrizeId: forced.id, points: 100 });
     const r = await app.request('/api/draw', {
-      method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'multi' }),
+      method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 10 }),
     });
     const body = await r.json();
     expect(body.isTest).toBe(true);
@@ -58,7 +58,7 @@ describe('POST /api/draw — test account', () => {
   it('test draws DO NOT decrement stock (documented decision)', async () => {
     const forced = await createPrize({ weight: 1, cashAmount: 999, stock: 1 });
     const u = await createUser({ accountType: 'test', testForcePrizeId: forced.id, points: 100 });
-    await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'multi' }) });
+    await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 10 }) });
     const prize = await prisma.prize.findUnique({ where: { id: forced.id } });
     expect(prize?.stock).toBe(1);  // not decremented despite 10 "wins"
   });
@@ -66,7 +66,7 @@ describe('POST /api/draw — test account', () => {
   it('lifetime + ranking + system totals all frozen for test draws', async () => {
     const u = await createUser({ accountType: 'test', points: 100 });
     await createPrize({ weight: 1, cashAmount: 500 });
-    await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'multi' }) });
+    await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 10 }) });
 
     const after = await prisma.user.findUnique({ where: { id: u.id } });
     expect(after?.lifetimeDrawCount).toBe(0);
@@ -83,7 +83,7 @@ describe('POST /api/draw — test account', () => {
   it('redemption.isTest = true so admin can filter test batches out of dashboards', async () => {
     const u = await createUser({ accountType: 'test', points: 50 });
     await createPrize({ weight: 1, cashAmount: 100 });
-    await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'single' }) });
+    await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 1 }) });
     const redemption = await prisma.redemption.findFirst();
     expect(redemption?.isTest).toBe(true);
   });
@@ -91,8 +91,32 @@ describe('POST /api/draw — test account', () => {
   it('FORCE_PRIZE_NOT_FOUND when testForcePrizeId points at a disabled / nonexistent prize', async () => {
     const u = await createUser({ accountType: 'test', testForcePrizeId: 'does_not_exist', points: 100 });
     await createPrize({ weight: 1 });
-    const r = await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'single' }) });
+    const r = await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 1 }) });
     expect(r.status).toBe(422);
     expect((await r.json()).error.code).toBe('FORCE_PRIZE_NOT_FOUND');
+  });
+
+  it('cycles through testForcePrizeIds for multi draw instead of repeating one prize', async () => {
+    const p1 = await createPrize({ weight: 1, cashAmount: 100 });
+    const p2 = await createPrize({ weight: 1, cashAmount: 200 });
+    const p3 = await createPrize({ weight: 1, cashAmount: 300 });
+    const u = await createUser({
+      accountType: 'test',
+      testForcePrizeIds: [p1.id, p2.id, p3.id],
+      testForcePrizeMode: 'cycle',
+      points: 100,
+    });
+    const r = await app.request('/api/draw', {
+      method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 10 }),
+    });
+    const body = await r.json();
+    expect(r.status).toBe(200);
+    expect(body.draws.map((d: { prize: { id: string } }) => d.prize.id)).toEqual([
+      p1.id, p2.id, p3.id, p1.id, p2.id, p3.id, p1.id, p2.id, p3.id, p1.id,
+    ]);
+    expect(new Set(body.draws.map((d: { prize: { id: string } }) => d.prize.id)).size).toBe(3);
+    expect(body.redemption.totalWinAmount).toBe(1900);
+    const logs = await prisma.drawLog.findMany({ orderBy: { subIndex: 'asc' } });
+    expect(logs.every((log) => log.forcedByAdmin)).toBe(true);
   });
 });

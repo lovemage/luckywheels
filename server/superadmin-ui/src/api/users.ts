@@ -44,6 +44,8 @@ export function fetchUsers(query: UsersListQuery): Promise<UsersListResponse> {
 export interface SuperUserDetail extends SuperUserRow {
   testSkipCost: boolean;
   testForcePrizeId: string | null;
+  testForcePrizeIds?: string[] | null;
+  testForcePrizeMode?: 'random' | 'cycle' | null;
   blacklistReason: string | null;
   blacklistedByAdminUserId: string | null;
   entertainmentCodeBoundAt: string | null;
@@ -119,7 +121,16 @@ export function setEntertainmentCode(site: Site, id: string, body: { code: strin
   });
 }
 
-export function updateTestSettings(site: Site, id: string, body: { testSkipCost?: boolean; testForcePrizeId?: string | null }): Promise<{ ok: true }> {
+export function updateTestSettings(
+  site: Site,
+  id: string,
+  body: {
+    testSkipCost?: boolean;
+    testForcePrizeId?: string | null;
+    testForcePrizeIds?: string[];
+    testForcePrizeMode?: 'random' | 'cycle';
+  },
+): Promise<{ ok: true }> {
   return api(`/api/superadmin/users/${site}/${id}/test-settings`, {
     method: 'PATCH',
     body: JSON.stringify(body),

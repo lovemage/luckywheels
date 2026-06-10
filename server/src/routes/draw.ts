@@ -156,6 +156,17 @@ function costControlGate(globalDrawNumber: number, settings: DrawSettings): Gate
   return globalDrawNumber % settings.costControlInterval === 0 ? null : GatedBy.cost_control;
 }
 
+function testForcePrizePool(user: User): string[] {
+  const testUser = user as User & { testForcePrizeIds?: string[] };
+  if (testUser.testForcePrizeIds?.length) return testUser.testForcePrizeIds;
+  return user.testForcePrizeId ? [user.testForcePrizeId] : [];
+}
+
+function pickForcedTestPrize(pool: Prize[], mode: string, subIndex: number): Prize {
+  if (mode === 'cycle') return pool[subIndex % pool.length]!;
+  return pool[Math.floor(Math.random() * pool.length)]!;
+}
+
 async function reservePrizeStock(tx: Prisma.TransactionClient, prize: Prize): Promise<boolean> {
   if (prize.isConsolation) return true;
   const stockUpdate = await tx.prize.updateMany({
@@ -357,13 +368,23 @@ async function handleTestDraw(c: Context, user: User, tier: Tier, threshold: { p
         },
       });
 
+      const forcedIds = testForcePrizePool(user);
+      const forcedByAdmin = forcedIds.length > 0;
+      const forcedPrizeById = new Map(eligible.map((p) => [p.id, p]));
+      const forcedPool: Prize[] = [];
+      for (const id of forcedIds) {
+        const forcedPrize = forcedPrizeById.get(id);
+        if (!forcedPrize) {
+          throw new AppError('FORCE_PRIZE_NOT_FOUND', 'test override prize missing', 422);
+        }
+        forcedPool.push(forcedPrize);
+      }
+
       const subDraws: Array<{ chosen: Prize; winningCashAmount: number }> = [];
       for (let i = 0; i < threshold.draws; i++) {
         let chosen: Prize;
-        if (user.testForcePrizeId) {
-          const found = eligible.find((p) => p.id === user.testForcePrizeId);
-          if (!found) throw new AppError('FORCE_PRIZE_NOT_FOUND', 'test override prize missing', 422);
-          chosen = found;
+        if (forcedByAdmin) {
+          chosen = pickForcedTestPrize(forcedPool, (user as User & { testForcePrizeMode?: string }).testForcePrizeMode ?? 'random', i);
         } else {
           chosen = pickPrize(eligible);
         }
@@ -390,7 +411,7 @@ async function handleTestDraw(c: Context, user: User, tier: Tier, threshold: { p
             randomSeed: randomBytes(8).toString('hex'),
             winningCashAmount,
             isTest: true,
-            forcedByAdmin: Boolean(user.testForcePrizeId),
+            forcedByAdmin,
           },
         });
         drawLogs.push({ log, chosen });

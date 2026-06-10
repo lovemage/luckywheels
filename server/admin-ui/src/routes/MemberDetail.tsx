@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams, Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -14,7 +14,9 @@ import {
   approveUser,
   type DrawHistoryItem,
   type PointsHistoryItem,
+  type TestForcePrizeMode,
 } from '../api/users.js';
+import { fetchPrizes } from '../api/prizes.js';
 import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
 import { DoubleConfirmModal } from '../components/DoubleConfirmModal.js';
@@ -52,6 +54,8 @@ export function MemberDetail() {
   const [codeModal, setCodeModal] = useState<null | { next: string | null }>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [memberTab, setMemberTab] = useState<'overview' | 'history'>('overview');
+  const [selectedPrizeIds, setSelectedPrizeIds] = useState<string[]>([]);
+  const [forcePrizeMode, setForcePrizeMode] = useState<TestForcePrizeMode>('random');
   const qc = useQueryClient();
   const adjust = useMutation({
     mutationFn: (delta: number) => adjustPoints(id!, { delta }),
@@ -95,6 +99,12 @@ export function MemberDetail() {
       navigate('/users');
     },
   });
+  const testSettingsMut = useMutation({
+    mutationFn: (body: Parameters<typeof updateTestSettings>[1]) => updateTestSettings(id!, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users', id] });
+    },
+  });
   const history = useQuery({
     queryKey: ['admin', 'users', id, 'history'],
     queryFn: () => fetchDrawHistory(id!),
@@ -105,6 +115,35 @@ export function MemberDetail() {
     queryFn: () => fetchPointsHistory(id!),
     enabled: Boolean(id),
   });
+  const prizes = useQuery({
+    queryKey: ['admin', 'prizes'],
+    queryFn: fetchPrizes,
+    enabled: data?.accountType === 'test',
+  });
+  const enabledPrizes = (prizes.data?.items ?? []).filter((prize) => prize.enabled);
+  const enabledPrizeIds = new Set(enabledPrizes.map((prize) => prize.id));
+  const hiddenSelectedPrizeIds = selectedPrizeIds.filter((prizeId) => !enabledPrizeIds.has(prizeId));
+
+  useEffect(() => {
+    if (!data) return;
+    const nextIds = Array.isArray(data.testForcePrizeIds) && data.testForcePrizeIds.length > 0
+      ? data.testForcePrizeIds
+      : data.testForcePrizeId
+        ? [data.testForcePrizeId]
+        : [];
+    setSelectedPrizeIds(nextIds);
+    setForcePrizeMode(data.testForcePrizeMode ?? 'random');
+  }, [data]);
+
+  function updateForcedPrizes(nextIds: string[], nextMode = forcePrizeMode) {
+    setSelectedPrizeIds(nextIds);
+    setForcePrizeMode(nextMode);
+    testSettingsMut.mutate({
+      testForcePrizeIds: nextIds,
+      testForcePrizeMode: nextMode,
+    });
+  }
+
   if (isLoading || !data) return <p>載入中…</p>;
   return (
     <section className="member-detail-page">
@@ -273,28 +312,72 @@ export function MemberDetail() {
               <label className="member-detail-check">
                 <input
                   type="checkbox"
-                  defaultChecked={data.testSkipCost}
-                  onChange={(e) =>
-                    updateTestSettings(id!, { testSkipCost: e.target.checked }).then(() =>
-                      qc.invalidateQueries({ queryKey: ['admin', 'users', id] }),
-                    )
-                  }
+                  checked={data.testSkipCost}
+                  disabled={testSettingsMut.isPending}
+                  onChange={(e) => testSettingsMut.mutate({ testSkipCost: e.target.checked })}
                 />
                 不扣積分（測試專用）
               </label>
-              <label className="member-detail-field">
-                強制中獎 Prize ID（空白＝關閉）
-                <input
-                  type="text"
-                  defaultValue={data.testForcePrizeId ?? ''}
-                  onBlur={(e) => {
-                    const v = e.target.value.trim();
-                    updateTestSettings(id!, { testForcePrizeId: v === '' ? null : v }).then(() =>
-                      qc.invalidateQueries({ queryKey: ['admin', 'users', id] }),
-                    );
-                  }}
-                />
-              </label>
+              <div className="member-detail-field">
+                <span>指定中獎模式</span>
+                <div className="member-detail-segmented" role="group" aria-label="指定中獎模式">
+                  {([
+                    ['random', '隨機'],
+                    ['cycle', '依序循環'],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={forcePrizeMode === value ? 'is-active' : ''}
+                      disabled={testSettingsMut.isPending}
+                      onClick={() => updateForcedPrizes(selectedPrizeIds, value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="member-detail-field">
+                <span>指定中獎獎項</span>
+                {prizes.isLoading && <p className="admin-muted-text">載入獎項中…</p>}
+                {!prizes.isLoading && enabledPrizes.length === 0 && (
+                  <p className="admin-muted-text">目前沒有啟用中的獎項</p>
+                )}
+                {enabledPrizes.length > 0 && (
+                  <div className="member-detail-prize-options">
+                    {enabledPrizes.map((prize) => {
+                      const checked = selectedPrizeIds.includes(prize.id);
+                      return (
+                        <label key={prize.id} className="member-detail-prize-option">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={testSettingsMut.isPending}
+                            onChange={(e) => {
+                              const nextIds = e.target.checked
+                                ? [...selectedPrizeIds, prize.id]
+                                : selectedPrizeIds.filter((prizeId) => prizeId !== prize.id);
+                              updateForcedPrizes(nextIds);
+                            }}
+                          />
+                          <span>
+                            <strong>{prize.rankLabel} {prize.name}</strong>
+                            <small>{prize.cashAmount.toLocaleString()} 元</small>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {!prizes.isLoading && hiddenSelectedPrizeIds.length > 0 && (
+                  <small className="admin-muted-text">
+                    未顯示的既有 Prize ID：{hiddenSelectedPrizeIds.join('、')}
+                  </small>
+                )}
+              </div>
+              {testSettingsMut.isError && (
+                <p className="member-detail-error">{testSettingsMut.error.message}</p>
+              )}
             </section>
           )}
         </div>

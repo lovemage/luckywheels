@@ -10,7 +10,13 @@ describe('PATCH /api/admin/users/:id/account-type', () => {
 
   it('promotes a test user to verified and audit-logs before/after', async () => {
     const admin = await createAdmin();
-    const user = await createUser({ accountType: 'test', testSkipCost: true });
+    const user = await createUser({
+      accountType: 'test',
+      testSkipCost: true,
+      testForcePrizeId: 'legacy-prize-id',
+      testForcePrizeIds: ['new-prize-id'],
+      testForcePrizeMode: 'cycle',
+    });
     const r = await app.request(`/api/admin/users/${user.id}/account-type`, {
       method: 'PATCH',
       headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
@@ -21,6 +27,8 @@ describe('PATCH /api/admin/users/:id/account-type', () => {
     expect(u!.accountType).toBe('verified');
     expect(u!.testSkipCost).toBe(false);
     expect(u!.testForcePrizeId).toBeNull();
+    expect(u!.testForcePrizeIds).toEqual([]);
+    expect(u!.testForcePrizeMode).toBe('random');
     const log = await prisma.adminActionLog.findFirstOrThrow({ where: { event: 'user.account_type_change' } });
     expect(log.payloadBefore).toMatchObject({ accountType: 'test' });
     expect(log.payloadAfter).toMatchObject({ accountType: 'verified' });

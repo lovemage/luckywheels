@@ -92,13 +92,20 @@ adminUsersRoutes.patch('/api/admin/users/:id/approve', requireAdmin, async (c) =
 const TestSettingsBody = z.object({
   testSkipCost: z.boolean().optional(),
   testForcePrizeId: z.string().nullable().optional(),
+  testForcePrizeIds: z.array(z.string()).optional(),
+  testForcePrizeMode: z.enum(['random', 'cycle']).optional(),
 });
 
 adminUsersRoutes.patch('/api/admin/users/:id/test-settings', requireAdmin, async (c) => {
   let body: z.infer<typeof TestSettingsBody>;
   try { body = TestSettingsBody.parse(await c.req.json()); }
   catch { throw new AppError('TEST_SETTINGS_BODY_INVALID', 'invalid body', 400); }
-  if (body.testSkipCost === undefined && body.testForcePrizeId === undefined) {
+  if (
+    body.testSkipCost === undefined &&
+    body.testForcePrizeId === undefined &&
+    body.testForcePrizeIds === undefined &&
+    body.testForcePrizeMode === undefined
+  ) {
     throw new AppError('TEST_SETTINGS_NO_OP', 'no fields to update', 400);
   }
   await setTestSettingsOp(prisma, c.req.param('id'), body, actorFrom(c, c.get('admin').id));

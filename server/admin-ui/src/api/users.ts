@@ -37,6 +37,8 @@ export function fetchUsers(q: UsersListQuery): Promise<UsersListResponse> {
 export interface AdminUserDetail extends AdminUserRow {
   testSkipCost: boolean;
   testForcePrizeId: string | null;
+  testForcePrizeIds?: string[] | null;
+  testForcePrizeMode?: TestForcePrizeMode | null;
   blacklistReason: string | null;
   blacklistedByAdminUserId: string | null;
   entertainmentCodeBoundAt: string | null;
@@ -88,7 +90,17 @@ export function approveUser(id: string): Promise<{ ok: true }> {
   });
 }
 
-export function updateTestSettings(id: string, body: { testSkipCost?: boolean; testForcePrizeId?: string | null }) {
+export type TestForcePrizeMode = 'random' | 'cycle';
+
+export function updateTestSettings(
+  id: string,
+  body: {
+    testSkipCost?: boolean;
+    testForcePrizeId?: string | null;
+    testForcePrizeIds?: string[];
+    testForcePrizeMode?: TestForcePrizeMode;
+  },
+) {
   return api<{ ok: true }>(`/api/admin/users/${id}/test-settings`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },

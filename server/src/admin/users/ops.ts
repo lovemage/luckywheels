@@ -22,6 +22,11 @@ export interface AuditActor {
   note?: string | null;
 }
 
+type TestPrizeSettingsUser = {
+  testForcePrizeIds: string[];
+  testForcePrizeMode: string;
+};
+
 /** Build the audit actor from a request context + the acting admin's id. */
 export function actorFrom(c: Context, adminUserId: string | null): AuditActor {
   return {
@@ -191,7 +196,12 @@ export async function setAccountTypeOp(
       data: {
         accountType,
         // demoting to a non-test type clears test settings
-        ...(accountType !== 'test' ? { testSkipCost: false, testForcePrizeId: null } : {}),
+        ...(accountType !== 'test' ? {
+          testSkipCost: false,
+          testForcePrizeId: null,
+          testForcePrizeIds: [],
+          testForcePrizeMode: 'random',
+        } : {}),
       },
     });
     await writeAdminActionLog(tx, {
@@ -228,7 +238,12 @@ export async function approveUserOp(client: PrismaClient, userId: string, actor:
 export async function setTestSettingsOp(
   client: PrismaClient,
   userId: string,
-  body: { testSkipCost?: boolean; testForcePrizeId?: string | null },
+  body: {
+    testSkipCost?: boolean;
+    testForcePrizeId?: string | null;
+    testForcePrizeIds?: string[];
+    testForcePrizeMode?: 'random' | 'cycle';
+  },
   actor: AuditActor,
 ): Promise<void> {
   await client.$transaction(async (tx) => {
@@ -237,14 +252,44 @@ export async function setTestSettingsOp(
     if (user.accountType !== 'test') {
       throw new AppError('TEST_SETTINGS_REQUIRES_TEST_ACCOUNT', 'user is not a test account', 422);
     }
-    if (body.testForcePrizeId) {
-      const prize = await tx.prize.findUnique({ where: { id: body.testForcePrizeId } });
-      if (!prize) throw new AppError('TEST_FORCE_PRIZE_NOT_FOUND', 'prize not found', 404);
+    const testUser = user as typeof user & TestPrizeSettingsUser;
+    const idsToValidate = [
+      ...(body.testForcePrizeId ? [body.testForcePrizeId] : []),
+      ...(body.testForcePrizeIds ?? []),
+    ];
+    if (idsToValidate.length > 0) {
+      const uniqueIds = Array.from(new Set(idsToValidate));
+      const prizes = await tx.prize.findMany({
+        where: { id: { in: uniqueIds }, enabled: true },
+        select: { id: true },
+      });
+      if (prizes.length !== uniqueIds.length) {
+        throw new AppError('TEST_FORCE_PRIZE_NOT_FOUND', 'prize not found or disabled', 404);
+      }
     }
-    const before = { testSkipCost: user.testSkipCost, testForcePrizeId: user.testForcePrizeId };
+    const before = {
+      testSkipCost: user.testSkipCost,
+      testForcePrizeId: user.testForcePrizeId,
+      testForcePrizeIds: testUser.testForcePrizeIds ?? [],
+      testForcePrizeMode: testUser.testForcePrizeMode ?? 'random',
+    };
+    const nextForcePrizeIds = body.testForcePrizeIds === undefined
+      ? body.testForcePrizeId === undefined
+        ? testUser.testForcePrizeIds ?? []
+        : body.testForcePrizeId
+          ? [body.testForcePrizeId]
+          : []
+      : Array.from(new Set(body.testForcePrizeIds));
     const after = {
       testSkipCost: body.testSkipCost ?? user.testSkipCost,
-      testForcePrizeId: body.testForcePrizeId === undefined ? user.testForcePrizeId : body.testForcePrizeId,
+      testForcePrizeId:
+        body.testForcePrizeId !== undefined
+          ? body.testForcePrizeId
+          : body.testForcePrizeIds !== undefined
+            ? null
+            : user.testForcePrizeId,
+      testForcePrizeIds: nextForcePrizeIds,
+      testForcePrizeMode: body.testForcePrizeMode ?? testUser.testForcePrizeMode ?? 'random',
     };
     await tx.user.update({ where: { id: userId }, data: after });
     await writeAdminActionLog(tx, {

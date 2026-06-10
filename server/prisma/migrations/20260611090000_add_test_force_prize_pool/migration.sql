@@ -1,0 +1,3 @@
+ALTER TABLE "User"
+  ADD COLUMN "testForcePrizeIds" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "testForcePrizeMode" TEXT NOT NULL DEFAULT 'random';
