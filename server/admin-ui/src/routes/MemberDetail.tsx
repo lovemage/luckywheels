@@ -156,44 +156,77 @@ export function MemberDetail() {
         <AccountTypeBadge type={data.accountType} />
       </header>
 
-      <div className="member-detail-actions">
-        {data.accountType === 'pending' && (
-          <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending}>
-            {approveMut.isPending ? '處理中…' : '允許會員'}
-          </button>
-        )}
-        {data.accountType !== 'blacklisted' && data.accountType !== 'pending' && (
-          <button
-            onClick={() => {
-              const next = data.accountType === 'test' ? 'verified' : 'test';
-              if (window.confirm(`切換為「${next === 'test' ? '測試' : '正式'}」會員？`)) {
-                setAccountType(id!, next).then(() =>
-                  qc.invalidateQueries({ queryKey: ['admin', 'users', id] }),
-                );
-              }
-            }}
-          >
-            測試會員
-          </button>
-        )}
-        {data.accountType === 'blacklisted' ? (
-          <button onClick={() => setBlacklistModal({ mode: 'clear' })}>解除黑名單</button>
-        ) : (
-          <button onClick={() => setBlacklistModal({ mode: 'set' })}>黑名單</button>
-        )}
-        <button className="danger" onClick={() => setDeleteModalOpen(true)}>刪除</button>
-      </div>
+      <div className="member-detail-toolbar">
+        <div className="member-detail-actions">
+          {data.accountType === 'pending' && (
+            <button onClick={() => approveMut.mutate()} disabled={approveMut.isPending}>
+              {approveMut.isPending ? '處理中…' : '允許會員'}
+            </button>
+          )}
+          {data.accountType !== 'blacklisted' && data.accountType !== 'pending' && (
+            <button
+              onClick={() => {
+                const next = data.accountType === 'test' ? 'verified' : 'test';
+                if (window.confirm(`切換為「${next === 'test' ? '測試' : '正式'}」會員？`)) {
+                  setAccountType(id!, next).then(() =>
+                    qc.invalidateQueries({ queryKey: ['admin', 'users', id] }),
+                  );
+                }
+              }}
+            >
+              測試會員
+            </button>
+          )}
+          {data.accountType === 'blacklisted' ? (
+            <button onClick={() => setBlacklistModal({ mode: 'clear' })}>解除黑名單</button>
+          ) : (
+            <button onClick={() => setBlacklistModal({ mode: 'set' })}>黑名單</button>
+          )}
+          <button className="danger" onClick={() => setDeleteModalOpen(true)}>刪除</button>
+        </div>
 
-      <nav className="member-detail-tabs">
-        <button disabled={memberTab === 'overview'} onClick={() => setMemberTab('overview')}>
-          會員資訊
-        </button>
-        <button disabled={memberTab === 'history'} onClick={() => setMemberTab('history')}>
-          抽獎歷史
-        </button>
-      </nav>
+        <nav className="member-detail-tabs">
+          <button disabled={memberTab === 'overview'} onClick={() => setMemberTab('overview')}>
+            會員資訊
+          </button>
+          <button disabled={memberTab === 'history'} onClick={() => setMemberTab('history')}>
+            抽獎歷史
+          </button>
+        </nav>
+      </div>
       {memberTab === 'overview' && (
         <div className="member-detail-grid">
+          <section className="member-detail-card">
+            <h2>積分調整</h2>
+            <div className="member-detail-points-tool">
+              <input
+                type="number"
+                value={pointsDelta}
+                onChange={(e) => {
+                  setPointsDelta(e.target.value);
+                  setPointsError(null);
+                  setPointsSuccess(null);
+                }}
+                placeholder="輸入正數或負數"
+              />
+              <button
+                onClick={() => {
+                  const n = Number(pointsDelta);
+                  if (!Number.isInteger(n) || n === 0) {
+                    setPointsError('請輸入非零整數');
+                    return;
+                  }
+                  adjust.mutate(n);
+                }}
+                disabled={adjust.isPending || pointsDelta.trim() === ''}
+              >
+                {adjust.isPending ? '處理中…' : pointsDelta.trim() && Number(pointsDelta) < 0 ? '扣除積分' : '新增積分'}
+              </button>
+            </div>
+            {pointsSuccess && <p className="admin-success-text">{pointsSuccess}</p>}
+            {pointsError && <p className="member-detail-error">{pointsError}</p>}
+          </section>
+
           <section className="member-detail-card member-detail-card--wide">
             <h2>基本資料</h2>
             <dl className="member-detail-info-grid">
@@ -233,37 +266,6 @@ export function MemberDetail() {
                 <strong>{data.lifetimeDrawCount.toLocaleString()}</strong>
               </article>
             </div>
-          </section>
-
-          <section className="member-detail-card">
-            <h2>積分調整</h2>
-            <div className="member-detail-points-tool">
-              <input
-                type="number"
-                value={pointsDelta}
-                onChange={(e) => {
-                  setPointsDelta(e.target.value);
-                  setPointsError(null);
-                  setPointsSuccess(null);
-                }}
-                placeholder="輸入正數或負數"
-              />
-              <button
-                onClick={() => {
-                  const n = Number(pointsDelta);
-                  if (!Number.isInteger(n) || n === 0) {
-                    setPointsError('請輸入非零整數');
-                    return;
-                  }
-                  adjust.mutate(n);
-                }}
-                disabled={adjust.isPending || pointsDelta.trim() === ''}
-              >
-                {adjust.isPending ? '處理中…' : pointsDelta.trim() && Number(pointsDelta) < 0 ? '扣除積分' : '新增積分'}
-              </button>
-            </div>
-            {pointsSuccess && <p className="admin-success-text">{pointsSuccess}</p>}
-            {pointsError && <p className="member-detail-error">{pointsError}</p>}
           </section>
 
           <section className="member-detail-card member-detail-card--wide">
