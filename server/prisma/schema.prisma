@@ -38,6 +38,8 @@ model User {
 
   testSkipCost             Boolean      @default(false)
   testForcePrizeId         String?
+  testForcePrizeIds        String[]     @default([])
+  testForcePrizeMode       String       @default("random")
 
   blacklistedAt            DateTime?
   blacklistedByAdminUserId String?

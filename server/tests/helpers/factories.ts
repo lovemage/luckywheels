@@ -11,6 +11,8 @@ export async function createUser(o: Partial<{
   accountType: AccountType;
   testSkipCost: boolean;
   testForcePrizeId: string | null;
+  testForcePrizeIds: string[];
+  testForcePrizeMode: 'random' | 'cycle';
   lifetimeDrawCount: number;
   lastWinDrawIndex: number | null;
   totalBurnAmount: number;
@@ -35,6 +37,8 @@ export async function createUser(o: Partial<{
       accountType: o.accountType ?? 'verified',
       testSkipCost: o.testSkipCost ?? false,
       testForcePrizeId: o.testForcePrizeId ?? null,
+      testForcePrizeIds: o.testForcePrizeIds ?? [],
+      testForcePrizeMode: o.testForcePrizeMode ?? 'random',
       lifetimeDrawCount: o.lifetimeDrawCount ?? 0,
       lastWinDrawIndex: o.lastWinDrawIndex ?? null,
       totalBurnAmount: o.totalBurnAmount ?? 0,

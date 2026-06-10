@@ -732,6 +732,66 @@ th {
   font-weight: 800;
 }
 
+.member-detail-segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: fit-content;
+  padding: 4px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  background: var(--admin-surface-strong);
+}
+
+.member-detail-segmented button {
+  min-height: 32px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.member-detail-segmented button.is-active {
+  border-color: rgba(176, 138, 57, 0.34);
+  color: var(--admin-accent-strong);
+  background: #fffaf0;
+}
+
+.member-detail-prize-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.member-detail-prize-option {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 10px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  color: var(--admin-ink);
+  background: var(--admin-surface);
+}
+
+.member-detail-prize-option input {
+  min-height: 0;
+  margin-top: 3px;
+}
+
+.member-detail-prize-option span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.member-detail-prize-option strong {
+  overflow-wrap: anywhere;
+}
+
+.member-detail-prize-option small {
+  color: var(--admin-muted);
+  font-weight: 700;
+}
+
 .member-search {
   position: relative;
   width: 100%;

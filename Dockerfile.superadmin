@@ -1,0 +1,56 @@
+# Superadmin service — a SEPARATE Railway service from the same repo. It
+# connects to BOTH site databases at once (SITE_A_DATABASE_URL /
+# SITE_B_DATABASE_URL) and serves the superadmin console at its own domain.
+# It does NOT run prisma migrate — each member service owns and migrates its
+# own database.
+FROM node:22-bookworm-slim AS base
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+
+############################################
+# 1) Build superadmin UI
+############################################
+FROM base AS superadmin-ui-builder
+COPY server/superadmin-ui/package.json server/superadmin-ui/package-lock.json ./
+RUN npm ci
+COPY server/superadmin-ui ./
+RUN npm run build
+
+############################################
+# 2) Build server (tsc) + prisma client
+############################################
+FROM base AS server-builder
+COPY server/package.json server/package-lock.json ./
+RUN npm ci
+COPY server/tsconfig.json server/tsconfig.build.json ./
+COPY server/prisma ./prisma
+COPY server/src ./src
+COPY server/scripts ./scripts
+RUN npx prisma generate
+RUN npx tsc -p tsconfig.build.json
+
+############################################
+# 3) Runtime
+############################################
+FROM base AS runtime
+ENV NODE_ENV=production
+WORKDIR /app/server
+
+COPY server/package.json server/package-lock.json ./
+RUN npm ci
+COPY server/prisma ./prisma
+RUN npx prisma generate
+
+# Compiled server (includes dist/src/superadmin/*)
+COPY --from=server-builder /app/dist ./dist
+COPY --from=server-builder /app/scripts ./scripts
+
+# Superadmin UI build → served from /app/server/superadmin-ui/dist by index.ts
+COPY --from=superadmin-ui-builder /app/dist ./superadmin-ui/dist
+
+EXPOSE 3001
+# No `prisma migrate deploy` here on purpose — this service must never migrate
+# either site DB. It only reads/writes existing rows.
+CMD ["node", "dist/src/superadmin/index.js"]

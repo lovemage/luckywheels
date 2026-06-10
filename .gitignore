@@ -3,6 +3,12 @@ dist/
 .vite/
 *.tsbuildinfo
 
+# CodeGraph local knowledge-graph index
+.codegraph/
+
+報價單/
+業主版本/
+
 .env
 .env.local
 .env.*.local

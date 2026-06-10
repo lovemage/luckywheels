@@ -17,7 +17,13 @@
     "admin:create": "tsx scripts/create-admin.ts",
     "admin-ui:dev": "npm --prefix admin-ui run dev",
     "admin-ui:build": "npm --prefix admin-ui run build",
-    "admin-ui:test": "npm --prefix admin-ui run test"
+    "admin-ui:test": "npm --prefix admin-ui run test",
+    "superadmin:dev": "tsx watch --env-file=.env src/superadmin/index.ts",
+    "start:superadmin": "node dist/src/superadmin/index.js",
+    "superadmin:create": "tsx scripts/create-superadmin.ts",
+    "build:superadmin": "tsc -p tsconfig.build.json && npm run superadmin-ui:build",
+    "superadmin-ui:dev": "npm --prefix superadmin-ui run dev",
+    "superadmin-ui:build": "npm --prefix superadmin-ui run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1062.0",

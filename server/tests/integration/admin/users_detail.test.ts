@@ -17,6 +17,7 @@ describe('GET /api/admin/users/:id', () => {
     expect(body).toMatchObject({
       id: user.id, nickname: 'Test', accountType: 'test',
       testSkipCost: true, testForcePrizeId: null,
+      testForcePrizeIds: [], testForcePrizeMode: 'random',
       points: 28,
     });
     expect(body.entertainmentMemberCode).not.toBeNull();
