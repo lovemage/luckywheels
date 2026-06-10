@@ -4,18 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`LINE 會員抽獎系統` — a LINE-login lucky-wheel draw system. It is no longer a single-page
-prototype: it is now **three apps in one repo**, plus a backend that is substantially built.
+`LINE 會員抽獎系統` — a LINE-login lucky-wheel draw system. One codebase that **builds four apps**,
+deployed as **multiple Railway services**.
 
 | App | Path | Stack | Served at |
 | --- | --- | --- | --- |
 | Member SPA (玩家端) | `src/` | Vite + React 19 + zustand | `/` |
 | Backend API | `server/` | Hono + Prisma (PostgreSQL) + jose JWT | `/api/*` |
 | Admin Console (後台) | `server/admin-ui/` | Vite + React 19 + React Router + React Query | `/admin` |
+| Superadmin Console (跨站總管) | `server/src/superadmin/*` + `server/superadmin-ui/` | same backend pkg; separate Hono entry + SPA | own domain `/` |
 
-In production a **single container** (`Dockerfile`) builds all three and the Hono server serves
-both SPAs as static files alongside the API (`server/src/index.ts` — `/admin/*` → admin-ui dist,
-`/*` → member `web-dist`, everything else falls back to the respective SPA `index.html`).
+### Production topology (NOT derivable from the repo — read this)
+
+This repo is deployed **several times in one Railway project**:
+
+- **Two member/admin "sites"** — each its own service + its own PostgreSQL DB + its own domain
+  (e.g. `luckyds.com` / `ds-lucky.com`). **Same Prisma schema, two separate datasets.** Both share
+  the **same LINE channel**, so a person has the same `lineUserId` but a *separate* `User` row per DB
+  (⇒ `entertainmentMemberCode` is unique only *within* one DB, not across sites).
+- **One superadmin service** (`Dockerfile.superadmin`) that connects to **both** DBs at once to
+  review/manage members and show cross-site stats. It runs **no migrations**.
+
+Each member service builds from the root `Dockerfile` (member SPA + admin-ui + server in one image);
+the superadmin builds from `Dockerfile.superadmin` and serves `server/superadmin-ui/` at its root.
 
 ## Source-of-truth docs — read before non-trivial changes
 
@@ -55,6 +66,14 @@ npm install
 npm run dev        # vite dev server for the admin SPA
 npm run build      # tsc -b + vite build → dist/ (vite base is "/admin/")
 npm test           # vitest (happy-dom + Testing Library)
+```
+
+**Superadmin (from `server/`):**
+```bash
+npm run superadmin:dev      # PORT=3002 recommended; needs SITE_A/B_DATABASE_URL + SUPERADMIN_JWT_SECRET
+npm run superadmin-ui:dev   # vite dev server for the superadmin SPA (server/superadmin-ui/)
+npm run superadmin:create -- --account a@b.com --password '…' [--site A] [--promote]
+npm run build:superadmin    # tsc (server) + builds superadmin-ui
 ```
 
 There is **no linter**. Type errors fail every build (`tsc` runs before `vite build` everywhere).
@@ -113,6 +132,55 @@ via `/api/admin/settings`. The member SPA reads a public subset via `GET /api/pu
 Mutating admin actions write `AdminActionLog` rows (`server/src/audit/log.ts`); some system events
 (e.g. `draw_blocked_blacklist`) log with a null `adminUserId`.
 
+A **third** realm exists for the superadmin: its own secret `SUPERADMIN_JWT_SECRET`, cookie
+`lw_superadmin_session`, and `requireSuperadmin` (`server/src/superadmin/auth/*`) which checks the
+loaded `AdminUser.role === 'superadmin'` in the **control DB** (`SUPERADMIN_CONTROL_SITE`, default `A`).
+
+### Database connections — one client per DB, swapped by datasource URL
+
+`server/src/db.ts` exports a **single module-level `PrismaClient`** bound to `DATABASE_URL` at import;
+every member/admin route uses this global `prisma`. Tests swap the DB by overwriting
+`process.env.DATABASE_URL` with `TEST_DATABASE_URL` **before** `db.ts` is imported (`tests/setup.ts`).
+
+The **superadmin** is the only place holding **two live connections**:
+`server/src/superadmin/clients.ts` builds one client per site with
+`new PrismaClient({ datasources: { db: { url } } })` (`clientFor('A'|'B')`), reading
+`SITE_A_DATABASE_URL` / `SITE_B_DATABASE_URL`. Both DBs share the same generated client, so this just
+works. On Railway those are reference variables to the two Postgres services, so the superadmin talks
+to them over **private networking** (`*.railway.internal`). `server/src/superadmin/env.ts` parses its
+own env directly (it does **not** import the shared `env.ts`), so the superadmin service needs only
+its own vars, not the member app's LINE/DB config.
+
+### Images / media — upload to a bucket, read through a proxy
+
+Prize images live in a **Railway Bucket** (S3-compatible, `@aws-sdk/client-s3`,
+`server/src/storage/bucket.ts`, `forcePathStyle`). Admins upload via `POST /api/admin/uploads`
+(multipart `file`; png/jpeg/webp/gif, ≤5 MB; stored at key `prize-images/<uuid>.<ext>`);
+`Prize.imageUrl` stores the bucket's **public URL** (`${ENDPOINT}/${BUCKET}/${key}`).
+
+Clients **never hotlink the bucket** — both SPAs rewrite stored URLs through `/api/media-proxy?url=…`
+via `proxiedImageUrl()`. The proxy (`server/src/routes/media-proxy.ts`) is an **allow-list / SSRF
+guard**: it only fetches when the URL's host + bucket prefix matches the configured `ENDPOINT`/`BUCKET`
+(else `403`), then streams the object back with long immutable cache + `nosniff`. This sidesteps
+hotlinking/CORS and keeps bucket credentials server-side. Bucket env is optional locally → upload/proxy
+endpoints return `BUCKET_NOT_CONFIGURED` when unset.
+
+### Backend routing — how requests are dispatched
+
+Routers are plain Hono routers, all mounted at `/` (full paths live inside each router) in
+`server/src/index.ts` (member/admin) and `server/src/superadmin/index.ts` (superadmin). `app.onError`
+runs every thrown `AppError` through `formatError` → `{ error: { code, message } }` + status. **Order
+matters:** API routes first, then static SPA serving, then a catch-all `GET *` returning the SPA
+`index.html` (so client-side routes deep-link). The member server additionally rewrites
+`/admin/assets/*` because admin-ui is built with vite `base: "/admin/"`.
+
+- Member routes: `routes/{auth,draw,me,onboarding,public,media-proxy}`.
+- Admin routes: `admin/routes/{auth,users,redemptions,prizes,settings,action-logs,uploads,me}`.
+- Superadmin routes: `superadmin/routes/{auth,users,stats}`.
+
+Shared member-management logic lives in `server/src/admin/users/ops.ts` (client-injectable, takes an
+`AuditActor`) so the admin routes and the superadmin routes call **one** implementation and can't drift.
+
 ### Member SPA (`src/`)
 
 No longer "everything in App.tsx". `src/App.tsx` is the phone-shell shell, but there's now a real
@@ -143,12 +211,26 @@ is why the server rewrites `/admin/assets/*` when serving it.
 
 ## Deploy
 
-`Dockerfile` is a 4-stage multi-stage build (member web-builder, admin-builder, server-builder,
-runtime) → one image. `railway.json` deploys it on Railway with healthcheck `/api/healthz`.
-Container `CMD` runs `prisma migrate deploy` **then** starts the server, so a missing migration aborts
-the deploy loudly. The Railway Bucket (S3-compatible, `@aws-sdk/client-s3`) backs admin image
-uploads; its 5 env vars are auto-injected when the bucket service is referenced. Locally they're
-optional — upload endpoints return `BUCKET_NOT_CONFIGURED` when unset.
+**Member sites** — `Dockerfile` is a 4-stage build (member web-builder, admin-builder, server-builder,
+runtime) → one image; `railway.json` deploys it with healthcheck `/api/healthz`. Container `CMD` runs
+`prisma migrate deploy` **then** starts the server, so a missing migration aborts the deploy loudly.
+Each member service owns and migrates its **own** DB.
+
+**Superadmin** — `Dockerfile.superadmin` builds `server/superadmin-ui/` + the server and starts
+`dist/src/superadmin/index.js`; it **never runs migrations**. Because Railway's config-as-code
+(`railway.json`) overrides per-service Dockerfile settings, the superadmin service is pointed at its
+own config file `railway.superadmin.json` (set via the service's `railwayConfigFile`) so it uses
+`Dockerfile.superadmin` without touching the member sites. Its env: `SITE_A_DATABASE_URL` /
+`SITE_B_DATABASE_URL` (reference variables to the two Postgres), `SUPERADMIN_JWT_SECRET`, optional
+`SUPERADMIN_CONTROL_SITE` / `SITE_*_LABEL`. Bootstrap a login with `npm run superadmin:create`.
+
+The Railway Bucket (S3-compatible) backs admin image uploads; its 5 env vars are auto-injected when
+the bucket service is referenced. Locally they're optional — endpoints return `BUCKET_NOT_CONFIGURED`
+when unset.
+
+`railway up` deploys the **local working tree** to one named service (`--service`), so the member
+sites only pick up shared-code changes (e.g. the `admin/users/ops.ts` refactor) when they themselves
+redeploy — keep that in mind before merging shared changes.
 
 ## Conventions & assets
 
