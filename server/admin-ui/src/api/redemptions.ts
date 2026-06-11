@@ -4,6 +4,7 @@ export interface RedemptionRow {
   id: string;
   code: string;
   tier: 'single' | 'multi';
+  tierDraws: number;
   status: 'pending' | 'delivered' | 'cancelled';
   createdAt: string;
   statusChangedAt: string | null;
@@ -31,6 +32,7 @@ export interface RedemptionDetail {
   id: string;
   code: string;
   tier: 'single' | 'multi';
+  tierDraws: number;
   status: 'pending' | 'delivered' | 'cancelled';
   createdAt: string;
   statusChangedAt: string | null;
@@ -44,6 +46,7 @@ export interface RedemptionDetail {
     subIndex: number;
     prize: { id: string; name: string };
     tierCost: number;
+    tierDraws: number;
     winningCashAmount: number;
     createdAt: string;
     isTest: boolean;

@@ -100,6 +100,8 @@ export async function createDrawLog(o: Partial<{
   prizeId: string;
   subIndex: number;
   tier: 'single' | 'multi';
+  tierCost: number;
+  tierDraws: number;
   winningCashAmount: number;
 }> = {}) {
   dlg += 1;
@@ -110,8 +112,8 @@ export async function createDrawLog(o: Partial<{
       prizeId: o.prizeId!,
       subIndex: o.subIndex ?? 0,
       tier: o.tier ?? 'single',
-      tierCost: o.tier === 'multi' ? 48 : 6,
-      tierDraws: o.tier === 'multi' ? 10 : 1,
+      tierCost: o.tierCost ?? (o.tier === 'multi' ? 48 : 6),
+      tierDraws: o.tierDraws ?? (o.tier === 'multi' ? 10 : 1),
       pointsBefore: 100,
       pointsAfter: 94,
       randomSeed: `seed-${dlg}`,

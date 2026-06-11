@@ -27,6 +27,10 @@ type TestPrizeSettingsUser = {
   testForcePrizeMode: string;
 };
 
+function inferTierDraws(redemption: { tier: string; drawLogs: Array<{ tierDraws: number }> }): number {
+  return redemption.drawLogs[0]?.tierDraws ?? (redemption.tier === 'single' ? 1 : redemption.drawLogs.length);
+}
+
 /** Build the audit actor from a request context + the acting admin's id. */
 export function actorFrom(c: Context, adminUserId: string | null): AuditActor {
   return {
@@ -424,6 +428,7 @@ export async function drawHistoryOp(
         id: r.id,
         code: r.code,
         tier: r.tier,
+        tierDraws: inferTierDraws(r),
         status: r.status,
         createdAt: r.createdAt,
         statusChangedAt: r.statusChangedAt,

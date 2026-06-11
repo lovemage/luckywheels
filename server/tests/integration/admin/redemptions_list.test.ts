@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { app } from '../../../src/index.js';
 import { resetDb } from '../../helpers/db.js';
 import { createAdmin, adminHeaders } from '../../helpers/admin.ts';
-import { createUser, createRedemption } from '../../helpers/factories.js';
+import { createUser, createPrize, createRedemption, createDrawLog } from '../../helpers/factories.js';
 
 describe('GET /api/admin/redemptions', () => {
   beforeEach(resetDb);
@@ -36,6 +36,21 @@ describe('GET /api/admin/redemptions', () => {
     await createRedemption({ userId: u2.id });
     const r = await app.request(`/api/admin/redemptions?userId=${u1.id}`, { headers: await adminHeaders(admin.id, admin.email) });
     expect((await r.json()).items).toHaveLength(1);
+  });
+
+  it('returns actual tierDraws for non-10 multi redemptions', async () => {
+    const admin = await createAdmin();
+    const u = await createUser();
+    const p = await createPrize();
+    const red = await createRedemption({ userId: u.id, tier: 'multi', status: 'pending', code: 'THRE3333-3333-3333' });
+    for (let i = 0; i < 3; i++) {
+      await createDrawLog({ userId: u.id, redemptionId: red.id, prizeId: p.id, subIndex: i, tier: 'multi', tierCost: 15, tierDraws: 3 });
+    }
+    const r = await app.request('/api/admin/redemptions?code=THRE3333-3333-3333', { headers: await adminHeaders(admin.id, admin.email) });
+    const body = await r.json();
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0].tier).toBe('multi');
+    expect(body.items[0].tierDraws).toBe(3);
   });
 
   it('cursor pagination', async () => {

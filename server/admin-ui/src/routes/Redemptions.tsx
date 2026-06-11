@@ -6,6 +6,7 @@ import { Table } from '../components/Table.js';
 import { CodeChip } from '../components/CodeChip.js';
 import { STATUS_LABELS, StatusBadge } from '../components/StatusBadge.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
+import { drawTierLabel } from '../utils/drawLabel.js';
 
 type StatusFilter = 'pending' | 'delivered' | 'cancelled' | 'all';
 type QuickStatusAction = { row: RedemptionRow; action: 'claim' | 'unclaim' } | null;
@@ -123,7 +124,7 @@ export function Redemptions() {
                   );
                 }
               },
-              { header: '類型', cell: (r) => r.tier === 'multi' ? '10 連抽' : '單抽' },
+              { header: '類型', cell: (r) => drawTierLabel(r.tier, r.tierDraws) },
               {
                 header: '狀態',
                 cell: (r) => {

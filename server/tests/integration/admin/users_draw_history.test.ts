@@ -41,8 +41,8 @@ describe('GET /api/admin/users/:id/draw-history', () => {
           prizeId: prize.id,
           subIndex: i,
           tier: 'multi',
-          tierCost: 48,
-          tierDraws: 10,
+          tierCost: 15,
+          tierDraws: 3,
           pointsBefore: 50,
           pointsAfter: 2,
           randomSeed: 'seed',
@@ -57,6 +57,7 @@ describe('GET /api/admin/users/:id/draw-history', () => {
     const body = await r.json();
     expect(body.items).toHaveLength(2);
     expect(body.items[0].redemption.tier).toBe('multi');
+    expect(body.items[0].redemption.tierDraws).toBe(3);
     expect(body.items[0].draws).toHaveLength(2);
     expect(body.items[1].redemption.tier).toBe('single');
     expect(body.items[1].draws).toHaveLength(1);

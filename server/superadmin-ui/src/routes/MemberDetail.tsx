@@ -9,6 +9,7 @@ import {
   fetchPointsHistory, fetchDrawHistory,
 } from '../api/users.js';
 import { SiteBadge, AccountBadge } from '../components/SiteBadge.js';
+import { drawTierLabel } from '../utils/drawLabel.js';
 
 function fmt(iso: string | null): string {
   if (!iso) return '—';
@@ -205,7 +206,7 @@ export function MemberDetail() {
               <ul className="sa-loglist">
                 {drawHistory.data.items.map((r) => (
                   <li key={r.redemption.id}>
-                    <strong>{r.redemption.code}</strong>（{r.redemption.tier === 'multi' ? '十連' : '單抽'}・{r.redemption.status}）
+                    <strong>{r.redemption.code}</strong>（{drawTierLabel(r.redemption.tier, r.redemption.tierDraws)}・{r.redemption.status}）
                     <span className="sa-sub">　{fmt(r.redemption.createdAt)}</span>
                     <div className="sa-sub">{r.draws.map((d) => `${d.prize.name}${d.winningCashAmount ? `(+${d.winningCashAmount})` : ''}`).join('、')}</div>
                   </li>

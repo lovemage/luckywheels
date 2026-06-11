@@ -21,6 +21,10 @@ function normalizeCode(input: string): string {
   return input.startsWith('LW-') ? input.slice(3) : input;
 }
 
+function inferTierDraws(redemption: { tier: string; drawLogs: Array<{ tierDraws: number }> }): number {
+  return redemption.drawLogs[0]?.tierDraws ?? (redemption.tier === 'single' ? 1 : redemption.drawLogs.length);
+}
+
 adminRedemptionsRoutes.get('/api/admin/redemptions', requireAdmin, async (c) => {
   let q: z.infer<typeof ListQuery>;
   try { q = ListQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
@@ -37,13 +41,16 @@ adminRedemptionsRoutes.get('/api/admin/redemptions', requireAdmin, async (c) => 
     take: q.take + 1,
     ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
     orderBy: { createdAt: 'desc' },
-    include: { user: { select: { id: true, nickname: true, displayName: true, entertainmentMemberCode: true } } },
+    include: {
+      user: { select: { id: true, nickname: true, displayName: true, entertainmentMemberCode: true } },
+      drawLogs: { orderBy: { subIndex: 'asc' }, take: 1, select: { tierDraws: true } },
+    },
   });
   let nextCursor: string | null = null;
   if (items.length > q.take) nextCursor = items.pop()!.id;
   return c.json({
     items: items.map((r) => ({
-      id: r.id, code: r.code, tier: r.tier, status: r.status,
+      id: r.id, code: r.code, tier: r.tier, tierDraws: inferTierDraws(r), status: r.status,
       createdAt: r.createdAt, statusChangedAt: r.statusChangedAt,
       isTest: r.isTest, totalWinAmount: r.totalWinAmount,
       user: r.user,
@@ -122,7 +129,7 @@ adminRedemptionsRoutes.get('/api/admin/redemptions/:id', requireAdmin, async (c)
   }
 
   return c.json({
-    id: red.id, code: red.code, tier: red.tier, status: red.status,
+    id: red.id, code: red.code, tier: red.tier, tierDraws: inferTierDraws(red), status: red.status,
     createdAt: red.createdAt,
     statusChangedAt: red.statusChangedAt,
     statusChangedByAdminUser,
@@ -135,6 +142,7 @@ adminRedemptionsRoutes.get('/api/admin/redemptions/:id', requireAdmin, async (c)
       subIndex: d.subIndex,
       prize: d.prize,
       tierCost: d.tierCost,
+      tierDraws: d.tierDraws,
       winningCashAmount: d.winningCashAmount,
       createdAt: d.createdAt,
       isTest: d.isTest,

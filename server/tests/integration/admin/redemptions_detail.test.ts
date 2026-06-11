@@ -12,13 +12,15 @@ describe('GET /api/admin/redemptions/:id', () => {
     const u = await createUser({ nickname: 'Alice' });
     const p = await createPrize();
     const red = await createRedemption({ userId: u.id, tier: 'multi', status: 'pending' });
-    await createDrawLog({ userId: u.id, redemptionId: red.id, prizeId: p.id, subIndex: 0 });
-    await createDrawLog({ userId: u.id, redemptionId: red.id, prizeId: p.id, subIndex: 1 });
+    await createDrawLog({ userId: u.id, redemptionId: red.id, prizeId: p.id, subIndex: 0, tier: 'multi', tierCost: 15, tierDraws: 3 });
+    await createDrawLog({ userId: u.id, redemptionId: red.id, prizeId: p.id, subIndex: 1, tier: 'multi', tierCost: 15, tierDraws: 3 });
     const r = await app.request(`/api/admin/redemptions/${red.id}`, { headers: await adminHeaders(admin.id, admin.email) });
     expect(r.status).toBe(200);
     const body = await r.json();
     expect(body.id).toBe(red.id);
+    expect(body.tierDraws).toBe(3);
     expect(body.draws).toHaveLength(2);
+    expect(body.draws[0].tierDraws).toBe(3);
     expect(body.user.nickname).toBe('Alice');
   });
 

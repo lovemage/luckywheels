@@ -5,6 +5,7 @@ import { fetchRedemption, setRedemptionStatus } from '../api/redemptions.js';
 import { CodeChip } from '../components/CodeChip.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { DoubleConfirmModal } from '../components/DoubleConfirmModal.js';
+import { drawTierLabel } from '../utils/drawLabel.js';
 
 type ActionKind = 'claim' | 'void' | 'unclaim';
 
@@ -90,7 +91,7 @@ export function RedemptionDetail() {
             </div>
             <div className="member-detail-info-item">
               <dt>類型</dt>
-              <dd><span>{data.tier === 'multi' ? '10 連抽' : '單抽'}</span></dd>
+              <dd><span>{drawTierLabel(data.tier, data.tierDraws)}</span></dd>
             </div>
             <div className="member-detail-info-item">
               <dt>中獎總額</dt>

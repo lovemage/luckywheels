@@ -22,6 +22,7 @@ import { ConfirmModal } from '../components/ConfirmModal.js';
 import { DoubleConfirmModal } from '../components/DoubleConfirmModal.js';
 import { Table } from '../components/Table.js';
 import { StatusBadge } from '../components/StatusBadge.js';
+import { drawTierLabel } from '../utils/drawLabel.js';
 
 function formatDateTime(value: string | null | undefined) {
   return value ? new Date(value).toLocaleString() : '—';
@@ -395,7 +396,7 @@ export function MemberDetail() {
                 <Link to={`/redemptions/${r.redemption.id}`}>{r.redemption.code}</Link>
               ),
             },
-            { header: '類型', cell: (r) => (r.redemption.tier === 'multi' ? '10 連抽' : '單抽') },
+            { header: '類型', cell: (r) => drawTierLabel(r.redemption.tier, r.redemption.tierDraws) },
             { header: '狀態', cell: (r) => <StatusBadge status={r.redemption.status} /> },
             { header: '中獎', cell: (r) => r.draws.map((d) => d.prize.name).join('、') },
             { header: '建立時間', cell: (r) => new Date(r.redemption.createdAt).toLocaleString() },

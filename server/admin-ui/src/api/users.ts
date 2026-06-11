@@ -129,6 +129,7 @@ export interface DrawHistoryItem {
     id: string;
     code: string;
     tier: 'single' | 'multi';
+    tierDraws: number;
     status: string;
     createdAt: string;
     statusChangedAt: string | null;
