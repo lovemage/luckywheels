@@ -36,8 +36,8 @@ export function Onboarding({ settings }: { settings: PublicSettings | null }) {
       const ae = e as ApiError;
       const map: Record<string, string> = {
         NICKNAME_INVALID: '暱稱需為 2-12 字',
-        ENTERTAINMENT_CODE_INVALID: '請輸入會員編號',
-        ENTERTAINMENT_CODE_TAKEN: '此編號已申請註冊',
+        ENTERTAINMENT_CODE_INVALID: '請輸入娛樂城帳號',
+        ENTERTAINMENT_CODE_TAKEN: '此帳號已申請註冊',
         ENTERTAINMENT_CODE_REASON_REQUIRED: '系統錯誤，請聯絡客服',
       };
       setErr(map[ae.code] ?? ae.message);
@@ -57,7 +57,7 @@ export function Onboarding({ settings }: { settings: PublicSettings | null }) {
       <section className="auth-card">
         <img src={logoSrc} alt="幸運輪盤" className="auth-logo" />
         <h1>完成註冊</h1>
-        <p>請填寫您的暱稱與娛樂城會員編號，送出後等待管理員開啟會員</p>
+        <p>請填寫您的暱稱與娛樂城帳號，送出後等待管理員開啟會員</p>
         <form onSubmit={submit}>
           <label>
             暱稱
@@ -70,7 +70,7 @@ export function Onboarding({ settings }: { settings: PublicSettings | null }) {
             />
           </label>
           <label>
-            娛樂城會員編號
+            娛樂城帳號
             <input
               value={code}
               onChange={(e) => setCode(e.target.value)}
