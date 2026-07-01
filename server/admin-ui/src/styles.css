@@ -172,8 +172,8 @@ th {
 
 .admin-shell {
   min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 1fr;
 }
 
 .admin-topbar {
@@ -216,16 +216,25 @@ th {
 }
 
 .admin-layout {
-  display: contents;
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr);
+  min-height: 0;
 }
 
 .admin-nav {
+  position: sticky;
+  top: 65px;
+  align-self: start;
+  height: calc(100dvh - 65px);
+  padding: 16px 12px;
   color: var(--admin-ink);
+  background: rgba(23, 12, 42, 0.92);
+  border-right: 1px solid var(--admin-line);
 }
 
 .admin-nav ul {
-  display: flex;
-  gap: 6px;
+  display: grid;
+  gap: 5px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -234,10 +243,10 @@ th {
 .admin-nav-link {
   display: flex;
   align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 7px 14px;
-  border-radius: 999px;
+  gap: 9px;
+  min-height: 38px;
+  padding: 9px 11px;
+  border-radius: 8px;
   color: var(--admin-muted);
   font-size: 13px;
   font-weight: 700;
@@ -253,7 +262,7 @@ th {
 .admin-nav-link.is-active {
   color: var(--admin-ink);
   background: var(--admin-nav-soft);
-  box-shadow: none;
+  box-shadow: inset 3px 0 0 var(--admin-accent);
 }
 
 .admin-nav-dot {
@@ -273,9 +282,6 @@ th {
   min-width: 0;
   padding: 24px;
   overflow-x: auto;
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
 }
 
 .admin-content > h1:first-child,
@@ -587,6 +593,87 @@ th {
   font-size: 12px;
   font-weight: 800;
   background: rgba(110, 53, 217, 0.34);
+}
+
+.admin-code-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid rgba(240, 195, 74, 0.34);
+  border-radius: 6px;
+  color: var(--admin-accent-strong);
+  background: rgba(240, 195, 74, 0.14);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  color: var(--admin-muted);
+  background: rgba(48, 27, 81, 0.78);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-status-badge--pending {
+  border-color: rgba(240, 195, 74, 0.42);
+  color: var(--admin-accent-strong);
+  background: rgba(240, 195, 74, 0.14);
+}
+
+.admin-status-badge--delivered {
+  border-color: rgba(91, 213, 156, 0.42);
+  color: #a9f3d0;
+  background: rgba(91, 213, 156, 0.14);
+}
+
+.admin-status-badge--cancelled {
+  border-color: rgba(255, 101, 122, 0.46);
+  color: #ffc1ca;
+  background: rgba(255, 101, 122, 0.14);
+}
+
+.admin-account-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  color: var(--admin-muted);
+  background: rgba(48, 27, 81, 0.78);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-account-badge--pending {
+  border-color: rgba(240, 195, 74, 0.42);
+  color: var(--admin-accent-strong);
+  background: rgba(240, 195, 74, 0.14);
+}
+
+.admin-account-badge--verified {
+  border-color: rgba(91, 213, 156, 0.42);
+  color: #a9f3d0;
+  background: rgba(91, 213, 156, 0.14);
+}
+
+.admin-account-badge--test {
+  border-color: rgba(126, 90, 255, 0.46);
+  color: #d9ceff;
+  background: rgba(126, 90, 255, 0.18);
+}
+
+.admin-account-badge--blacklisted {
+  border-color: rgba(255, 101, 122, 0.46);
+  color: #ffc1ca;
+  background: rgba(255, 101, 122, 0.14);
 }
 
 .status-badge-button {
@@ -1179,4 +1266,26 @@ th {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(8, 4, 18, 0.7);
+}
+
+.admin-modal-panel {
+  width: min(600px, 100%);
+  min-width: min(360px, 100%);
+  padding: 24px;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  color: var(--admin-ink);
+  background: var(--admin-surface);
+  box-shadow: 0 24px 64px rgba(8, 4, 18, 0.5);
 }

@@ -1,9 +1,3 @@
-const COLORS: Record<string, string> = {
-  pending: '#fef9c3',
-  delivered: '#dcfce7',
-  cancelled: '#fee2e2',
-};
-
 export const STATUS_LABELS: Record<string, string> = {
   pending: '未完成',
   delivered: '已派送',
@@ -21,17 +15,7 @@ function StatusIcon() {
 
 export function StatusBadge({ status }: { status: string }) {
   return (
-    <span
-      style={{
-        alignItems: 'center',
-        background: COLORS[status] ?? '#eee',
-        borderRadius: 12,
-        display: 'inline-flex',
-        gap: 4,
-        padding: '2px 8px',
-        fontSize: 12,
-      }}
-    >
+    <span className={`admin-status-badge admin-status-badge--${status}`}>
       <StatusIcon />
       {STATUS_LABELS[status] ?? status}
     </span>

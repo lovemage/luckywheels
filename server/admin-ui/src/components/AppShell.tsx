@@ -29,6 +29,11 @@ export function AppShell() {
           <p className="admin-eyebrow">Admin Console</p>
           <h1>Lucky Wheels 管理後台</h1>
         </div>
+        <div className="admin-search">
+          <MemberSearch />
+        </div>
+      </header>
+      <div className="admin-layout">
         <nav className="admin-nav" aria-label="管理後台導覽">
           <ul>
             {visibleLinks.map((l) => (
@@ -46,13 +51,10 @@ export function AppShell() {
             ))}
           </ul>
         </nav>
-        <div className="admin-search">
-          <MemberSearch />
-        </div>
-      </header>
-      <main className="admin-content">
-        <Outlet />
-      </main>
+        <main className="admin-content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

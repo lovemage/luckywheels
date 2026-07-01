@@ -12,16 +12,10 @@ export function Modal({ open, onClose, title, children }: {
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      }}
+      className="admin-modal-overlay"
       onClick={onClose}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: '#fff', padding: 24, borderRadius: 8, minWidth: 360, maxWidth: 600 }}
-      >
+      <div className="admin-modal-panel" onClick={(e) => e.stopPropagation()}>
         <h2 style={{ marginTop: 0 }}>{title}</h2>
         {children}
       </div>
