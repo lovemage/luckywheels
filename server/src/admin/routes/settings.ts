@@ -3,11 +3,12 @@ import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../db.js';
 import { AppError } from '../../errors.js';
-import { requireAdmin } from '../auth/middleware.js';
+import { requireAdminNav } from '../auth/middleware.js';
 import { audit } from '../audit/helper.js';
 import { SETTINGS_KEYS, DEFAULT_SETTINGS } from '../../../prisma/seed.js';
 
 export const adminSettingsRoutes = new Hono();
+const requireSystemNav = requireAdminNav('system');
 
 const Threshold = z.object({
   points: z.number().int().min(1),
@@ -73,7 +74,7 @@ async function readAllSettings(): Promise<Record<string, string>> {
   return map;
 }
 
-adminSettingsRoutes.get('/api/admin/settings', requireAdmin, async (c) => {
+adminSettingsRoutes.get('/api/admin/settings', ...requireSystemNav, async (c) => {
   const m = await readAllSettings();
   let pointThresholds: { points: number; draws: number }[] = [];
   try { pointThresholds = JSON.parse(m[SETTINGS_KEYS.pointThresholds] ?? '[]'); } catch { /* ignore */ }
@@ -104,7 +105,7 @@ adminSettingsRoutes.get('/api/admin/settings', requireAdmin, async (c) => {
   });
 });
 
-adminSettingsRoutes.patch('/api/admin/settings', requireAdmin, async (c) => {
+adminSettingsRoutes.patch('/api/admin/settings', ...requireSystemNav, async (c) => {
   let body: BodyT;
   try {
     body = Body.parse(await c.req.json());

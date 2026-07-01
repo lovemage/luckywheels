@@ -2,11 +2,12 @@ import { Hono } from 'hono';
 import { randomUUID } from 'node:crypto';
 import { AppError } from '../../errors.js';
 import { prisma } from '../../db.js';
-import { requireAdmin } from '../auth/middleware.js';
+import { requireAnyAdminNav } from '../auth/middleware.js';
 import { audit } from '../audit/helper.js';
 import { putObject } from '../../storage/bucket.js';
 
 export const adminUploadsRoutes = new Hono();
+const requireUploadNav = requireAnyAdminNav(['prizes', 'system']);
 
 const ALLOWED_MIME = new Set([
   'image/png',
@@ -23,7 +24,7 @@ const MIME_EXT: Record<string, string> = {
   'image/gif': 'gif',
 };
 
-adminUploadsRoutes.post('/api/admin/uploads', requireAdmin, async (c) => {
+adminUploadsRoutes.post('/api/admin/uploads', ...requireUploadNav, async (c) => {
   let form: Record<string, unknown>;
   try {
     form = await c.req.parseBody();

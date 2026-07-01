@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { prisma } from '../../db.js';
 import { AppError } from '../../errors.js';
-import { requireAdmin } from '../auth/middleware.js';
+import { requireAdminNav } from '../auth/middleware.js';
 import {
   actorFrom,
   listUsersOp,
@@ -19,6 +19,7 @@ import {
 } from '../users/ops.js';
 
 export const adminUsersRoutes = new Hono();
+const requireUsersNav = requireAdminNav('users');
 
 // All member-management logic lives in admin/users/ops.ts so the normal admin
 // console and the cross-site superadmin console share one implementation. These
@@ -31,18 +32,18 @@ const ListQuery = z.object({
   cursor: z.string().optional(),
 });
 
-adminUsersRoutes.get('/api/admin/users', requireAdmin, async (c) => {
+adminUsersRoutes.get('/api/admin/users', ...requireUsersNav, async (c) => {
   let query: z.infer<typeof ListQuery>;
   try { query = ListQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
   catch { throw new AppError('LIST_QUERY_INVALID', 'invalid query parameters', 400); }
   return c.json(await listUsersOp(prisma, query));
 });
 
-adminUsersRoutes.get('/api/admin/users/:id', requireAdmin, async (c) => {
+adminUsersRoutes.get('/api/admin/users/:id', ...requireUsersNav, async (c) => {
   return c.json(await getUserOp(prisma, c.req.param('id')));
 });
 
-adminUsersRoutes.delete('/api/admin/users/:id', requireAdmin, async (c) => {
+adminUsersRoutes.delete('/api/admin/users/:id', ...requireUsersNav, async (c) => {
   await deleteUserOp(prisma, c.req.param('id'), actorFrom(c, c.get('admin').id));
   return c.json({ ok: true });
 });
@@ -52,7 +53,7 @@ const PointsAdjustBody = z.object({
   reason: z.string().max(500).optional(),
 });
 
-adminUsersRoutes.post('/api/admin/users/:id/points', requireAdmin, async (c) => {
+adminUsersRoutes.post('/api/admin/users/:id/points', ...requireUsersNav, async (c) => {
   let body: z.infer<typeof PointsAdjustBody>;
   try { body = PointsAdjustBody.parse(await c.req.json()); }
   catch { throw new AppError('POINTS_BODY_INVALID', 'invalid body', 400); }
@@ -60,7 +61,7 @@ adminUsersRoutes.post('/api/admin/users/:id/points', requireAdmin, async (c) => 
   return c.json({ points });
 });
 
-adminUsersRoutes.get('/api/admin/users/:id/points-history', requireAdmin, async (c) => {
+adminUsersRoutes.get('/api/admin/users/:id/points-history', ...requireUsersNav, async (c) => {
   return c.json({ items: await pointsHistoryOp(prisma, c.req.param('id')) });
 });
 
@@ -68,7 +69,7 @@ const AccountTypeBody = z.object({
   accountType: z.enum(['verified', 'test']),  // 'blacklisted' deliberately excluded
 });
 
-adminUsersRoutes.patch('/api/admin/users/:id/account-type', requireAdmin, async (c) => {
+adminUsersRoutes.patch('/api/admin/users/:id/account-type', ...requireUsersNav, async (c) => {
   let body: z.infer<typeof AccountTypeBody>;
   try {
     const raw = await c.req.json();
@@ -84,7 +85,7 @@ adminUsersRoutes.patch('/api/admin/users/:id/account-type', requireAdmin, async 
   return c.json({ ok: true });
 });
 
-adminUsersRoutes.patch('/api/admin/users/:id/approve', requireAdmin, async (c) => {
+adminUsersRoutes.patch('/api/admin/users/:id/approve', ...requireUsersNav, async (c) => {
   await approveUserOp(prisma, c.req.param('id'), actorFrom(c, c.get('admin').id));
   return c.json({ ok: true });
 });
@@ -96,7 +97,7 @@ const TestSettingsBody = z.object({
   testForcePrizeMode: z.enum(['random', 'cycle']).optional(),
 });
 
-adminUsersRoutes.patch('/api/admin/users/:id/test-settings', requireAdmin, async (c) => {
+adminUsersRoutes.patch('/api/admin/users/:id/test-settings', ...requireUsersNav, async (c) => {
   let body: z.infer<typeof TestSettingsBody>;
   try { body = TestSettingsBody.parse(await c.req.json()); }
   catch { throw new AppError('TEST_SETTINGS_BODY_INVALID', 'invalid body', 400); }
@@ -118,7 +119,7 @@ const BlacklistBody = z.object({
   restoreTo: z.enum(['verified', 'test']).optional(),
 });
 
-adminUsersRoutes.patch('/api/admin/users/:id/blacklist', requireAdmin, async (c) => {
+adminUsersRoutes.patch('/api/admin/users/:id/blacklist', ...requireUsersNav, async (c) => {
   let body: z.infer<typeof BlacklistBody>;
   try { body = BlacklistBody.parse(await c.req.json()); }
   catch { throw new AppError('BLACKLIST_BODY_INVALID', 'invalid body', 400); }
@@ -134,7 +135,7 @@ const EntertainmentCodeBody = z.object({
   reason: z.string().min(1).max(500),
 });
 
-adminUsersRoutes.patch('/api/admin/users/:id/entertainment-code', requireAdmin, async (c) => {
+adminUsersRoutes.patch('/api/admin/users/:id/entertainment-code', ...requireUsersNav, async (c) => {
   let body: z.infer<typeof EntertainmentCodeBody>;
   try {
     const raw = await c.req.json();
@@ -148,7 +149,7 @@ adminUsersRoutes.patch('/api/admin/users/:id/entertainment-code', requireAdmin, 
   return c.json({ ok: true });
 });
 
-adminUsersRoutes.get('/api/admin/users/:id/draw-history', requireAdmin, async (c) => {
+adminUsersRoutes.get('/api/admin/users/:id/draw-history', ...requireUsersNav, async (c) => {
   const url = new URL(c.req.url);
   const take = Math.min(Number(url.searchParams.get('take') ?? 25), 50);
   const cursor = url.searchParams.get('cursor');

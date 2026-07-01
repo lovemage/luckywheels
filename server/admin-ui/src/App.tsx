@@ -1,7 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { Navigate } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import { setSessionExpiredListener } from './api/client.js';
+import { fetchAdminMe, type AdminNavKey } from './api/me.js';
 import { sessionStore } from './state/session.js';
 import { AuthGuard } from './components/AuthGuard.js';
 import { AppShell } from './components/AppShell.js';
@@ -30,6 +33,13 @@ function GlobalSessionWire() {
   return null;
 }
 
+function AdminNavGate({ nav }: { nav: AdminNavKey }) {
+  const { data, isLoading } = useQuery({ queryKey: ['admin', 'me'], queryFn: fetchAdminMe });
+  if (isLoading) return <p>載入中…</p>;
+  if (!data?.isMain && !data?.allowedNavs.includes(nav)) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -40,16 +50,24 @@ export function App() {
           <Route element={<AuthGuard />}>
             <Route element={<AppShell />}>
               <Route index element={<Dashboard />} />
-              <Route path="users" element={<Members />} />
-              <Route path="users/:id" element={<MemberDetail />} />
-              <Route path="redemptions" element={<Redemptions />} />
-              <Route path="redemptions/:id" element={<RedemptionDetail />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="logs" element={<Logs />} />
-              <Route path="prizes" element={<Prizes />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="home" element={<HomeSettings />} />
-              <Route path="system" element={<SystemSettings />} />
+              <Route element={<AdminNavGate nav="users" />}>
+                <Route path="users" element={<Members />} />
+                <Route path="users/:id" element={<MemberDetail />} />
+              </Route>
+              <Route element={<AdminNavGate nav="redemptions" />}>
+                <Route path="redemptions" element={<Redemptions />} />
+                <Route path="redemptions/:id" element={<RedemptionDetail />} />
+              </Route>
+              <Route element={<AdminNavGate nav="prizes" />}>
+                <Route path="prizes" element={<Prizes />} />
+              </Route>
+              <Route element={<AdminNavGate nav="system" />}>
+                <Route path="profile" element={<Profile />} />
+                <Route path="logs" element={<Logs />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="home" element={<HomeSettings />} />
+                <Route path="system" element={<SystemSettings />} />
+              </Route>
             </Route>
           </Route>
         </Routes>

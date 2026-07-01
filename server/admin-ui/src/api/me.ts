@@ -1,10 +1,14 @@
 import { api } from './client.js';
 
+export type AdminNavKey = 'users' | 'redemptions' | 'prizes' | 'system';
+
 export interface AdminMe {
   id: string;
   account: string;
   email: string;
   role: string;
+  isMain: boolean;
+  allowedNavs: AdminNavKey[];
   lastLoginAt: string | null;
   passwordChangedAt: string | null;
 }

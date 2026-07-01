@@ -1,21 +1,27 @@
 import { NavLink, Outlet } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import { fetchAdminMe, type AdminNavKey } from '../api/me.js';
 import { MemberSearch } from './MemberSearch.js';
 
 type SidebarLink = {
   to: string;
   label: string;
   shortLabel: string;
+  nav: AdminNavKey;
   end?: boolean;
 };
 
 const sidebarLinks: SidebarLink[] = [
-  { to: '/users', label: '會員列表', shortLabel: '會員' },
-  { to: '/redemptions', label: '中獎紀錄', shortLabel: '中獎' },
-  { to: '/prizes', label: '獎品設定', shortLabel: '獎品' },
-  { to: '/system', label: '系統設定', shortLabel: '設定' },
+  { to: '/users', label: '會員列表', shortLabel: '會員', nav: 'users' },
+  { to: '/redemptions', label: '中獎紀錄', shortLabel: '中獎', nav: 'redemptions' },
+  { to: '/prizes', label: '獎品設定', shortLabel: '獎品', nav: 'prizes' },
+  { to: '/system', label: '系統設定', shortLabel: '設定', nav: 'system' },
 ];
 
 export function AppShell() {
+  const me = useQuery({ queryKey: ['admin', 'me'], queryFn: fetchAdminMe });
+  const visibleLinks = sidebarLinks.filter((l) => me.data?.isMain || me.data?.allowedNavs.includes(l.nav));
+
   return (
     <div className="admin-shell">
       <header className="admin-topbar">
@@ -30,7 +36,7 @@ export function AppShell() {
       <div className="admin-layout">
         <nav className="admin-nav" aria-label="管理後台導覽">
           <ul>
-            {sidebarLinks.map((l) => (
+            {visibleLinks.map((l) => (
               <li key={l.to}>
                 <NavLink
                   to={l.to}

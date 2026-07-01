@@ -81,6 +81,9 @@ model AdminUser {
   email               String    @unique
   passwordHash        String
   role                String    @default("admin")
+  isMain              Boolean   @default(true)
+  allowedNavs         String[]  @default([])
+  createdByAdminUserId String?
   lastLoginAt         DateTime?
   passwordChangedAt   DateTime?
   createdAt           DateTime  @default(now())

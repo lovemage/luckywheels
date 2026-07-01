@@ -2,11 +2,12 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { prisma } from '../../db.js';
 import { AppError } from '../../errors.js';
-import { requireAdmin } from '../auth/middleware.js';
+import { requireAdminNav } from '../auth/middleware.js';
 import { audit } from '../audit/helper.js';
 import { SETTINGS_KEYS } from '../../../prisma/seed.js';
 
 export const adminRedemptionsRoutes = new Hono();
+const requireRedemptionsNav = requireAdminNav('redemptions');
 
 const ListQuery = z.object({
   status: z.enum(['pending', 'delivered', 'cancelled', 'all']).default('all'),
@@ -25,7 +26,7 @@ function inferTierDraws(redemption: { tier: string; drawLogs: Array<{ tierDraws:
   return redemption.drawLogs[0]?.tierDraws ?? (redemption.tier === 'single' ? 1 : redemption.drawLogs.length);
 }
 
-adminRedemptionsRoutes.get('/api/admin/redemptions', requireAdmin, async (c) => {
+adminRedemptionsRoutes.get('/api/admin/redemptions', ...requireRedemptionsNav, async (c) => {
   let q: z.infer<typeof ListQuery>;
   try { q = ListQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
   catch { throw new AppError('LIST_QUERY_INVALID', 'invalid query', 400); }
@@ -63,7 +64,7 @@ adminRedemptionsRoutes.get('/api/admin/redemptions', requireAdmin, async (c) => 
 // 不可復原 — 必須帶 { confirm: "RESET" }（前台 DoubleConfirmModal 要求輸入 RESET）。
 const ResetBody = z.object({ confirm: z.literal('RESET') });
 
-adminRedemptionsRoutes.post('/api/admin/redemptions/reset', requireAdmin, async (c) => {
+adminRedemptionsRoutes.post('/api/admin/redemptions/reset', ...requireRedemptionsNav, async (c) => {
   try {
     ResetBody.parse(await c.req.json());
   } catch {
@@ -111,7 +112,7 @@ adminRedemptionsRoutes.post('/api/admin/redemptions/reset', requireAdmin, async 
   return c.json({ ok: true, ...result });
 });
 
-adminRedemptionsRoutes.get('/api/admin/redemptions/:id', requireAdmin, async (c) => {
+adminRedemptionsRoutes.get('/api/admin/redemptions/:id', ...requireRedemptionsNav, async (c) => {
   const id = c.req.param('id');
   const red = await prisma.redemption.findUnique({
     where: { id },
@@ -156,7 +157,7 @@ const StatusActionBody = z.object({
   reason: z.string().min(1).max(500).optional(),
 });
 
-adminRedemptionsRoutes.patch('/api/admin/redemptions/:id/status', requireAdmin, async (c) => {
+adminRedemptionsRoutes.patch('/api/admin/redemptions/:id/status', ...requireRedemptionsNav, async (c) => {
   const id = c.req.param('id');
   let body: z.infer<typeof StatusActionBody>;
   try { body = StatusActionBody.parse(await c.req.json()); }

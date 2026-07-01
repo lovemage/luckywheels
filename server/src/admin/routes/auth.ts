@@ -80,6 +80,8 @@ adminAuthRoutes.get('/api/admin/me', requireAdmin, (c) => {
     account: a.email,
     email: a.email,
     role: a.role,
+    isMain: a.isMain,
+    allowedNavs: a.allowedNavs,
     lastLoginAt: a.lastLoginAt,
     passwordChangedAt: a.passwordChangedAt,
   });

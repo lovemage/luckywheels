@@ -2,9 +2,10 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { prisma } from '../../db.js';
 import { AppError } from '../../errors.js';
-import { requireAdmin } from '../auth/middleware.js';
+import { requireAdminNav } from '../auth/middleware.js';
 
 export const adminActionLogsRoutes = new Hono();
+const requireSystemNav = requireAdminNav('system');
 
 const Query = z.object({
   adminUserId: z.string().optional(),
@@ -17,7 +18,7 @@ const Query = z.object({
   cursor: z.string().optional(),
 });
 
-adminActionLogsRoutes.get('/api/admin/action-logs', requireAdmin, async (c) => {
+adminActionLogsRoutes.get('/api/admin/action-logs', ...requireSystemNav, async (c) => {
   let q: z.infer<typeof Query>;
   try { q = Query.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
   catch { throw new AppError('LIST_QUERY_INVALID', 'invalid query', 400); }

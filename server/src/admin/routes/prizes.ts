@@ -3,11 +3,12 @@ import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../db.js';
 import { AppError } from '../../errors.js';
-import { requireAdmin } from '../auth/middleware.js';
+import { requireAdminNav } from '../auth/middleware.js';
 import { audit } from '../audit/helper.js';
 import { SETTINGS_KEYS } from '../../../prisma/seed.js';
 
 export const adminPrizesRoutes = new Hono();
+const requirePrizesNav = requireAdminNav('prizes');
 
 const CreateBody = z.object({
   rankLabel: z.string().min(1).max(20),
@@ -50,7 +51,7 @@ async function setConsolationSetting(
 
 // --- routes ---
 
-adminPrizesRoutes.get('/api/admin/prizes', requireAdmin, async (c) => {
+adminPrizesRoutes.get('/api/admin/prizes', ...requirePrizesNav, async (c) => {
   const items = await prisma.prize.findMany({
     orderBy: [{ wheelPosition: 'asc' }, { createdAt: 'asc' }],
   });
@@ -59,7 +60,7 @@ adminPrizesRoutes.get('/api/admin/prizes', requireAdmin, async (c) => {
 
 // IMPORTANT: /reorder must be registered BEFORE /:id so Hono matches the literal
 // path first (otherwise PATCH /api/admin/prizes/reorder hits the :id handler).
-adminPrizesRoutes.patch('/api/admin/prizes/reorder', requireAdmin, async (c) => {
+adminPrizesRoutes.patch('/api/admin/prizes/reorder', ...requirePrizesNav, async (c) => {
   let body: z.infer<typeof ReorderBody>;
   try {
     body = ReorderBody.parse(await c.req.json());
@@ -92,14 +93,14 @@ adminPrizesRoutes.patch('/api/admin/prizes/reorder', requireAdmin, async (c) => 
   return c.json({ ok: true });
 });
 
-adminPrizesRoutes.get('/api/admin/prizes/:id', requireAdmin, async (c) => {
+adminPrizesRoutes.get('/api/admin/prizes/:id', ...requirePrizesNav, async (c) => {
   const id = c.req.param('id');
   const prize = await prisma.prize.findUnique({ where: { id } });
   if (!prize) throw new AppError('PRIZE_NOT_FOUND', 'no such prize', 404);
   return c.json(prize);
 });
 
-adminPrizesRoutes.post('/api/admin/prizes', requireAdmin, async (c) => {
+adminPrizesRoutes.post('/api/admin/prizes', ...requirePrizesNav, async (c) => {
   let body: z.infer<typeof CreateBody>;
   try {
     body = CreateBody.parse(await c.req.json());
@@ -151,7 +152,7 @@ adminPrizesRoutes.post('/api/admin/prizes', requireAdmin, async (c) => {
   return c.json(created);
 });
 
-adminPrizesRoutes.patch('/api/admin/prizes/:id', requireAdmin, async (c) => {
+adminPrizesRoutes.patch('/api/admin/prizes/:id', ...requirePrizesNav, async (c) => {
   const id = c.req.param('id');
   let body: z.infer<typeof UpdateBody>;
   try {
@@ -215,7 +216,7 @@ adminPrizesRoutes.patch('/api/admin/prizes/:id', requireAdmin, async (c) => {
   return c.json(updated);
 });
 
-adminPrizesRoutes.delete('/api/admin/prizes/:id', requireAdmin, async (c) => {
+adminPrizesRoutes.delete('/api/admin/prizes/:id', ...requirePrizesNav, async (c) => {
   const id = c.req.param('id');
   await prisma.$transaction(async (tx) => {
     const before = await tx.prize.findUnique({ where: { id } });

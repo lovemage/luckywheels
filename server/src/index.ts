@@ -20,6 +20,7 @@ import { adminActionLogsRoutes } from './admin/routes/action-logs.js';
 import { adminPrizesRoutes } from './admin/routes/prizes.js';
 import { adminSettingsRoutes } from './admin/routes/settings.js';
 import { adminUploadsRoutes } from './admin/routes/uploads.js';
+import { adminSubAccountsRoutes } from './admin/routes/sub-accounts.js';
 import { bootstrapAdminIfRequested } from './admin/bootstrap.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -65,6 +66,7 @@ app.route('/', adminActionLogsRoutes);
 app.route('/', adminPrizesRoutes);
 app.route('/', adminSettingsRoutes);
 app.route('/', adminUploadsRoutes);
+app.route('/', adminSubAccountsRoutes);
 
 app.use('/admin/assets/*', async (c, next) => {
   await next();

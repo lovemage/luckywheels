@@ -1,0 +1,4 @@
+ALTER TABLE "AdminUser"
+  ADD COLUMN "isMain" BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN "allowedNavs" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "createdByAdminUserId" TEXT;
