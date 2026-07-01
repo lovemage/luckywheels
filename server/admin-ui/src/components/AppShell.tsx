@@ -25,15 +25,10 @@ export function AppShell() {
   return (
     <div className="admin-shell">
       <header className="admin-topbar">
-        <div>
+        <div className="admin-brand">
           <p className="admin-eyebrow">Admin Console</p>
           <h1>Lucky Wheels 管理後台</h1>
         </div>
-        <div className="admin-search">
-          <MemberSearch />
-        </div>
-      </header>
-      <div className="admin-layout">
         <nav className="admin-nav" aria-label="管理後台導覽">
           <ul>
             {visibleLinks.map((l) => (
@@ -51,10 +46,13 @@ export function AppShell() {
             ))}
           </ul>
         </nav>
-        <main className="admin-content">
-          <Outlet />
-        </main>
-      </div>
+        <div className="admin-search">
+          <MemberSearch />
+        </div>
+      </header>
+      <main className="admin-content">
+        <Outlet />
+      </main>
     </div>
   );
 }
