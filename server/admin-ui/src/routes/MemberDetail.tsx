@@ -21,6 +21,8 @@ import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
 import { DoubleConfirmModal } from '../components/DoubleConfirmModal.js';
 import { Table } from '../components/Table.js';
+import { CursorPagination } from '../components/CursorPagination.js';
+import { useCursorPagination } from '../hooks/useCursorPagination.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { drawTierLabel } from '../utils/drawLabel.js';
 
@@ -57,6 +59,8 @@ export function MemberDetail() {
   const [memberTab, setMemberTab] = useState<'overview' | 'history'>('overview');
   const [selectedPrizeIds, setSelectedPrizeIds] = useState<string[]>([]);
   const [forcePrizeMode, setForcePrizeMode] = useState<TestForcePrizeMode>('random');
+  const pointsPagination = useCursorPagination();
+  const historyPagination = useCursorPagination();
   const qc = useQueryClient();
   const adjust = useMutation({
     mutationFn: (delta: number) => adjustPoints(id!, { delta }),
@@ -107,13 +111,13 @@ export function MemberDetail() {
     },
   });
   const history = useQuery({
-    queryKey: ['admin', 'users', id, 'history'],
-    queryFn: () => fetchDrawHistory(id!),
+    queryKey: ['admin', 'users', id, 'history', historyPagination.cursor],
+    queryFn: () => fetchDrawHistory(id!, { take: 20, cursor: historyPagination.cursor }),
     enabled: memberTab === 'history' && Boolean(id),
   });
   const pointsHistory = useQuery({
-    queryKey: ['admin', 'users', id, 'points-history'],
-    queryFn: () => fetchPointsHistory(id!),
+    queryKey: ['admin', 'users', id, 'points-history', pointsPagination.cursor],
+    queryFn: () => fetchPointsHistory(id!, { take: 20, cursor: pointsPagination.cursor }),
     enabled: Boolean(id),
   });
   const prizes = useQuery({
@@ -135,6 +139,11 @@ export function MemberDetail() {
     setSelectedPrizeIds(nextIds);
     setForcePrizeMode(data.testForcePrizeMode ?? 'random');
   }, [data]);
+
+  useEffect(() => {
+    pointsPagination.reset();
+    historyPagination.reset();
+  }, [id, pointsPagination.reset, historyPagination.reset]);
 
   function updateForcedPrizes(nextIds: string[], nextMode = forcePrizeMode) {
     setSelectedPrizeIds(nextIds);
@@ -276,10 +285,11 @@ export function MemberDetail() {
               <p className="admin-muted-text">尚無積分調整紀錄</p>
             )}
             {pointsHistory.data && pointsHistory.data.items.length > 0 && (
-              <Table<PointsHistoryItem>
-                rows={pointsHistory.data.items}
-                rowKey={(row) => row.id}
-                columns={[
+              <>
+                <Table<PointsHistoryItem>
+                  rows={pointsHistory.data.items}
+                  rowKey={(row) => row.id}
+                  columns={[
                   {
                     header: '調整',
                     cell: (row) => (
@@ -304,8 +314,16 @@ export function MemberDetail() {
                     header: '時間',
                     cell: (row) => new Date(row.createdAt).toLocaleString(),
                   },
-                ]}
-              />
+                  ]}
+                />
+                <CursorPagination
+                  page={pointsPagination.page}
+                  canPrevious={pointsPagination.canPrevious}
+                  canNext={Boolean(pointsHistory.data.nextCursor)}
+                  onPrevious={pointsPagination.previous}
+                  onNext={() => pointsPagination.next(pointsHistory.data?.nextCursor ?? null)}
+                />
+              </>
             )}
           </section>
 
@@ -386,10 +404,11 @@ export function MemberDetail() {
         </div>
       )}
       {memberTab === 'history' && history.data && (
-        <Table<DrawHistoryItem>
-          rows={history.data.items}
-          rowKey={(row) => row.redemption.id}
-          columns={[
+        <>
+          <Table<DrawHistoryItem>
+            rows={history.data.items}
+            rowKey={(row) => row.redemption.id}
+            columns={[
             {
               header: 'Code',
               cell: (r) => (
@@ -400,8 +419,16 @@ export function MemberDetail() {
             { header: '狀態', cell: (r) => <StatusBadge status={r.redemption.status} /> },
             { header: '中獎', cell: (r) => r.draws.map((d) => d.prize.name).join('、') },
             { header: '建立時間', cell: (r) => new Date(r.redemption.createdAt).toLocaleString() },
-          ]}
-        />
+            ]}
+          />
+          <CursorPagination
+            page={historyPagination.page}
+            canPrevious={historyPagination.canPrevious}
+            canNext={Boolean(history.data.nextCursor)}
+            onPrevious={historyPagination.previous}
+            onNext={() => historyPagination.next(history.data?.nextCursor ?? null)}
+          />
+        </>
       )}
       <ConfirmModal
         open={blacklistModal !== null}

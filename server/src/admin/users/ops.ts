@@ -82,7 +82,7 @@ export async function listUsersOp(
     where,
     take: query.take + 1,
     ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     select: USER_LIST_SELECT,
   });
 
@@ -154,19 +154,29 @@ export async function adjustPointsOp(
   return updated.points;
 }
 
-export async function pointsHistoryOp(client: PrismaClient, userId: string) {
+export async function pointsHistoryOp(
+  client: PrismaClient,
+  userId: string,
+  opts: { take: number; cursor?: string | null },
+) {
   const rows = await client.adminActionLog.findMany({
     where: { event: 'user.points_adjust', targetType: 'user', targetId: userId },
-    take: 20,
+    take: opts.take + 1,
+    ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
+  let nextCursor: string | null = null;
+  if (rows.length > opts.take) {
+    rows.pop();
+    nextCursor = rows[rows.length - 1]!.id;
+  }
   const adminIds = Array.from(new Set(rows.map((r) => r.adminUserId).filter((id): id is string => Boolean(id))));
   const admins = adminIds.length
     ? await client.adminUser.findMany({ where: { id: { in: adminIds } }, select: { id: true, email: true } })
     : [];
   const adminById = new Map(admins.map((a) => [a.id, a]));
 
-  return rows.map((row) => {
+  const items = rows.map((row) => {
     const after = row.payloadAfter && typeof row.payloadAfter === 'object' && !Array.isArray(row.payloadAfter)
       ? row.payloadAfter as Record<string, unknown>
       : {};
@@ -180,6 +190,7 @@ export async function pointsHistoryOp(client: PrismaClient, userId: string) {
       createdAt: row.createdAt,
     };
   });
+  return { items, nextCursor };
 }
 
 export async function setAccountTypeOp(
@@ -407,7 +418,7 @@ export async function drawHistoryOp(
 
   const redemptions = await client.redemption.findMany({
     where: { userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: opts.take + 1,
     ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
     include: {

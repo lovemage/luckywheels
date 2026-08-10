@@ -54,6 +54,9 @@ describe('GET /api/admin/action-logs', () => {
     const r2 = await app.request(`/api/admin/action-logs?take=2&cursor=${body1.nextCursor}`, { headers: await adminHeaders(admin.id, admin.email) });
     const body2 = await r2.json();
     expect(body2.items).toHaveLength(2);
-    expect(body2.items[0].id).not.toBe(body1.items[1].id);
+    const all = await app.request('/api/admin/action-logs?take=5', { headers: await adminHeaders(admin.id, admin.email) });
+    const allBody = await all.json();
+    expect([...body1.items, ...body2.items].map((item: { id: string }) => item.id))
+      .toEqual(allBody.items.slice(0, 4).map((item: { id: string }) => item.id));
   });
 });

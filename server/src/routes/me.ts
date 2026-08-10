@@ -1,8 +1,14 @@
 import { Hono } from 'hono';
 import { requireUser } from '../auth/middleware.js';
 import { prisma } from '../db.js';
+import { z } from 'zod';
 
 export const meRoutes = new Hono();
+
+const RedemptionsQuery = z.object({
+  take: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().optional(),
+});
 
 meRoutes.get('/api/me', requireUser, (c) => {
   const u = c.get('user');
@@ -22,10 +28,12 @@ meRoutes.get('/api/me', requireUser, (c) => {
 
 meRoutes.get('/api/me/redemptions', requireUser, async (c) => {
   const u = c.get('user');
+  const query = RedemptionsQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams));
   const redemptions = await prisma.redemption.findMany({
     where: { userId: u.id, totalWinAmount: { gt: 0 } },
-    orderBy: { createdAt: 'desc' },
-    take: 50,
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: query.take + 1,
+    ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
     include: {
       drawLogs: {
         where: { winningCashAmount: { gt: 0 } },
@@ -42,6 +50,12 @@ meRoutes.get('/api/me/redemptions', requireUser, async (c) => {
     },
   });
 
+  let nextCursor: string | null = null;
+  if (redemptions.length > query.take) {
+    redemptions.pop();
+    nextCursor = redemptions[redemptions.length - 1]!.id;
+  }
+
   return c.json({
     items: redemptions.map((r) => ({
       id: r.id,
@@ -56,5 +70,6 @@ meRoutes.get('/api/me/redemptions', requireUser, async (c) => {
         winningCashAmount: d.winningCashAmount,
       })),
     })),
+    nextCursor,
   });
 });

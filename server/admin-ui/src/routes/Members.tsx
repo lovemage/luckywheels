@@ -5,6 +5,8 @@ import { adjustPoints, approveUser, fetchUsers, type AdminUserRow } from '../api
 import { Modal } from '../components/Modal.js';
 import { Table } from '../components/Table.js';
 import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
+import { CursorPagination } from '../components/CursorPagination.js';
+import { useCursorPagination } from '../hooks/useCursorPagination.js';
 
 function PointsIcon() {
   return (
@@ -106,10 +108,11 @@ export function Members() {
   const [tab, setTab] = useState<'verified' | 'test' | 'pending'>('verified');
   const [q, setQ] = useState('');
   const [pointsModalUser, setPointsModalUser] = useState<AdminUserRow | null>(null);
+  const pagination = useCursorPagination();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'users', tab, q],
-    queryFn: () => fetchUsers({ tab, q: q || undefined }),
+    queryKey: ['admin', 'users', tab, q, pagination.cursor],
+    queryFn: () => fetchUsers({ tab, q: q || undefined, take: 25, cursor: pagination.cursor }),
   });
   const approve = useMutation({
     mutationFn: approveUser,
@@ -128,20 +131,21 @@ export function Members() {
         </div>
       </header>
       <div className="member-detail-actions admin-toolbar">
-        <button onClick={() => setTab('verified')} disabled={tab === 'verified'}>正式會員</button>
-        <button onClick={() => setTab('pending')} disabled={tab === 'pending'}>審核中</button>
-        <button onClick={() => setTab('test')} disabled={tab === 'test'}>測試會員</button>
+        <button onClick={() => { setTab('verified'); pagination.reset(); }} disabled={tab === 'verified'}>正式會員</button>
+        <button onClick={() => { setTab('pending'); pagination.reset(); }} disabled={tab === 'pending'}>審核中</button>
+        <button onClick={() => { setTab('test'); pagination.reset(); }} disabled={tab === 'test'}>測試會員</button>
         <input
           placeholder="搜尋暱稱 / LINE 名 / lineUserId / 娛樂城編號 / Redemption code"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => { setQ(e.target.value); pagination.reset(); }}
           className="admin-toolbar-search"
         />
       </div>
       {isLoading && <p>載入中…</p>}
       {data && (
-        <section className="member-detail-card member-detail-card--wide admin-table-card">
-          <Table<AdminUserRow>
+        <>
+          <section className="member-detail-card member-detail-card--wide admin-table-card">
+            <Table<AdminUserRow>
             rows={data.items}
             rowKey={(u) => u.id}
             columns={[
@@ -173,8 +177,16 @@ export function Members() {
                 ),
               },
             ]}
+            />
+          </section>
+          <CursorPagination
+            page={pagination.page}
+            canPrevious={pagination.canPrevious}
+            canNext={Boolean(data.nextCursor)}
+            onPrevious={pagination.previous}
+            onNext={() => pagination.next(data.nextCursor)}
           />
-        </section>
+        </>
       )}
       {pointsModalUser && (
         <PointsAdjustModal

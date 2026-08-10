@@ -50,7 +50,10 @@ adminActionLogsRoutes.get('/api/admin/action-logs', ...requireSystemNav, async (
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
   let nextCursor: string | null = null;
-  if (rows.length > q.take) nextCursor = rows.pop()!.id;
+  if (rows.length > q.take) {
+    rows.pop();
+    nextCursor = rows[rows.length - 1]!.id;
+  }
 
   // AdminActionLog has no Prisma relation to AdminUser; batch-load admin emails for the page
   const adminIds = Array.from(new Set(rows.map((r) => r.adminUserId).filter((id): id is string => !!id)));

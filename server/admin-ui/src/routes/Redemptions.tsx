@@ -7,6 +7,8 @@ import { CodeChip } from '../components/CodeChip.js';
 import { STATUS_LABELS, StatusBadge } from '../components/StatusBadge.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
 import { drawTierLabel } from '../utils/drawLabel.js';
+import { CursorPagination } from '../components/CursorPagination.js';
+import { useCursorPagination } from '../hooks/useCursorPagination.js';
 
 type StatusFilter = 'pending' | 'delivered' | 'cancelled' | 'all';
 type QuickStatusAction = { row: RedemptionRow; action: 'claim' | 'unclaim' } | null;
@@ -55,9 +57,10 @@ export function Redemptions() {
   const [status, setStatus] = useState<StatusFilter>('pending');
   const [code, setCode] = useState('');
   const [quickAction, setQuickAction] = useState<QuickStatusAction>(null);
+  const pagination = useCursorPagination();
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'redemptions', status, code],
-    queryFn: () => fetchRedemptions({ status, code: code || undefined }),
+    queryKey: ['admin', 'redemptions', status, code, pagination.cursor],
+    queryFn: () => fetchRedemptions({ status, code: code || undefined, take: 25, cursor: pagination.cursor }),
   });
   const mut = useMutation({
     mutationFn: (action: NonNullable<QuickStatusAction>) =>
@@ -81,7 +84,7 @@ export function Redemptions() {
       </header>
       <div className="member-detail-actions admin-toolbar">
         {(['pending', 'delivered', 'cancelled', 'all'] as const).map((s) => (
-          <button key={s} disabled={status === s} onClick={() => setStatus(s)}>{STATUS_LABELS[s]}</button>
+          <button key={s} disabled={status === s} onClick={() => { setStatus(s); pagination.reset(); }}>{STATUS_LABELS[s]}</button>
         ))}
         <label className="admin-search-field">
           <span>
@@ -91,14 +94,15 @@ export function Redemptions() {
             aria-label="搜尋兌換碼"
             placeholder="輸入兌換碼（可帶 LW- 前綴）"
             value={code}
-            onChange={(e) => setCode(e.target.value.trim().toUpperCase())}
+            onChange={(e) => { setCode(e.target.value.trim().toUpperCase()); pagination.reset(); }}
           />
         </label>
       </div>
       {isLoading && <p>載入中…</p>}
       {data && (
-        <section className="member-detail-card member-detail-card--wide admin-table-card">
-          <Table<RedemptionRow>
+        <>
+          <section className="member-detail-card member-detail-card--wide admin-table-card">
+            <Table<RedemptionRow>
             rows={data.items}
             rowKey={(r) => r.id}
             columns={[
@@ -145,8 +149,16 @@ export function Redemptions() {
               { header: '中獎金額', cell: (r) => r.totalWinAmount },
               { header: '建立時間', cell: (r) => new Date(r.createdAt).toLocaleString() },
             ]}
+            />
+          </section>
+          <CursorPagination
+            page={pagination.page}
+            canPrevious={pagination.canPrevious}
+            canNext={Boolean(data.nextCursor)}
+            onPrevious={pagination.previous}
+            onNext={() => pagination.next(data.nextCursor)}
           />
-        </section>
+        </>
       )}
       {quickAction && copy && (
         <ConfirmModal

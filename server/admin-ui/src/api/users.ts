@@ -72,8 +72,15 @@ export interface PointsHistoryItem {
   createdAt: string;
 }
 
-export function fetchPointsHistory(id: string): Promise<{ items: PointsHistoryItem[] }> {
-  return api(`/api/admin/users/${id}/points-history`);
+export function fetchPointsHistory(
+  id: string,
+  query: { take?: number; cursor?: string } = {},
+): Promise<{ items: PointsHistoryItem[]; nextCursor: string | null }> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) params.set(key, String(value));
+  }
+  return api(`/api/admin/users/${id}/points-history?${params.toString()}`);
 }
 
 export function setAccountType(id: string, accountType: 'verified' | 'test'): Promise<{ ok: true }> {
@@ -147,6 +154,13 @@ export interface DrawHistoryItem {
   }[];
 }
 
-export function fetchDrawHistory(id: string): Promise<{ items: DrawHistoryItem[]; nextCursor: string | null }> {
-  return api(`/api/admin/users/${id}/draw-history`);
+export function fetchDrawHistory(
+  id: string,
+  query: { take?: number; cursor?: string } = {},
+): Promise<{ items: DrawHistoryItem[]; nextCursor: string | null }> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) params.set(key, String(value));
+  }
+  return api(`/api/admin/users/${id}/draw-history?${params.toString()}`);
 }

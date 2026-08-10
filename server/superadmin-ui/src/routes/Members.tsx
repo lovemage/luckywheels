@@ -4,12 +4,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsers, approveUser, type UsersListQuery, type SuperUserRow } from '../api/users.js';
 import { fetchSuperadminMe, type Site } from '../api/me.js';
 import { SiteBadge, AccountBadge } from '../components/SiteBadge.js';
+import { CursorPagination } from '../components/CursorPagination.js';
 
 const TABS = [
   { key: 'pending', label: '審核中' },
   { key: 'verified', label: '正式 / 黑名單' },
   { key: 'test', label: '測試' },
 ] as const;
+
+type PageCursors = Partial<Record<Site, string>> | null;
 
 function fmt(iso: string): string {
   return new Date(iso).toLocaleString('zh-TW', {
@@ -23,12 +26,24 @@ export function Members() {
   const [site, setSite] = useState<'' | Site>('');
   const [qInput, setQInput] = useState('');
   const [q, setQ] = useState('');
+  const [pageCursors, setPageCursors] = useState<PageCursors>(null);
+  const [cursorHistory, setCursorHistory] = useState<PageCursors[]>([]);
 
   const { data: me } = useQuery({ queryKey: ['superadmin', 'me'], queryFn: fetchSuperadminMe, retry: false });
 
-  const query: UsersListQuery = { tab, q: q || undefined, take: 50, site: site || undefined };
+  const activeCursorSites = pageCursors
+    ? (['A', 'B'] as const).filter((key) => Boolean(pageCursors[key]))
+    : [];
+  const query: UsersListQuery = {
+    tab,
+    q: q || undefined,
+    take: 50,
+    site: site || (activeCursorSites.length === 1 ? activeCursorSites[0] : undefined),
+    cursorA: pageCursors?.A,
+    cursorB: pageCursors?.B,
+  };
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['superadmin', 'users', tab, q, site],
+    queryKey: ['superadmin', 'users', tab, q, site, pageCursors?.A, pageCursors?.B],
     queryFn: () => fetchUsers(query),
   });
 
@@ -40,6 +55,28 @@ export function Members() {
   function onSearch(e: FormEvent) {
     e.preventDefault();
     setQ(qInput.trim());
+    resetPagination();
+  }
+
+  function resetPagination() {
+    setPageCursors(null);
+    setCursorHistory([]);
+  }
+
+  function nextPage() {
+    if (!data) return;
+    const next: Partial<Record<Site, string>> = {};
+    if (data.cursors.A) next.A = data.cursors.A;
+    if (data.cursors.B) next.B = data.cursors.B;
+    if (!next.A && !next.B) return;
+    setCursorHistory((current) => [...current, pageCursors]);
+    setPageCursors(next);
+  }
+
+  function previousPage() {
+    if (cursorHistory.length === 0) return;
+    setPageCursors(cursorHistory[cursorHistory.length - 1] ?? null);
+    setCursorHistory(cursorHistory.slice(0, -1));
   }
 
   const items = data?.items ?? [];
@@ -58,7 +95,7 @@ export function Members() {
               key={t.key}
               type="button"
               className={`sa-tab${tab === t.key ? ' is-active' : ''}`}
-              onClick={() => setTab(t.key)}
+              onClick={() => { setTab(t.key); resetPagination(); }}
             >
               {t.label}
             </button>
@@ -73,7 +110,7 @@ export function Members() {
               key={o.value || 'all'}
               type="button"
               className={`sa-seg${site === o.value ? ' is-active' : ''}`}
-              onClick={() => setSite(o.value)}
+              onClick={() => { setSite(o.value); resetPagination(); }}
             >
               {o.label}
             </button>
@@ -88,7 +125,7 @@ export function Members() {
           />
           <button type="submit" className="sa-btn sa-btn--ghost">搜尋</button>
           {q && (
-            <button type="button" className="sa-btn sa-btn--ghost" onClick={() => { setQInput(''); setQ(''); }}>清除</button>
+            <button type="button" className="sa-btn sa-btn--ghost" onClick={() => { setQInput(''); setQ(''); resetPagination(); }}>清除</button>
           )}
         </form>
       </div>
@@ -97,8 +134,9 @@ export function Members() {
       {isError && <p className="sa-error">讀取失敗，請重新整理。</p>}
 
       {!isLoading && !isError && (
-        <div className="sa-table-wrap">
-          <table className="sa-table">
+        <>
+          <div className="sa-table-wrap">
+            <table className="sa-table">
             <thead>
               <tr>
                 <th>會員</th>
@@ -152,8 +190,16 @@ export function Members() {
                 <tr><td colSpan={8} className="sa-empty">沒有符合條件的會員</td></tr>
               )}
             </tbody>
-          </table>
-        </div>
+            </table>
+          </div>
+          <CursorPagination
+            page={cursorHistory.length + 1}
+            canPrevious={cursorHistory.length > 0}
+            canNext={Boolean(data?.cursors.A || data?.cursors.B)}
+            onPrevious={previousPage}
+            onNext={nextPage}
+          />
+        </>
       )}
     </section>
   );

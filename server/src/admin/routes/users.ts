@@ -32,6 +32,11 @@ const ListQuery = z.object({
   cursor: z.string().optional(),
 });
 
+const HistoryQuery = z.object({
+  take: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().optional(),
+});
+
 adminUsersRoutes.get('/api/admin/users', ...requireUsersNav, async (c) => {
   let query: z.infer<typeof ListQuery>;
   try { query = ListQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
@@ -62,7 +67,10 @@ adminUsersRoutes.post('/api/admin/users/:id/points', ...requireUsersNav, async (
 });
 
 adminUsersRoutes.get('/api/admin/users/:id/points-history', ...requireUsersNav, async (c) => {
-  return c.json({ items: await pointsHistoryOp(prisma, c.req.param('id')) });
+  let query: z.infer<typeof HistoryQuery>;
+  try { query = HistoryQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
+  catch { throw new AppError('HISTORY_QUERY_INVALID', 'invalid history query parameters', 400); }
+  return c.json(await pointsHistoryOp(prisma, c.req.param('id'), query));
 });
 
 const AccountTypeBody = z.object({
@@ -150,8 +158,8 @@ adminUsersRoutes.patch('/api/admin/users/:id/entertainment-code', ...requireUser
 });
 
 adminUsersRoutes.get('/api/admin/users/:id/draw-history', ...requireUsersNav, async (c) => {
-  const url = new URL(c.req.url);
-  const take = Math.min(Number(url.searchParams.get('take') ?? 25), 50);
-  const cursor = url.searchParams.get('cursor');
-  return c.json(await drawHistoryOp(prisma, c.req.param('id'), { take, cursor }));
+  let query: z.infer<typeof HistoryQuery>;
+  try { query = HistoryQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
+  catch { throw new AppError('HISTORY_QUERY_INVALID', 'invalid history query parameters', 400); }
+  return c.json(await drawHistoryOp(prisma, c.req.param('id'), query));
 });

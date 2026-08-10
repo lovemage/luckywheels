@@ -359,6 +359,21 @@ th {
   background: rgba(255, 101, 122, 0.12);
 }
 
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-pagination span {
+  min-width: 72px;
+  text-align: center;
+  color: var(--admin-muted);
+  font-weight: 700;
+}
+
 .admin-toolbar {
   padding: 12px;
   border: 1px solid var(--admin-line);

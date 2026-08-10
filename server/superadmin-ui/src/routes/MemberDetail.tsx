@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError } from '../api/client.js';
@@ -10,6 +10,8 @@ import {
 } from '../api/users.js';
 import { SiteBadge, AccountBadge } from '../components/SiteBadge.js';
 import { drawTierLabel } from '../utils/drawLabel.js';
+import { CursorPagination } from '../components/CursorPagination.js';
+import { useCursorPagination } from '../hooks/useCursorPagination.js';
 
 function fmt(iso: string | null): string {
   if (!iso) return '—';
@@ -27,6 +29,8 @@ export function MemberDetail() {
 
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [migrating, setMigrating] = useState(false);
+  const pointsPagination = useCursorPagination();
+  const drawPagination = useCursorPagination();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['superadmin', 'user', site, id],
@@ -34,15 +38,20 @@ export function MemberDetail() {
     enabled: !!site && !!id,
   });
   const pointsHistory = useQuery({
-    queryKey: ['superadmin', 'user', site, id, 'points-history'],
-    queryFn: () => fetchPointsHistory(site!, id),
+    queryKey: ['superadmin', 'user', site, id, 'points-history', pointsPagination.cursor],
+    queryFn: () => fetchPointsHistory(site!, id, { take: 20, cursor: pointsPagination.cursor }),
     enabled: !!site && !!id,
   });
   const drawHistory = useQuery({
-    queryKey: ['superadmin', 'user', site, id, 'draw-history'],
-    queryFn: () => fetchDrawHistory(site!, id),
+    queryKey: ['superadmin', 'user', site, id, 'draw-history', drawPagination.cursor],
+    queryFn: () => fetchDrawHistory(site!, id, { take: 20, cursor: drawPagination.cursor }),
     enabled: !!site && !!id,
   });
+
+  useEffect(() => {
+    pointsPagination.reset();
+    drawPagination.reset();
+  }, [site, id, pointsPagination.reset, drawPagination.reset]);
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ['superadmin', 'user', site, id] });
@@ -186,16 +195,25 @@ export function MemberDetail() {
         <Card title="積分調整紀錄">
           {pointsHistory.data?.items.length
             ? (
-              <ul className="sa-loglist">
-                {pointsHistory.data.items.map((h) => (
-                  <li key={h.id}>
-                    <span className={h.delta >= 0 ? 'sa-pos' : 'sa-neg'}>{h.delta >= 0 ? `+${h.delta}` : h.delta}</span>
-                    {' '}（{h.before ?? '—'} → {h.after ?? '—'}）
-                    {h.reason ? `　${h.reason}` : ''}
-                    <span className="sa-sub">　{fmt(h.createdAt)}{h.adminUser ? `　by ${h.adminUser.email}` : ''}</span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="sa-loglist">
+                  {pointsHistory.data.items.map((h) => (
+                    <li key={h.id}>
+                      <span className={h.delta >= 0 ? 'sa-pos' : 'sa-neg'}>{h.delta >= 0 ? `+${h.delta}` : h.delta}</span>
+                      {' '}（{h.before ?? '—'} → {h.after ?? '—'}）
+                      {h.reason ? `　${h.reason}` : ''}
+                      <span className="sa-sub">　{fmt(h.createdAt)}{h.adminUser ? `　by ${h.adminUser.email}` : ''}</span>
+                    </li>
+                  ))}
+                </ul>
+                <CursorPagination
+                  page={pointsPagination.page}
+                  canPrevious={pointsPagination.canPrevious}
+                  canNext={Boolean(pointsHistory.data.nextCursor)}
+                  onPrevious={pointsPagination.previous}
+                  onNext={() => pointsPagination.next(pointsHistory.data?.nextCursor ?? null)}
+                />
+              </>
             )
             : <p className="sa-sub">沒有紀錄</p>}
         </Card>
@@ -203,15 +221,24 @@ export function MemberDetail() {
         <Card title="抽獎紀錄">
           {drawHistory.data?.items.length
             ? (
-              <ul className="sa-loglist">
-                {drawHistory.data.items.map((r) => (
-                  <li key={r.redemption.id}>
-                    <strong>{r.redemption.code}</strong>（{drawTierLabel(r.redemption.tier, r.redemption.tierDraws)}・{r.redemption.status}）
-                    <span className="sa-sub">　{fmt(r.redemption.createdAt)}</span>
-                    <div className="sa-sub">{r.draws.map((d) => `${d.prize.name}${d.winningCashAmount ? `(+${d.winningCashAmount})` : ''}`).join('、')}</div>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="sa-loglist">
+                  {drawHistory.data.items.map((r) => (
+                    <li key={r.redemption.id}>
+                      <strong>{r.redemption.code}</strong>（{drawTierLabel(r.redemption.tier, r.redemption.tierDraws)}・{r.redemption.status}）
+                      <span className="sa-sub">　{fmt(r.redemption.createdAt)}</span>
+                      <div className="sa-sub">{r.draws.map((d) => `${d.prize.name}${d.winningCashAmount ? `(+${d.winningCashAmount})` : ''}`).join('、')}</div>
+                    </li>
+                  ))}
+                </ul>
+                <CursorPagination
+                  page={drawPagination.page}
+                  canPrevious={drawPagination.canPrevious}
+                  canNext={Boolean(drawHistory.data.nextCursor)}
+                  onPrevious={drawPagination.previous}
+                  onNext={() => drawPagination.next(drawHistory.data?.nextCursor ?? null)}
+                />
+              </>
             )
             : <p className="sa-sub">沒有紀錄</p>}
         </Card>

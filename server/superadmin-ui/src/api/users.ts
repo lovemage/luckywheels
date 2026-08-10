@@ -147,8 +147,16 @@ export interface PointsHistoryItem {
   createdAt: string;
 }
 
-export function fetchPointsHistory(site: Site, id: string): Promise<{ items: PointsHistoryItem[] }> {
-  return api(`/api/superadmin/users/${site}/${id}/points-history`);
+export function fetchPointsHistory(
+  site: Site,
+  id: string,
+  query: { take?: number; cursor?: string } = {},
+): Promise<{ items: PointsHistoryItem[]; nextCursor: string | null }> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) params.set(key, String(value));
+  }
+  return api(`/api/superadmin/users/${site}/${id}/points-history?${params.toString()}`);
 }
 
 export interface DrawHistoryItem {
@@ -174,6 +182,14 @@ export interface DrawHistoryItem {
   }[];
 }
 
-export function fetchDrawHistory(site: Site, id: string): Promise<{ items: DrawHistoryItem[]; nextCursor: string | null }> {
-  return api(`/api/superadmin/users/${site}/${id}/draw-history`);
+export function fetchDrawHistory(
+  site: Site,
+  id: string,
+  query: { take?: number; cursor?: string } = {},
+): Promise<{ items: DrawHistoryItem[]; nextCursor: string | null }> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) params.set(key, String(value));
+  }
+  return api(`/api/superadmin/users/${site}/${id}/draw-history?${params.toString()}`);
 }

@@ -61,5 +61,16 @@ describe('GET /api/admin/redemptions', () => {
     const body = await r.json();
     expect(body.items).toHaveLength(2);
     expect(body.nextCursor).toBeTruthy();
+    const next = await app.request(`/api/admin/redemptions?take=2&cursor=${body.nextCursor}`, {
+      headers: await adminHeaders(admin.id, admin.email),
+    });
+    const nextBody = await next.json();
+    expect(nextBody.items).toHaveLength(2);
+    const all = await app.request('/api/admin/redemptions?take=5', {
+      headers: await adminHeaders(admin.id, admin.email),
+    });
+    const allBody = await all.json();
+    expect([...body.items, ...nextBody.items].map((item: { id: string }) => item.id))
+      .toEqual(allBody.items.slice(0, 4).map((item: { id: string }) => item.id));
   });
 });

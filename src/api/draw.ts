@@ -67,6 +67,12 @@ export interface WinHistoryEntry {
   }[];
 }
 
-export function fetchWinHistory(): Promise<{ items: WinHistoryEntry[] }> {
-  return api('/api/me/redemptions');
+export function fetchWinHistory(
+  query: { take?: number; cursor?: string } = {},
+): Promise<{ items: WinHistoryEntry[]; nextCursor: string | null }> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) params.set(key, String(value));
+  }
+  return api(`/api/me/redemptions?${params.toString()}`);
 }

@@ -41,14 +41,17 @@ adminRedemptionsRoutes.get('/api/admin/redemptions', ...requireRedemptionsNav, a
     where,
     take: q.take + 1,
     ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     include: {
       user: { select: { id: true, nickname: true, displayName: true, entertainmentMemberCode: true } },
       drawLogs: { orderBy: { subIndex: 'asc' }, take: 1, select: { tierDraws: true } },
     },
   });
   let nextCursor: string | null = null;
-  if (items.length > q.take) nextCursor = items.pop()!.id;
+  if (items.length > q.take) {
+    items.pop();
+    nextCursor = items[items.length - 1]!.id;
+  }
   return c.json({
     items: items.map((r) => ({
       id: r.id, code: r.code, tier: r.tier, tierDraws: inferTierDraws(r), status: r.status,

@@ -176,6 +176,8 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const [isWheelFrozen, setIsWheelFrozen] = useState(false);
   const [result, setResult] = useState<DrawResponse | null>(null);
   const [winHistory, setWinHistory] = useState<WinHistoryEntry[]>([]);
+  const [winHistoryCursor, setWinHistoryCursor] = useState<string | null>(null);
+  const [winHistoryLoadingMore, setWinHistoryLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const soundsRef = useRef<Record<SoundKey, HTMLAudioElement> | null>(null);
   const soundTimersRef = useRef<Partial<Record<SoundKey, number>>>({});
@@ -284,10 +286,27 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
 
   useEffect(() => {
     if (view !== 'mine') return;
-    fetchWinHistory()
-      .then((history) => setWinHistory(formatWinHistory(history.items)))
+    fetchWinHistory({ take: 20 })
+      .then((history) => {
+        setWinHistory(formatWinHistory(history.items));
+        setWinHistoryCursor(history.nextCursor);
+      })
       .catch(() => setError('無法載入中獎紀錄，請稍後再試'));
   }, [view]);
+
+  async function loadMoreWinHistory() {
+    if (!winHistoryCursor || winHistoryLoadingMore) return;
+    setWinHistoryLoadingMore(true);
+    try {
+      const history = await fetchWinHistory({ take: 20, cursor: winHistoryCursor });
+      setWinHistory((current) => [...current, ...formatWinHistory(history.items)]);
+      setWinHistoryCursor(history.nextCursor);
+    } catch {
+      setError('無法載入更多中獎紀錄，請稍後再試');
+    } finally {
+      setWinHistoryLoadingMore(false);
+    }
+  }
 
   if (!prizes || !settings) {
     return (
@@ -574,6 +593,16 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
                     </li>
                   ))}
                 </ol>
+              )}
+              {winHistoryCursor && (
+                <button
+                  type="button"
+                  className="win-history-more"
+                  disabled={winHistoryLoadingMore}
+                  onClick={loadMoreWinHistory}
+                >
+                  {winHistoryLoadingMore ? '載入中…' : '載入更多'}
+                </button>
               )}
             </div>
           </section>

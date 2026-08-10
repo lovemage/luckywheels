@@ -1767,6 +1767,23 @@ h1 {
   border-bottom: 0;
 }
 
+.win-history-more {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+}
+
+.win-history-more:disabled {
+  opacity: 0.55;
+}
+
 .win-modal .hint {
   margin: 0;
   font-size: 12px;

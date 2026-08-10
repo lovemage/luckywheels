@@ -57,6 +57,11 @@ const ListQuery = z.object({
   cursorB: z.string().optional(),
 });
 
+const HistoryQuery = z.object({
+  take: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().optional(),
+});
+
 superadminUsersRoutes.get('/api/superadmin/users', requireSuperadmin, async (c) => {
   let query: z.infer<typeof ListQuery>;
   try { query = ListQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
@@ -122,15 +127,18 @@ superadminUsersRoutes.get('/api/superadmin/users/:site/:id', requireSuperadmin, 
 
 superadminUsersRoutes.get('/api/superadmin/users/:site/:id/points-history', requireSuperadmin, async (c) => {
   const site = siteParam(c);
-  return c.json({ items: await pointsHistoryOp(clientFor(site), c.req.param('id')) });
+  let query: z.infer<typeof HistoryQuery>;
+  try { query = HistoryQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
+  catch { throw new AppError('HISTORY_QUERY_INVALID', 'invalid history query parameters', 400); }
+  return c.json(await pointsHistoryOp(clientFor(site), c.req.param('id'), query));
 });
 
 superadminUsersRoutes.get('/api/superadmin/users/:site/:id/draw-history', requireSuperadmin, async (c) => {
   const site = siteParam(c);
-  const url = new URL(c.req.url);
-  const take = Math.min(Number(url.searchParams.get('take') ?? 25), 50);
-  const cursor = url.searchParams.get('cursor');
-  return c.json(await drawHistoryOp(clientFor(site), c.req.param('id'), { take, cursor }));
+  let query: z.infer<typeof HistoryQuery>;
+  try { query = HistoryQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams)); }
+  catch { throw new AppError('HISTORY_QUERY_INVALID', 'invalid history query parameters', 400); }
+  return c.json(await drawHistoryOp(clientFor(site), c.req.param('id'), query));
 });
 
 // ---- per-site mutations (full member management) --------------------------
