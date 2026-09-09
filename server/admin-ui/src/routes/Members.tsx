@@ -112,7 +112,7 @@ export function Members() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'users', tab, q, pagination.cursor],
-    queryFn: () => fetchUsers({ tab, q: q || undefined, take: 25, cursor: pagination.cursor }),
+    queryFn: () => fetchUsers({ tab, q: q || undefined, take: 50, cursor: pagination.cursor }),
   });
   const approve = useMutation({
     mutationFn: approveUser,
