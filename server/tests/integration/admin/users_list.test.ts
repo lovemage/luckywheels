@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { app } from '../../../src/index.js';
 import { resetDb } from '../../helpers/db.js';
 import { createAdmin, adminHeaders } from '../../helpers/admin.ts';
-import { createRedemption, createUser } from '../../helpers/factories.js';
+import { createDrawLog, createPrize, createRedemption, createUser } from '../../helpers/factories.js';
 
 describe('GET /api/admin/users', () => {
   beforeEach(resetDb);
@@ -68,10 +68,15 @@ describe('GET /api/admin/users', () => {
     const admin = await createAdmin();
     const member = await createUser({ nickname: '待領獎會員', accountType: 'verified' });
     await createUser({ nickname: '待審核會員', accountType: 'pending' });
-    await createRedemption({ userId: member.id, totalWinAmount: 500, status: 'pending' });
-    await createRedemption({ userId: member.id, totalWinAmount: 0, status: 'pending' });
-    await createRedemption({ userId: member.id, totalWinAmount: 100, status: 'delivered' });
-    await createRedemption({ userId: member.id, totalWinAmount: 100, status: 'pending', isTest: true });
+    const prize = await createPrize();
+    const pendingWinner = await createRedemption({ userId: member.id, totalWinAmount: 0, status: 'pending' });
+    const pendingNoWin = await createRedemption({ userId: member.id, totalWinAmount: 0, status: 'pending' });
+    const deliveredWinner = await createRedemption({ userId: member.id, totalWinAmount: 100, status: 'delivered' });
+    const testWinner = await createRedemption({ userId: member.id, totalWinAmount: 100, status: 'pending', isTest: true });
+    await createDrawLog({ userId: member.id, redemptionId: pendingWinner.id, prizeId: prize.id, winningCashAmount: 500 });
+    await createDrawLog({ userId: member.id, redemptionId: pendingNoWin.id, prizeId: prize.id, winningCashAmount: 0 });
+    await createDrawLog({ userId: member.id, redemptionId: deliveredWinner.id, prizeId: prize.id, winningCashAmount: 100 });
+    await createDrawLog({ userId: member.id, redemptionId: testWinner.id, prizeId: prize.id, winningCashAmount: 100 });
 
     const r = await app.request('/api/admin/users', {
       headers: await adminHeaders(admin.id, admin.email),

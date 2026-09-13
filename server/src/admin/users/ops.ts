@@ -54,7 +54,11 @@ const USER_LIST_SELECT = {
   _count: {
     select: {
       redemptions: {
-        where: { status: 'pending' as const, totalWinAmount: { gt: 0 }, isTest: false },
+        where: {
+          status: 'pending' as const,
+          isTest: false,
+          drawLogs: { some: { winningCashAmount: { gt: 0 } } },
+        },
       },
     },
   },
@@ -100,7 +104,11 @@ export async function listUsersOp(
     }),
     client.user.count({ where: { accountType: 'pending' } }),
     client.redemption.count({
-      where: { status: 'pending', totalWinAmount: { gt: 0 }, isTest: false },
+      where: {
+        status: 'pending',
+        isTest: false,
+        drawLogs: { some: { winningCashAmount: { gt: 0 } } },
+      },
     }),
   ]);
 

@@ -54,6 +54,7 @@ export function RedemptionDetail() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'redemptions', id] });
       qc.invalidateQueries({ queryKey: ['admin', 'redemptions'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
       setAction(null);
     },
   });

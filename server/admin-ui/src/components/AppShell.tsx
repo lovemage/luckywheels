@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAdminMe, type AdminNavKey } from '../api/me.js';
+import { fetchUsers } from '../api/users.js';
 import { MemberSearch } from './MemberSearch.js';
 
 type SidebarLink = {
@@ -20,7 +21,20 @@ const sidebarLinks: SidebarLink[] = [
 
 export function AppShell() {
   const me = useQuery({ queryKey: ['admin', 'me'], queryFn: fetchAdminMe });
+  const canSeeUsers = Boolean(me.data && (me.data.isMain || me.data.allowedNavs.includes('users')));
+  const userAlerts = useQuery({
+    queryKey: ['admin', 'users', 'alerts'],
+    queryFn: () => fetchUsers({ take: 1 }),
+    enabled: canSeeUsers,
+    refetchInterval: 30_000,
+  });
   const visibleLinks = sidebarLinks.filter((l) => me.data?.isMain || me.data?.allowedNavs.includes(l.nav));
+
+  function alertCount(nav: AdminNavKey): number {
+    if (nav === 'users') return userAlerts.data?.alerts.pendingApprovalCount ?? 0;
+    if (nav === 'redemptions') return userAlerts.data?.alerts.pendingRedemptionCount ?? 0;
+    return 0;
+  }
 
   return (
     <div className="admin-shell">
@@ -36,7 +50,10 @@ export function AppShell() {
       <div className="admin-layout">
         <nav className="admin-nav" aria-label="管理後台導覽">
           <ul>
-            {visibleLinks.map((l) => (
+            {visibleLinks.map((l) => {
+              const count = alertCount(l.nav);
+              const alertLabel = l.nav === 'users' ? `${count} 位會員待審核` : `${count} 筆中獎待確認`;
+              return (
               <li key={l.to}>
                 <NavLink
                   to={l.to}
@@ -46,9 +63,13 @@ export function AppShell() {
                 >
                   <span className="admin-nav-dot" aria-hidden="true" />
                   <span className="admin-nav-label">{l.label}</span>
+                  {count > 0 && (
+                    <span className="admin-nav-alert-count" aria-label={alertLabel} title={alertLabel}>{count}</span>
+                  )}
                 </NavLink>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </nav>
         <main className="admin-content">
