@@ -23,6 +23,8 @@ export function Settings() {
         costControlEnabled: data.costControlEnabled,
         costControlInterval: data.costControlInterval,
         rulesText: data.rulesText,
+        winTitleText: data.winTitleText,
+        winRedemptionText: data.winRedemptionText,
       });
   }, [data]);
 
@@ -95,6 +97,35 @@ export function Settings() {
         >
           + 新增門檻
         </button>
+      </fieldset>
+
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
+        <legend>中獎畫面文案</legend>
+        <p className="admin-muted-text">
+          修改會員中獎後看到的標題與領獎說明。儲存後，前台重新載入即可看到新內容。
+        </p>
+        <label>
+          中獎標題
+          <input
+            type="text"
+            maxLength={40}
+            value={form.winTitleText ?? ''}
+            onChange={(e) => setForm({ ...form, winTitleText: e.target.value })}
+            style={{ width: '100%', display: 'block', marginTop: 6 }}
+          />
+          <Hint>例如「恭喜中獎」。最多 40 個字。</Hint>
+        </label>
+        <label>
+          領獎說明
+          <textarea
+            rows={3}
+            maxLength={200}
+            value={form.winRedemptionText ?? ''}
+            onChange={(e) => setForm({ ...form, winRedemptionText: e.target.value })}
+            style={{ width: '100%', display: 'block', marginTop: 6 }}
+          />
+          <Hint>預設為「請將兌換碼截圖傳送給代理以進行領取。」最多 200 個字。</Hint>
+        </label>
       </fieldset>
 
       <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">

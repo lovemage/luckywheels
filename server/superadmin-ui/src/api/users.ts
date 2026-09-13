@@ -17,11 +17,16 @@ export interface SuperUserRow {
   createdAt: string;
   site: Site;
   siteLabel: string;
+  pendingRedemptionCount?: number;
 }
 
 export interface UsersListResponse {
   items: SuperUserRow[];
   cursors: Record<Site, string | null>;
+  alerts: {
+    pendingApprovalCount: number;
+    pendingRedemptionCount: number;
+  };
 }
 
 export interface UsersListQuery {

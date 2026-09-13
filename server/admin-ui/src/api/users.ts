@@ -12,11 +12,16 @@ export interface AdminUserRow {
   lifetimeDrawCount: number;
   blacklistedAt: string | null;
   createdAt: string;
+  pendingRedemptionCount?: number;
 }
 
 export interface UsersListResponse {
   items: AdminUserRow[];
   nextCursor: string | null;
+  alerts: {
+    pendingApprovalCount: number;
+    pendingRedemptionCount: number;
+  };
 }
 
 export interface UsersListQuery {

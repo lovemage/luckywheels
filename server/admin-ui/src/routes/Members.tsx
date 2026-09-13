@@ -114,6 +114,7 @@ export function Members() {
     queryKey: ['admin', 'users', tab, q, pagination.cursor],
     queryFn: () => fetchUsers({ tab, q: q || undefined, take: 50, cursor: pagination.cursor }),
   });
+  const alerts = data?.alerts ?? { pendingApprovalCount: 0, pendingRedemptionCount: 0 };
   const approve = useMutation({
     mutationFn: approveUser,
     onSuccess: () => {
@@ -132,7 +133,14 @@ export function Members() {
       </header>
       <div className="member-detail-actions admin-toolbar">
         <button onClick={() => { setTab('verified'); pagination.reset(); }} disabled={tab === 'verified'}>正式會員</button>
-        <button onClick={() => { setTab('pending'); pagination.reset(); }} disabled={tab === 'pending'}>審核中</button>
+        <button onClick={() => { setTab('pending'); pagination.reset(); }} disabled={tab === 'pending'}>
+          審核中
+          {alerts.pendingApprovalCount > 0 && (
+            <span className="admin-alert-count" aria-label={`${alerts.pendingApprovalCount} 位會員待審核`}>
+              {alerts.pendingApprovalCount}
+            </span>
+          )}
+        </button>
         <button onClick={() => { setTab('test'); pagination.reset(); }} disabled={tab === 'test'}>測試會員</button>
         <input
           placeholder="搜尋暱稱 / LINE 名 / lineUserId / 娛樂城編號 / Redemption code"
@@ -141,6 +149,13 @@ export function Members() {
           className="admin-toolbar-search"
         />
       </div>
+      {alerts.pendingRedemptionCount > 0 && (
+        <div className="admin-alert-summary" role="status">
+          <span className="admin-alert-dot" aria-hidden="true" />
+          目前有 {alerts.pendingRedemptionCount} 筆中獎尚未確認領取
+          <Link to="/redemptions">前往中獎紀錄</Link>
+        </div>
+      )}
       {isLoading && <p>載入中…</p>}
       {data && (
         <>
@@ -149,7 +164,21 @@ export function Members() {
             rows={data.items}
             rowKey={(u) => u.id}
             columns={[
-              { header: '暱稱', cell: (u) => <Link to={`/users/${u.id}`}>{u.nickname ?? '(未填)'}</Link> },
+              { header: '暱稱', cell: (u) => {
+                const pendingRedemptions = u.pendingRedemptionCount ?? 0;
+                const needsAttention = u.accountType === 'pending' || pendingRedemptions > 0;
+                const alertText = u.accountType === 'pending'
+                  ? '會員待審核'
+                  : `${pendingRedemptions} 筆中獎待確認`;
+                return (
+                  <span className="admin-member-name">
+                    <Link to={`/users/${u.id}`}>{u.nickname ?? '(未填)'}</Link>
+                    {needsAttention && (
+                      <span className="admin-alert-dot" title={alertText} aria-label={alertText} />
+                    )}
+                  </span>
+                );
+              } },
               { header: 'LINE 名', cell: (u) => u.displayName },
               { header: '娛樂城編號', cell: (u) => u.entertainmentMemberCode ?? '—' },
               { header: '帳號類型', cell: (u) => <AccountTypeBadge type={u.accountType} /> },

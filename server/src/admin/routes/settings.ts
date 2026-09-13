@@ -27,6 +27,8 @@ const Body = z.object({
     .union([z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7)])
     .optional(),
   rulesText: z.string().min(1).max(2000).optional(),
+  winTitleText: z.string().trim().min(1).max(40).optional(),
+  winRedemptionText: z.string().trim().min(1).max(200).optional(),
   // 首頁外觀：上傳後得到的圖片 URL；空字串＝清除、回退前端內建預設圖。
   homeLogoUrl: z.string().max(2000).optional(),
   homeBackgroundUrl: z.string().max(2000).optional(),
@@ -93,6 +95,8 @@ adminSettingsRoutes.get('/api/admin/settings', ...requireSystemNav, async (c) =>
     costControlEnabled: (m[SETTINGS_KEYS.costControlEnabled] ?? 'false') === 'true',
     costControlInterval: Number(m[SETTINGS_KEYS.costControlInterval] ?? '3'),
     rulesText: m[SETTINGS_KEYS.rulesText] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.rulesText],
+    winTitleText: m[SETTINGS_KEYS.winTitleText] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winTitleText],
+    winRedemptionText: m[SETTINGS_KEYS.winRedemptionText] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winRedemptionText],
     homeLogoUrl: m[SETTINGS_KEYS.homeLogoUrl] ?? '',
     homeBackgroundUrl: m[SETTINGS_KEYS.homeBackgroundUrl] ?? '',
     totals: {
@@ -137,6 +141,10 @@ adminSettingsRoutes.patch('/api/admin/settings', ...requireSystemNav, async (c) 
     updates.push({ key: SETTINGS_KEYS.costControlInterval, value: serialize(body.costControlInterval) });
   if (body.rulesText !== undefined)
     updates.push({ key: SETTINGS_KEYS.rulesText, value: serialize(body.rulesText) });
+  if (body.winTitleText !== undefined)
+    updates.push({ key: SETTINGS_KEYS.winTitleText, value: serialize(body.winTitleText) });
+  if (body.winRedemptionText !== undefined)
+    updates.push({ key: SETTINGS_KEYS.winRedemptionText, value: serialize(body.winRedemptionText) });
   if (body.homeLogoUrl !== undefined)
     updates.push({ key: SETTINGS_KEYS.homeLogoUrl, value: serialize(body.homeLogoUrl) });
   if (body.homeBackgroundUrl !== undefined)

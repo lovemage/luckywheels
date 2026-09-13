@@ -73,10 +73,10 @@ superadminUsersRoutes.get('/api/superadmin/users', requireSuperadmin, async (c) 
 
   const perSite = await Promise.all(
     sitesToQuery.map(async (site) => {
-      const { items, nextCursor } = await listUsersOp(clientFor(site), {
+      const { items, nextCursor, alerts } = await listUsersOp(clientFor(site), {
         tab: query.tab, q: query.q, take: query.take, cursor: cursors[site],
       });
-      return { site, nextCursor, items: items.map((u) => ({ ...u, site, siteLabel: cfg.labels[site] })) };
+      return { site, nextCursor, alerts, items: items.map((u) => ({ ...u, site, siteLabel: cfg.labels[site] })) };
     }),
   );
 
@@ -86,8 +86,15 @@ superadminUsersRoutes.get('/api/superadmin/users', requireSuperadmin, async (c) 
 
   const nextCursors: Record<Site, string | null> = { A: null, B: null };
   for (const s of perSite) nextCursors[s.site] = s.nextCursor;
+  const alerts = perSite.reduce(
+    (total, current) => ({
+      pendingApprovalCount: total.pendingApprovalCount + current.alerts.pendingApprovalCount,
+      pendingRedemptionCount: total.pendingRedemptionCount + current.alerts.pendingRedemptionCount,
+    }),
+    { pendingApprovalCount: 0, pendingRedemptionCount: 0 },
+  );
 
-  return c.json({ items, cursors: nextCursors });
+  return c.json({ items, cursors: nextCursors, alerts });
 });
 
 // ---- per-site single-user read --------------------------------------------

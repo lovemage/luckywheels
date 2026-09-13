@@ -17,6 +17,8 @@ export interface PublicSettings {
   spinDurationMs: number;
   pointThresholds: { points: number; draws: number }[];
   rulesText: string;
+  winTitleText: string;
+  winRedemptionText: string;
   /** Admin-configurable home logo URL; empty string ⇒ use the bundled default. */
   homeLogoUrl: string;
   /** Admin-configurable home background URL; empty string ⇒ use the bundled default. */

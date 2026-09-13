@@ -593,7 +593,16 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           <TabButton active={view === 'mine'} icon={<HistoryTabIcon />} label="中獎紀錄" onClick={() => setView('mine')} />
         </nav>
 
-        {result && <WinModal key={result.redemption.id} result={result} onClose={closeResult} onRevealWin={() => playSound('win')} />}
+        {result && (
+          <WinModal
+            key={result.redemption.id}
+            result={result}
+            onClose={closeResult}
+            onRevealWin={() => playSound('win')}
+            winTitleText={settings?.winTitleText}
+            winRedemptionText={settings?.winRedemptionText}
+          />
+        )}
       </section>
     </main>
   );

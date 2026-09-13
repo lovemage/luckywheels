@@ -13,6 +13,7 @@ beforeEach(() => {
           lifetimeDrawCount: 3, blacklistedAt: null, createdAt: '2026-06-01' },
       ],
       nextCursor: null,
+      alerts: { pendingApprovalCount: 0, pendingRedemptionCount: 0 },
     }), { status: 200, headers: { 'content-type': 'application/json' } }),
   ));
 });
@@ -29,6 +30,29 @@ describe('Members', () => {
     expect(screen.getByText('正式')).toBeDefined();
   });
 
+  it('shows attention badges for pending approval and unconfirmed wins', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({
+        items: [
+          { id: 'u1', nickname: 'Alice', displayName: 'ALICE', pictureUrl: null, lineUserId: 'U_a',
+            entertainmentMemberCode: 'EM_AA', accountType: 'verified', points: 28,
+            lifetimeDrawCount: 3, blacklistedAt: null, createdAt: '2026-06-01', pendingRedemptionCount: 2 },
+        ],
+        nextCursor: null,
+        alerts: { pendingApprovalCount: 3, pendingRedemptionCount: 2 },
+      }), { status: 200, headers: { 'content-type': 'application/json' } }),
+    ));
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter><Members /></MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByLabelText('3 位會員待審核')).toBeDefined();
+    expect(screen.getByRole('status').textContent).toContain('2 筆中獎尚未確認領取');
+    expect(screen.getByLabelText('2 筆中獎待確認')).toBeDefined();
+  });
+
   it('loads the next cursor and can return to the previous page', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
@@ -38,6 +62,7 @@ describe('Members', () => {
             lifetimeDrawCount: 3, blacklistedAt: null, createdAt: '2026-06-01' },
         ],
         nextCursor: 'cursor-2',
+        alerts: { pendingApprovalCount: 0, pendingRedemptionCount: 0 },
       }), { status: 200, headers: { 'content-type': 'application/json' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         items: [
@@ -46,6 +71,7 @@ describe('Members', () => {
             lifetimeDrawCount: 1, blacklistedAt: null, createdAt: '2026-05-01' },
         ],
         nextCursor: null,
+        alerts: { pendingApprovalCount: 0, pendingRedemptionCount: 0 },
       }), { status: 200, headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', fetchMock);
 

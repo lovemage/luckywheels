@@ -8,13 +8,21 @@ export const publicRoutes = new Hono();
 publicRoutes.get('/api/settings/public', async (c) => {
   const s = await readDrawSettings();
   const rows = await prisma.appSetting.findMany({
-    where: { key: { in: [SETTINGS_KEYS.rulesText, SETTINGS_KEYS.homeLogoUrl, SETTINGS_KEYS.homeBackgroundUrl] } },
+    where: { key: { in: [
+      SETTINGS_KEYS.rulesText,
+      SETTINGS_KEYS.winTitleText,
+      SETTINGS_KEYS.winRedemptionText,
+      SETTINGS_KEYS.homeLogoUrl,
+      SETTINGS_KEYS.homeBackgroundUrl,
+    ] } },
   });
   const m = new Map(rows.map((r) => [r.key, r.value]));
   return c.json({
     spinDurationMs: s.spinDurationMs,
     pointThresholds: s.pointThresholds,
     rulesText: m.get(SETTINGS_KEYS.rulesText) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.rulesText],
+    winTitleText: m.get(SETTINGS_KEYS.winTitleText) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winTitleText],
+    winRedemptionText: m.get(SETTINGS_KEYS.winRedemptionText) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winRedemptionText],
     homeLogoUrl: m.get(SETTINGS_KEYS.homeLogoUrl) ?? '',
     homeBackgroundUrl: m.get(SETTINGS_KEYS.homeBackgroundUrl) ?? '',
   });

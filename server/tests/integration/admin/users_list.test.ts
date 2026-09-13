@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { app } from '../../../src/index.js';
 import { resetDb } from '../../helpers/db.js';
 import { createAdmin, adminHeaders } from '../../helpers/admin.ts';
-import { createUser } from '../../helpers/factories.js';
+import { createRedemption, createUser } from '../../helpers/factories.js';
 
 describe('GET /api/admin/users', () => {
   beforeEach(resetDb);
@@ -62,5 +62,23 @@ describe('GET /api/admin/users', () => {
     const body = await r.json();
     expect(body.items).toHaveLength(2);
     expect(body.nextCursor).toBeTruthy();
+  });
+
+  it('returns attention counts and each member pending winning redemption count', async () => {
+    const admin = await createAdmin();
+    const member = await createUser({ nickname: '待領獎會員', accountType: 'verified' });
+    await createUser({ nickname: '待審核會員', accountType: 'pending' });
+    await createRedemption({ userId: member.id, totalWinAmount: 500, status: 'pending' });
+    await createRedemption({ userId: member.id, totalWinAmount: 0, status: 'pending' });
+    await createRedemption({ userId: member.id, totalWinAmount: 100, status: 'delivered' });
+    await createRedemption({ userId: member.id, totalWinAmount: 100, status: 'pending', isTest: true });
+
+    const r = await app.request('/api/admin/users', {
+      headers: await adminHeaders(admin.id, admin.email),
+    });
+    expect(r.status).toBe(200);
+    const body = await r.json();
+    expect(body.alerts).toEqual({ pendingApprovalCount: 1, pendingRedemptionCount: 1 });
+    expect(body.items.find((u: { id: string }) => u.id === member.id)?.pendingRedemptionCount).toBe(1);
   });
 });

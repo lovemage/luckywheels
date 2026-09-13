@@ -28,10 +28,18 @@ function WinAmount({ amount, reducedMotion }: { amount: number; reducedMotion: b
   return <span aria-hidden="true">{formatAmount(display)}</span>;
 }
 
-export function WinModal({ result, onClose, onRevealWin }: {
+export function WinModal({
+  result,
+  onClose,
+  onRevealWin,
+  winTitleText = '恭喜中獎',
+  winRedemptionText = '請將兌換碼截圖傳送給代理以進行領取。',
+}: {
   result: DrawResponse;
   onClose: () => void;
   onRevealWin?: () => void;
+  winTitleText?: string;
+  winRedemptionText?: string;
 }) {
   const total = result.draws.reduce((sum, draw) => sum + draw.winningCashAmount, 0);
   const hasWin = total > 0;
@@ -118,7 +126,7 @@ export function WinModal({ result, onClose, onRevealWin }: {
           <div className={`win-emblem ${hasWin ? 'is-gold' : ''}`} aria-hidden="true">
             {hasWin ? <Trophy size={34} strokeWidth={1.4} /> : <Gift size={34} strokeWidth={1.4} />}
           </div>
-          <h2 id="win-modal-title">{hasWin ? '恭喜中獎' : '感謝參與'}</h2>
+          <h2 id="win-modal-title">{hasWin ? winTitleText : '感謝參與'}</h2>
           {hasWin && <div className="win-total-block">
             <p className="win-total-label">{isMulti ? `${result.tierDraws} 連抽・${complete ? '獎金合計' : '獎金累計'}` : '獲得獎金'}</p>
             <div className="win-total" aria-label={`獎金 ${formatAmount(visibleTotal)} 元`}>
@@ -144,7 +152,7 @@ export function WinModal({ result, onClose, onRevealWin }: {
             <span className="win-total-label">兌換碼</span>
             <div className="redemption-actions"><p className="redemption-code">{code}</p>
               <button type="button" className="copy-code-button" onClick={copyCode} aria-label="複製兌換碼">{copyStatus === '兌換碼已複製' ? <Check size={18} /> : <Copy size={18} />}</button></div>
-            <p className="hint" role="status">{copyStatus || '請將兌換碼截圖傳送給客服以進行領取。'}</p>
+            <p className="hint" role="status">{copyStatus || winRedemptionText}</p>
           </div>}
           <button className="win-close-button" type="button" onClick={onClose}>返回轉盤</button>
         </div>

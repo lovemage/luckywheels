@@ -26,6 +26,8 @@ describe('admin AppSetting edit', () => {
       payoutCapEnabled: boolean;
       payoutCapRatio: number;
       rulesText: string;
+      winTitleText: string;
+      winRedemptionText: string;
       totals: { drawCount: number; payoutAmount: number; pointsBurned: number };
       consolationPrizeId: string;
     };
@@ -36,7 +38,24 @@ describe('admin AppSetting edit', () => {
     expect(json.payoutCapEnabled).toBe(false);
     expect(json.payoutCapRatio).toBe(0.45);
     expect(json.rulesText).toBe(DEFAULT_SETTINGS[SETTINGS_KEYS.rulesText]);
+    expect(json.winTitleText).toBe('恭喜中獎');
+    expect(json.winRedemptionText).toBe('請將兌換碼截圖傳送給代理以進行領取。');
     expect(json.totals).toEqual({ drawCount: 0, payoutAmount: 0, pointsBurned: 0 });
+  });
+
+  it('PATCH win copy persists + /api/settings/public reflects it', async () => {
+    const admin = await createAdmin();
+    const winTitleText = '幸運降臨';
+    const winRedemptionText = '請將兌換碼截圖傳送給您的代理。';
+    const r = await app.request('/api/admin/settings', {
+      method: 'PATCH',
+      headers: { ...await adminHeaders(admin.id, admin.email), 'content-type': 'application/json' },
+      body: JSON.stringify({ winTitleText, winRedemptionText }),
+    });
+    expect(r.status).toBe(200);
+    const pub = await app.request('/api/settings/public');
+    const pubJson = await pub.json() as { winTitleText: string; winRedemptionText: string };
+    expect(pubJson).toMatchObject({ winTitleText, winRedemptionText });
   });
 
   it('PATCH rulesText persists + /api/settings/public reflects it', async () => {

@@ -10,6 +10,8 @@ export const SETTINGS_KEYS = {
   costControlEnabled: 'costControlEnabled',
   costControlInterval: 'costControlInterval',
   rulesText: 'rulesText',
+  winTitleText: 'winTitleText',
+  winRedemptionText: 'winRedemptionText',
   consolationPrizeId: 'consolationPrizeId',
   // 首頁外觀：會員前台 logo 與背景圖（空字串＝使用前端內建預設圖）
   homeLogoUrl: 'homeLogoUrl',
@@ -43,6 +45,8 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
     '中獎時會產生 Redemption 隨機碼，將碼截圖傳給管理員兌換彩金。',
     '積分由管理員後台派發，會員不可自行修改。',
   ].join('\n'),
+  [SETTINGS_KEYS.winTitleText]: '恭喜中獎',
+  [SETTINGS_KEYS.winRedemptionText]: '請將兌換碼截圖傳送給代理以進行領取。',
   [SETTINGS_KEYS.consolationPrizeId]: '',
   [SETTINGS_KEYS.homeLogoUrl]: '',
   [SETTINGS_KEYS.homeBackgroundUrl]: '',

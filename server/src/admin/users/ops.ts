@@ -51,14 +51,26 @@ const USER_LIST_SELECT = {
   id: true, nickname: true, displayName: true, pictureUrl: true,
   lineUserId: true, entertainmentMemberCode: true, accountType: true,
   points: true, lifetimeDrawCount: true, blacklistedAt: true, createdAt: true,
+  _count: {
+    select: {
+      redemptions: {
+        where: { status: 'pending' as const, totalWinAmount: { gt: 0 }, isTest: false },
+      },
+    },
+  },
 } satisfies Prisma.UserSelect;
 
-export type UserListRow = Prisma.UserGetPayload<{ select: typeof USER_LIST_SELECT }>;
+type SelectedUserListRow = Prisma.UserGetPayload<{ select: typeof USER_LIST_SELECT }>;
+export type UserListRow = Omit<SelectedUserListRow, '_count'> & { pendingRedemptionCount: number };
 
 export async function listUsersOp(
   client: PrismaClient,
   query: ListUsersQuery,
-): Promise<{ items: UserListRow[]; nextCursor: string | null }> {
+): Promise<{
+  items: UserListRow[];
+  nextCursor: string | null;
+  alerts: { pendingApprovalCount: number; pendingRedemptionCount: number };
+}> {
   const tabFilter =
     query.tab === 'test'
       ? { accountType: 'test' as const }
@@ -78,20 +90,34 @@ export async function listUsersOp(
     } : {}),
   };
 
-  const items = await client.user.findMany({
-    where,
-    take: query.take + 1,
-    ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    select: USER_LIST_SELECT,
-  });
+  const [selectedItems, pendingApprovalCount, pendingRedemptionCount] = await Promise.all([
+    client.user.findMany({
+      where,
+      take: query.take + 1,
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: USER_LIST_SELECT,
+    }),
+    client.user.count({ where: { accountType: 'pending' } }),
+    client.redemption.count({
+      where: { status: 'pending', totalWinAmount: { gt: 0 }, isTest: false },
+    }),
+  ]);
 
   let nextCursor: string | null = null;
-  if (items.length > query.take) {
-    items.pop();                              // drop the lookahead row...
-    nextCursor = items[items.length - 1]!.id; // ...cursor is the last RETURNED row (skip:1 then resumes after it)
+  if (selectedItems.length > query.take) {
+    selectedItems.pop();                                      // drop the lookahead row...
+    nextCursor = selectedItems[selectedItems.length - 1]!.id; // ...cursor is the last RETURNED row
   }
-  return { items, nextCursor };
+  const items = selectedItems.map(({ _count, ...user }) => ({
+    ...user,
+    pendingRedemptionCount: _count.redemptions,
+  }));
+  return {
+    items,
+    nextCursor,
+    alerts: { pendingApprovalCount, pendingRedemptionCount },
+  };
 }
 
 export async function getUserOp(client: PrismaClient, id: string) {

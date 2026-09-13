@@ -8,6 +8,8 @@ export interface AdminSettings {
   costControlEnabled: boolean;
   costControlInterval: number;
   rulesText: string;
+  winTitleText: string;
+  winRedemptionText: string;
   homeLogoUrl: string;
   homeBackgroundUrl: string;
   totals: { drawCount: number; payoutAmount: number; pointsBurned: number };
@@ -25,6 +27,8 @@ export type SettingsUpdate = Partial<
     | 'costControlEnabled'
     | 'costControlInterval'
     | 'rulesText'
+    | 'winTitleText'
+    | 'winRedemptionText'
     | 'homeLogoUrl'
     | 'homeBackgroundUrl'
   >

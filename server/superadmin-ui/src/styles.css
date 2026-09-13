@@ -138,6 +138,55 @@ a:hover { text-decoration: underline; }
 .sa-badge--acct-test { background: rgba(138, 92, 255, 0.18); border-color: #9b7bff; color: #cdbcff; }
 .sa-badge--acct-blacklisted { background: rgba(239, 90, 111, 0.18); border-color: var(--danger); color: #ffc1c9; }
 
+.sa-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sa-alert-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.sa-alert-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 13px;
+  border: 1px solid rgba(239, 90, 111, 0.36);
+  border-radius: 8px;
+  background: rgba(239, 90, 111, 0.1);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.sa-member-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sa-alert-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239, 90, 111, 0.17);
+}
+
 /* page / tabs / search */
 .sa-page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .sa-page-head h2 { margin: 0; font-size: 18px; }

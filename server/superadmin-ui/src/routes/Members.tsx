@@ -80,6 +80,7 @@ export function Members() {
   }
 
   const items = data?.items ?? [];
+  const alerts = data?.alerts ?? { pendingApprovalCount: 0, pendingRedemptionCount: 0 };
   const siteOptions: { value: '' | Site; label: string }[] = [
     { value: '', label: '全部' },
     ...(me?.sites ?? []).map((s) => ({ value: s.site, label: s.label })),
@@ -98,10 +99,22 @@ export function Members() {
               onClick={() => { setTab(t.key); resetPagination(); }}
             >
               {t.label}
+              {t.key === 'pending' && alerts.pendingApprovalCount > 0 && (
+                <span className="sa-alert-count" aria-label={`${alerts.pendingApprovalCount} 位會員待審核`}>
+                  {alerts.pendingApprovalCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
       </div>
+
+      {alerts.pendingRedemptionCount > 0 && (
+        <div className="sa-alert-summary" role="status">
+          <span className="sa-alert-dot" aria-hidden="true" />
+          目前有 {alerts.pendingRedemptionCount} 筆中獎尚未確認領取
+        </div>
+      )}
 
       <div className="sa-filters">
         <div className="sa-segment" role="group" aria-label="站別篩選">
@@ -158,7 +171,16 @@ export function Members() {
                         ? <img src={u.pictureUrl} alt="" className="sa-avatar" referrerPolicy="no-referrer" />
                         : <span className="sa-avatar sa-avatar--blank" aria-hidden="true" />}
                       <div className="sa-user-meta">
-                        <strong>{u.nickname || u.displayName}</strong>
+                        <strong className="sa-member-name">
+                          {u.nickname || u.displayName}
+                          {(u.accountType === 'pending' || (u.pendingRedemptionCount ?? 0) > 0) && (
+                            <span
+                              className="sa-alert-dot"
+                              title={u.accountType === 'pending' ? '會員待審核' : `${u.pendingRedemptionCount} 筆中獎待確認`}
+                              aria-label={u.accountType === 'pending' ? '會員待審核' : `${u.pendingRedemptionCount} 筆中獎待確認`}
+                            />
+                          )}
+                        </strong>
                         <span className="sa-sub">{u.displayName}</span>
                       </div>
                     </div>
