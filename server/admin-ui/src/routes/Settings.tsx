@@ -20,6 +20,7 @@ export function Settings() {
         spinDurationMs: data.spinDurationMs,
         minDrawsBeforeWin: data.minDrawsBeforeWin,
         cooldownDrawsAfterWin: data.cooldownDrawsAfterWin,
+        pendingApprovalAlertEnabled: data.pendingApprovalAlertEnabled,
         costControlEnabled: data.costControlEnabled,
         costControlInterval: data.costControlInterval,
         rulesText: data.rulesText,
@@ -97,6 +98,30 @@ export function Settings() {
         >
           + 新增門檻
         </button>
+      </fieldset>
+
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
+        <legend>待審核會員提示</legend>
+        <p className="admin-muted-text">
+          控制後台是否顯示「會員待審核」的提示（側邊欄「會員列表」與「審核中」頁籤的數字提醒、會員列表上的紅點）。
+          此開關只影響提示是否顯示，不影響審核流程本身——「審核中」頁籤與核准功能一律照常運作。
+        </p>
+        <label className="admin-toggle">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={form.pendingApprovalAlertEnabled ?? false}
+            onChange={(e) => setForm({ ...form, pendingApprovalAlertEnabled: e.target.checked })}
+          />
+          <span className="admin-toggle-track" aria-hidden="true" />
+          <span className="admin-toggle-label">
+            顯示會員待審核提示（pendingApprovalAlertEnabled）
+          </span>
+        </label>
+        <Hint>預設關閉：不顯示待審核會員的提示數字／紅點。開啟後，有新會員待審核時會在側邊欄與會員列表顯示提醒。</Hint>
+        {form.pendingApprovalAlertEnabled !== data.pendingApprovalAlertEnabled && (
+          <span className="admin-dirty-hint">尚未儲存</span>
+        )}
       </fieldset>
 
       <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">

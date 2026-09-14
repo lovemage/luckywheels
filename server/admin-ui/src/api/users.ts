@@ -22,6 +22,8 @@ export interface UsersListResponse {
     pendingApprovalCount: number;
     pendingRedemptionCount: number;
   };
+  /** Admin-toggleable (Settings 頁「待審核會員提示」開關；預設關閉）。 */
+  pendingApprovalAlertEnabled: boolean;
 }
 
 export interface UsersListQuery {

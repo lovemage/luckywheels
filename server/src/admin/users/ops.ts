@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { AppError } from '../../errors.js';
 import { writeAdminActionLog } from '../../audit/log.js';
+import { SETTINGS_KEYS } from '../../../prisma/seed.js';
 
 /**
  * Client-injectable member-management operations. These hold the transaction
@@ -74,6 +75,8 @@ export async function listUsersOp(
   items: UserListRow[];
   nextCursor: string | null;
   alerts: { pendingApprovalCount: number; pendingRedemptionCount: number };
+  /** Admin-toggleable (default off): whether the "會員待審核" alert UI should render. */
+  pendingApprovalAlertEnabled: boolean;
 }> {
   const tabFilter =
     query.tab === 'test'
@@ -94,7 +97,7 @@ export async function listUsersOp(
     } : {}),
   };
 
-  const [selectedItems, pendingApprovalCount, pendingRedemptionCount] = await Promise.all([
+  const [selectedItems, pendingApprovalCount, pendingRedemptionCount, alertSetting] = await Promise.all([
     client.user.findMany({
       where,
       take: query.take + 1,
@@ -110,6 +113,7 @@ export async function listUsersOp(
         drawLogs: { some: { winningCashAmount: { gt: 0 } } },
       },
     }),
+    client.appSetting.findUnique({ where: { key: SETTINGS_KEYS.pendingApprovalAlertEnabled } }),
   ]);
 
   let nextCursor: string | null = null;
@@ -125,6 +129,7 @@ export async function listUsersOp(
     items,
     nextCursor,
     alerts: { pendingApprovalCount, pendingRedemptionCount },
+    pendingApprovalAlertEnabled: alertSetting?.value === 'true',
   };
 }
 

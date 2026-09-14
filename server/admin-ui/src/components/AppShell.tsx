@@ -31,7 +31,10 @@ export function AppShell() {
   const visibleLinks = sidebarLinks.filter((l) => me.data?.isMain || me.data?.allowedNavs.includes(l.nav));
 
   function alertCount(nav: AdminNavKey): number {
-    if (nav === 'users') return userAlerts.data?.alerts.pendingApprovalCount ?? 0;
+    if (nav === 'users') {
+      if (!userAlerts.data?.pendingApprovalAlertEnabled) return 0;
+      return userAlerts.data?.alerts.pendingApprovalCount ?? 0;
+    }
     if (nav === 'redemptions') return userAlerts.data?.alerts.pendingRedemptionCount ?? 0;
     return 0;
   }

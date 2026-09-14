@@ -20,6 +20,7 @@ const Body = z.object({
   spinDurationMs: z.number().int().min(500).max(20000).optional(),
   minDrawsBeforeWin: z.number().int().min(0).max(100).optional(),
   cooldownDrawsAfterWin: z.number().int().min(0).max(100).optional(),
+  pendingApprovalAlertEnabled: z.boolean().optional(),
   payoutCapEnabled: z.boolean().optional(),
   payoutCapRatio: z.number().min(0).max(1).optional(),
   costControlEnabled: z.boolean().optional(),
@@ -90,6 +91,7 @@ adminSettingsRoutes.get('/api/admin/settings', ...requireSystemNav, async (c) =>
     spinDurationMs: Number(m[SETTINGS_KEYS.spinDurationMs] ?? '0'),
     minDrawsBeforeWin: Number(m[SETTINGS_KEYS.minDrawsBeforeWin] ?? '0'),
     cooldownDrawsAfterWin: Number(m[SETTINGS_KEYS.cooldownDrawsAfterWin] ?? '0'),
+    pendingApprovalAlertEnabled: (m[SETTINGS_KEYS.pendingApprovalAlertEnabled] ?? 'false') === 'true',
     payoutCapEnabled: (m[SETTINGS_KEYS.payoutCapEnabled] ?? 'false') === 'true',
     payoutCapRatio: Number(m[SETTINGS_KEYS.payoutCapRatio] ?? '0'),
     costControlEnabled: (m[SETTINGS_KEYS.costControlEnabled] ?? 'false') === 'true',
@@ -131,6 +133,8 @@ adminSettingsRoutes.patch('/api/admin/settings', ...requireSystemNav, async (c) 
     updates.push({ key: SETTINGS_KEYS.minDrawsBeforeWin, value: serialize(body.minDrawsBeforeWin) });
   if (body.cooldownDrawsAfterWin !== undefined)
     updates.push({ key: SETTINGS_KEYS.cooldownDrawsAfterWin, value: serialize(body.cooldownDrawsAfterWin) });
+  if (body.pendingApprovalAlertEnabled !== undefined)
+    updates.push({ key: SETTINGS_KEYS.pendingApprovalAlertEnabled, value: serialize(body.pendingApprovalAlertEnabled) });
   if (body.payoutCapEnabled !== undefined)
     updates.push({ key: SETTINGS_KEYS.payoutCapEnabled, value: serialize(body.payoutCapEnabled) });
   if (body.payoutCapRatio !== undefined)

@@ -5,6 +5,7 @@ export interface AdminSettings {
   spinDurationMs: number;
   minDrawsBeforeWin: number;
   cooldownDrawsAfterWin: number;
+  pendingApprovalAlertEnabled: boolean;
   costControlEnabled: boolean;
   costControlInterval: number;
   rulesText: string;
@@ -24,6 +25,7 @@ export type SettingsUpdate = Partial<
     | 'spinDurationMs'
     | 'minDrawsBeforeWin'
     | 'cooldownDrawsAfterWin'
+    | 'pendingApprovalAlertEnabled'
     | 'costControlEnabled'
     | 'costControlInterval'
     | 'rulesText'

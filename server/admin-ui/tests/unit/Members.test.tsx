@@ -40,6 +40,7 @@ describe('Members', () => {
         ],
         nextCursor: null,
         alerts: { pendingApprovalCount: 3, pendingRedemptionCount: 2 },
+        pendingApprovalAlertEnabled: true,
       }), { status: 200, headers: { 'content-type': 'application/json' } }),
     ));
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

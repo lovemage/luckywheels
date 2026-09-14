@@ -5,6 +5,9 @@ export const SETTINGS_KEYS = {
   spinDurationMs: 'spinDurationMs',
   minDrawsBeforeWin: 'minDrawsBeforeWin',
   cooldownDrawsAfterWin: 'cooldownDrawsAfterWin',
+  // 後台是否顯示「會員待審核」提示（側邊欄／會員列表頁籤數字、列表紅點）；
+  // 純粹控制提示是否顯示，不影響審核流程本身（新會員仍會卡在 pending，仍需手動核准）。
+  pendingApprovalAlertEnabled: 'pendingApprovalAlertEnabled',
   payoutCapEnabled: 'payoutCapEnabled',
   payoutCapRatio: 'payoutCapRatio',
   costControlEnabled: 'costControlEnabled',
@@ -36,6 +39,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   [SETTINGS_KEYS.spinDurationMs]: '4300',
   [SETTINGS_KEYS.minDrawsBeforeWin]: '0',
   [SETTINGS_KEYS.cooldownDrawsAfterWin]: '0',
+  [SETTINGS_KEYS.pendingApprovalAlertEnabled]: 'false',
   [SETTINGS_KEYS.payoutCapEnabled]: 'false',
   [SETTINGS_KEYS.payoutCapRatio]: '0.45',
   [SETTINGS_KEYS.costControlEnabled]: 'false',

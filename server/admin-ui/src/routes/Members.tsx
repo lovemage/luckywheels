@@ -115,6 +115,7 @@ export function Members() {
     queryFn: () => fetchUsers({ tab, q: q || undefined, take: 50, cursor: pagination.cursor }),
   });
   const alerts = data?.alerts ?? { pendingApprovalCount: 0, pendingRedemptionCount: 0 };
+  const pendingApprovalAlertEnabled = data?.pendingApprovalAlertEnabled ?? false;
   const approve = useMutation({
     mutationFn: approveUser,
     onSuccess: () => {
@@ -135,7 +136,7 @@ export function Members() {
         <button onClick={() => { setTab('verified'); pagination.reset(); }} disabled={tab === 'verified'}>正式會員</button>
         <button onClick={() => { setTab('pending'); pagination.reset(); }} disabled={tab === 'pending'}>
           審核中
-          {alerts.pendingApprovalCount > 0 && (
+          {pendingApprovalAlertEnabled && alerts.pendingApprovalCount > 0 && (
             <span className="admin-alert-count" aria-label={`${alerts.pendingApprovalCount} 位會員待審核`}>
               {alerts.pendingApprovalCount}
             </span>
@@ -166,8 +167,9 @@ export function Members() {
             columns={[
               { header: '暱稱', cell: (u) => {
                 const pendingRedemptions = u.pendingRedemptionCount ?? 0;
-                const needsAttention = u.accountType === 'pending' || pendingRedemptions > 0;
-                const alertText = u.accountType === 'pending'
+                const isPendingApproval = pendingApprovalAlertEnabled && u.accountType === 'pending';
+                const needsAttention = isPendingApproval || pendingRedemptions > 0;
+                const alertText = isPendingApproval
                   ? '會員待審核'
                   : `${pendingRedemptions} 筆中獎待確認`;
                 return (
