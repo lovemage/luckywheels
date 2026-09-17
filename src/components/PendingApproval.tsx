@@ -16,7 +16,7 @@ function proxiedImageUrl(url: string | null | undefined): string | null {
 }
 
 export function PendingApproval({ me, settings }: { me: MeProfile; settings: PublicSettings | null }) {
-  const logoSrc = proxiedImageUrl(settings?.homeLogoUrl) || '/assets/logo.png';
+  const logoSrc = proxiedImageUrl(settings?.homeLogoUrl) || '/assets/logo.webp';
   const bgSrc = proxiedImageUrl(settings?.homeBackgroundUrl);
   const style = {
     ...(bgSrc ? { '--auth-bg': `url(${JSON.stringify(bgSrc)})` } : {}),

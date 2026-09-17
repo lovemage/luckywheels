@@ -29,8 +29,18 @@ export function fetchPrizes(): Promise<{ items: PublicPrize[] }> {
   return api('/api/prizes/public');
 }
 
+let publicSettingsRequest: Promise<PublicSettings> | null = null;
+
 export function fetchSettings(): Promise<PublicSettings> {
-  return api('/api/settings/public');
+  // App and MainApp can mount close together. Share the in-flight/resulting
+  // request so one page load never downloads the same public settings twice.
+  if (!publicSettingsRequest) {
+    publicSettingsRequest = api<PublicSettings>('/api/settings/public').catch((error) => {
+      publicSettingsRequest = null;
+      throw error;
+    });
+  }
+  return publicSettingsRequest;
 }
 
 export interface DrawResponse {

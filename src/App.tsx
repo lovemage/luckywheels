@@ -99,9 +99,9 @@ function getRotationFromTransform(transform: string): number | null {
 
 type SoundKey = keyof typeof SOUND_SOURCES;
 
-function createAudio(src: string, loop = false) {
+function createAudio(src: string, preload: 'auto' | 'none' = 'none', loop = false) {
   const audio = new Audio(src);
-  audio.preload = 'auto';
+  audio.preload = preload;
   audio.loop = loop;
   return audio;
 }
@@ -219,7 +219,9 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
 
   useEffect(() => {
     soundsRef.current = {
-      enter: createAudio(SOUND_SOURCES.enter),
+      // The entry music starts as soon as the game data is ready. Defer the
+      // interaction-only effects so visitors who do not spin never download them.
+      enter: createAudio(SOUND_SOURCES.enter, 'auto'),
       wheelTap: createAudio(SOUND_SOURCES.wheelTap),
       spinConfirm: createAudio(SOUND_SOURCES.spinConfirm),
       wheelSpinning: createAudio(SOUND_SOURCES.wheelSpinning),
@@ -446,7 +448,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           <div className="title-lockup">
             <img
               className="logo-image"
-              src={proxiedImageUrl(settings.homeLogoUrl) || '/assets/logo.png'}
+              src={proxiedImageUrl(settings.homeLogoUrl) || '/assets/logo.webp'}
               alt="幸運輪盤"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
@@ -623,7 +625,7 @@ function Wheel({
 }) {
   return (
     <div className="wheel-wrap">
-      <img className="wheel-frame" src="/assets/wheel-frame.png" alt="" aria-hidden="true" />
+      <img className="wheel-frame" src="/assets/wheel-frame.webp" alt="" aria-hidden="true" />
       <div
         ref={wheelRef}
         className={`wheel ${isFrozen ? 'is-frozen' : ''}`}

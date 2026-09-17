@@ -22,7 +22,7 @@ export function Login({
   settings: PublicSettings | null;
   onShowLegal: (tab: LegalTab) => void;
 }) {
-  const logoSrc = proxiedImageUrl(settings?.homeLogoUrl) || '/assets/logo.png';
+  const logoSrc = proxiedImageUrl(settings?.homeLogoUrl) || '/assets/logo.webp';
   const bgSrc = proxiedImageUrl(settings?.homeBackgroundUrl);
   const style = {
     ...(bgSrc ? { '--auth-bg': `url(${JSON.stringify(bgSrc)})` } : {}),

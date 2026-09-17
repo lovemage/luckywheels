@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono, type Context } from 'hono';
+import { compress } from 'hono/compress';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,6 +43,12 @@ const MEMBER_INDEX_PATH = join(MEMBER_DIST, 'index.html');
 const MEMBER_FALLBACK = '<!doctype html><html><body><div id="root">Member UI not built yet.</div></body></html>';
 
 const app = new Hono();
+
+app.use('*', async (c, next) => {
+  await next();
+  c.res.headers.append('vary', 'Accept-Encoding');
+});
+app.use('*', compress({ threshold: 1024 }));
 
 app.onError((err, c) => {
   const { status, body } = formatError(err);

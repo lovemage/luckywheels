@@ -76,7 +76,7 @@ input:focus-visible {
      falls back to the bundled image when unset. */
   background:
     linear-gradient(180deg, rgba(22, 0, 32, 0.14), rgba(22, 0, 32, 0.22)),
-    var(--home-bg, url('/assets/lucky-bg.png')) center / cover no-repeat;
+    var(--home-bg, url('/assets/lucky-bg.webp')) center / cover no-repeat;
 }
 
 .stage-bg::after {
@@ -960,7 +960,7 @@ h1 {
   border-radius: 24px;
   background:
     linear-gradient(180deg, rgba(53, 17, 72, 0.96), rgba(19, 5, 31, 0.96)),
-    url('/assets/lucky-bg.png');
+    url('/assets/lucky-bg.webp');
   box-shadow: 0 34px 80px rgba(0, 0, 0, 0.36);
 }
 
@@ -1284,7 +1284,7 @@ h1 {
   text-align: center;
   background:
     linear-gradient(180deg, rgba(22, 0, 32, 0.2), rgba(22, 0, 32, 0.42)),
-    var(--auth-bg, url('/assets/lucky-bg.png')) center / cover no-repeat;
+    var(--auth-bg, url('/assets/lucky-bg.webp')) center / cover no-repeat;
   color: #fff5d6;
 }
 

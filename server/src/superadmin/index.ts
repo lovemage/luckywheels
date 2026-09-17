@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
+import { compress } from 'hono/compress';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,6 +29,12 @@ const SPA_INDEX_PATH = join(SPA_DIST, 'index.html');
 const SPA_FALLBACK = '<!doctype html><html><body><div id="root">Superadmin UI not built yet. Run npm --prefix superadmin-ui run build.</div></body></html>';
 
 const app = new Hono();
+
+app.use('*', async (c, next) => {
+  await next();
+  c.res.headers.append('vary', 'Accept-Encoding');
+});
+app.use('*', compress({ threshold: 1024 }));
 
 app.onError((err, c) => {
   const { status, body } = formatError(err);
