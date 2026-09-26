@@ -404,6 +404,19 @@ th {
   min-width: min(320px, 100%);
 }
 
+.admin-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--admin-muted);
+  font-weight: 700;
+}
+
+.admin-page-size select {
+  width: auto;
+}
+
 .admin-toolbar button {
   display: inline-flex;
   align-items: center;

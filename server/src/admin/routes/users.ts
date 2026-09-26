@@ -28,7 +28,7 @@ const requireUsersNav = requireAdminNav('users');
 const ListQuery = z.object({
   tab: z.enum(['verified', 'test', 'pending']).default('verified'),
   q: z.string().optional(),
-  take: z.coerce.number().int().min(1).max(50).default(25),
+  take: z.coerce.number().int().min(1).max(150).default(25),
   cursor: z.string().optional(),
 });
 

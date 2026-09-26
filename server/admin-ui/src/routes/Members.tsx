@@ -8,6 +8,9 @@ import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
 import { CursorPagination } from '../components/CursorPagination.js';
 import { useCursorPagination } from '../hooks/useCursorPagination.js';
 
+const PAGE_SIZE_OPTIONS = [50, 100, 150] as const;
+type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
+
 function PointsIcon() {
   return (
     <svg
@@ -107,12 +110,13 @@ function PointsAdjustModal({ user, onClose }: { user: AdminUserRow; onClose: () 
 export function Members() {
   const [tab, setTab] = useState<'verified' | 'test' | 'pending'>('verified');
   const [q, setQ] = useState('');
+  const [pageSize, setPageSize] = useState<PageSize>(50);
   const [pointsModalUser, setPointsModalUser] = useState<AdminUserRow | null>(null);
   const pagination = useCursorPagination();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'users', tab, q, pagination.cursor],
-    queryFn: () => fetchUsers({ tab, q: q || undefined, take: 50, cursor: pagination.cursor }),
+    queryKey: ['admin', 'users', tab, q, pageSize, pagination.cursor],
+    queryFn: () => fetchUsers({ tab, q: q || undefined, take: pageSize, cursor: pagination.cursor }),
   });
   const alerts = data?.alerts ?? { pendingApprovalCount: 0, pendingRedemptionCount: 0 };
   const pendingApprovalAlertEnabled = data?.pendingApprovalAlertEnabled ?? false;
@@ -149,6 +153,18 @@ export function Members() {
           onChange={(e) => { setQ(e.target.value); pagination.reset(); }}
           className="admin-toolbar-search"
         />
+        <label className="admin-page-size">
+          每頁
+          <select
+            value={pageSize}
+            onChange={(e) => { setPageSize(Number(e.target.value) as PageSize); pagination.reset(); }}
+          >
+            {PAGE_SIZE_OPTIONS.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          筆
+        </label>
       </div>
       {alerts.pendingRedemptionCount > 0 && (
         <div className="admin-alert-summary" role="status">
