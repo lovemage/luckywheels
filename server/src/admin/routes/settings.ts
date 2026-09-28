@@ -6,6 +6,7 @@ import { AppError } from '../../errors.js';
 import { requireAdminNav } from '../auth/middleware.js';
 import { audit } from '../audit/helper.js';
 import { SETTINGS_KEYS, DEFAULT_SETTINGS } from '../../../prisma/seed.js';
+import { parseDemoEntries } from '../../routes/winners.js';
 
 export const adminSettingsRoutes = new Hono();
 const requireSystemNav = requireAdminNav('system');
@@ -33,8 +34,21 @@ const Body = z.object({
   // 首頁外觀：上傳後得到的圖片 URL；空字串＝清除、回退前端內建預設圖。
   homeLogoUrl: z.string().max(2000).optional(),
   homeBackgroundUrl: z.string().max(2000).optional(),
+  adPopupEnabled: z.boolean().optional(),
+  adPopupImageUrl: z.string().max(2000).optional(),
+  adPopupLinkUrl: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine((v) => v === '' || /^https?:\/\/\S+$/i.test(v))
+    .optional(),
   winTickerEnabled: z.boolean().optional(),
   bottomNavCollapsible: z.boolean().optional(),
+  winTickerDemoEnabled: z.boolean().optional(),
+  winTickerDemoEntries: z
+    .array(z.object({ memberId: z.string().trim().min(1).max(40), rankLabel: z.string().trim().min(1).max(20) }))
+    .max(100)
+    .optional(),
 });
 type BodyT = z.infer<typeof Body>;
 
@@ -103,8 +117,13 @@ adminSettingsRoutes.get('/api/admin/settings', ...requireSystemNav, async (c) =>
     winRedemptionText: m[SETTINGS_KEYS.winRedemptionText] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winRedemptionText],
     homeLogoUrl: m[SETTINGS_KEYS.homeLogoUrl] ?? '',
     homeBackgroundUrl: m[SETTINGS_KEYS.homeBackgroundUrl] ?? '',
+    adPopupEnabled: m[SETTINGS_KEYS.adPopupEnabled] === 'true',
+    adPopupImageUrl: m[SETTINGS_KEYS.adPopupImageUrl] ?? '',
+    adPopupLinkUrl: m[SETTINGS_KEYS.adPopupLinkUrl] ?? '',
     winTickerEnabled: m[SETTINGS_KEYS.winTickerEnabled] === 'true',
     bottomNavCollapsible: m[SETTINGS_KEYS.bottomNavCollapsible] === 'true',
+    winTickerDemoEnabled: m[SETTINGS_KEYS.winTickerDemoEnabled] === 'true',
+    winTickerDemoEntries: parseDemoEntries(m[SETTINGS_KEYS.winTickerDemoEntries]),
     totals: {
       drawCount: Number(m[SETTINGS_KEYS.totalDrawCount] ?? '0'),
       payoutAmount: Number(m[SETTINGS_KEYS.totalPayoutAmount] ?? '0'),
@@ -157,10 +176,20 @@ adminSettingsRoutes.patch('/api/admin/settings', ...requireSystemNav, async (c) 
     updates.push({ key: SETTINGS_KEYS.homeLogoUrl, value: serialize(body.homeLogoUrl) });
   if (body.homeBackgroundUrl !== undefined)
     updates.push({ key: SETTINGS_KEYS.homeBackgroundUrl, value: serialize(body.homeBackgroundUrl) });
+  if (body.adPopupEnabled !== undefined)
+    updates.push({ key: SETTINGS_KEYS.adPopupEnabled, value: serialize(body.adPopupEnabled) });
+  if (body.adPopupImageUrl !== undefined)
+    updates.push({ key: SETTINGS_KEYS.adPopupImageUrl, value: serialize(body.adPopupImageUrl) });
+  if (body.adPopupLinkUrl !== undefined)
+    updates.push({ key: SETTINGS_KEYS.adPopupLinkUrl, value: serialize(body.adPopupLinkUrl) });
   if (body.winTickerEnabled !== undefined)
     updates.push({ key: SETTINGS_KEYS.winTickerEnabled, value: serialize(body.winTickerEnabled) });
   if (body.bottomNavCollapsible !== undefined)
     updates.push({ key: SETTINGS_KEYS.bottomNavCollapsible, value: serialize(body.bottomNavCollapsible) });
+  if (body.winTickerDemoEnabled !== undefined)
+    updates.push({ key: SETTINGS_KEYS.winTickerDemoEnabled, value: serialize(body.winTickerDemoEnabled) });
+  if (body.winTickerDemoEntries !== undefined)
+    updates.push({ key: SETTINGS_KEYS.winTickerDemoEntries, value: serialize(body.winTickerDemoEntries) });
 
   if (updates.length === 0) {
     return c.json({ ok: true });

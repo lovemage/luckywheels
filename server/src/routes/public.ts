@@ -14,6 +14,9 @@ publicRoutes.get('/api/settings/public', async (c) => {
       SETTINGS_KEYS.winRedemptionText,
       SETTINGS_KEYS.homeLogoUrl,
       SETTINGS_KEYS.homeBackgroundUrl,
+      SETTINGS_KEYS.adPopupEnabled,
+      SETTINGS_KEYS.adPopupImageUrl,
+      SETTINGS_KEYS.adPopupLinkUrl,
       SETTINGS_KEYS.winTickerEnabled,
       SETTINGS_KEYS.bottomNavCollapsible,
     ] } },
@@ -27,6 +30,9 @@ publicRoutes.get('/api/settings/public', async (c) => {
     winRedemptionText: m.get(SETTINGS_KEYS.winRedemptionText) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winRedemptionText],
     homeLogoUrl: m.get(SETTINGS_KEYS.homeLogoUrl) ?? '',
     homeBackgroundUrl: m.get(SETTINGS_KEYS.homeBackgroundUrl) ?? '',
+    adPopupEnabled: m.get(SETTINGS_KEYS.adPopupEnabled) === 'true',
+    adPopupImageUrl: m.get(SETTINGS_KEYS.adPopupImageUrl) ?? '',
+    adPopupLinkUrl: m.get(SETTINGS_KEYS.adPopupLinkUrl) ?? '',
     winTickerEnabled:
       (m.get(SETTINGS_KEYS.winTickerEnabled) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winTickerEnabled]) === 'true',
     bottomNavCollapsible:

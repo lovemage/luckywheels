@@ -24,6 +24,10 @@ export interface PublicSettings {
   /** Admin-configurable home background URL; empty string ⇒ use the bundled default. */
   homeBackgroundUrl: string;
   /** Admin toggle: bottom win ticker. Absent on older servers ⇒ treated as on. */
+  /** Admin-managed entry ad; an empty image URL falls back to the bundled default creative. */
+  adPopupEnabled?: boolean;
+  adPopupImageUrl?: string;
+  adPopupLinkUrl?: string;
   winTickerEnabled?: boolean;
   /** Admin toggle: tab bar collapses behind an up-arrow handle. Absent ⇒ on. */
   bottomNavCollapsible?: boolean;

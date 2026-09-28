@@ -5,6 +5,7 @@ import { prisma } from '../../db.js';
 import { requireAnyAdminNav } from '../auth/middleware.js';
 import { audit } from '../audit/helper.js';
 import { putObject } from '../../storage/bucket.js';
+import { toWebp } from '../../storage/webp.js';
 
 export const adminUploadsRoutes = new Hono();
 const requireUploadNav = requireAnyAdminNav(['prizes', 'system']);
@@ -16,6 +17,8 @@ const ALLOWED_MIME = new Set([
   'image/gif',
 ]);
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+// Originals that get re-encoded (form field convert=webp) may be larger; the stored WebP is small.
+const MAX_CONVERT_BYTES = 10 * 1024 * 1024; // 10 MB
 
 const MIME_EXT: Record<string, string> = {
   'image/png': 'png',
@@ -39,21 +42,34 @@ adminUploadsRoutes.post('/api/admin/uploads', ...requireUploadNav, async (c) => 
   if (!ALLOWED_MIME.has(contentType)) {
     throw new AppError('UPLOAD_MIME_REJECTED', `mime ${contentType} not allowed`, 415);
   }
-  if (file.size > MAX_BYTES) {
-    throw new AppError('UPLOAD_TOO_LARGE', `file ${file.size} bytes exceeds ${MAX_BYTES}`, 413);
+  const convert = form['convert'] === 'webp';
+  const maxBytes = convert ? MAX_CONVERT_BYTES : MAX_BYTES;
+  if (file.size > maxBytes) {
+    throw new AppError('UPLOAD_TOO_LARGE', `file ${file.size} bytes exceeds ${maxBytes}`, 413);
   }
 
-  const ext = MIME_EXT[contentType] ?? 'bin';
-  const key = `prize-images/${randomUUID()}.${ext}`;
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  let bytes: Uint8Array = new Uint8Array(await file.arrayBuffer());
+  let storedType = contentType;
+  if (convert) {
+    try {
+      bytes = await toWebp(bytes);
+    } catch {
+      throw new AppError('UPLOAD_IMAGE_INVALID', 'image could not be decoded', 422);
+    }
+    storedType = 'image/webp';
+  }
 
-  const { url } = await putObject({ key, body: bytes, contentType });
+  // Keep the prize-images/ prefix: the media proxy allow-list only serves that prefix.
+  const ext = MIME_EXT[storedType] ?? 'bin';
+  const key = `prize-images/${randomUUID()}.${ext}`;
+
+  const { url } = await putObject({ key, body: bytes, contentType: storedType });
 
   await audit(c, prisma, {
     event: 'admin.upload',
     targetType: 'upload',
     targetId: key,
-    payloadAfter: { key, url, sizeBytes: file.size, contentType },
+    payloadAfter: { key, url, sizeBytes: file.size, storedBytes: bytes.byteLength, contentType, storedType },
   });
 
   return c.json({ url, key });

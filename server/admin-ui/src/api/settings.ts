@@ -13,8 +13,13 @@ export interface AdminSettings {
   winRedemptionText: string;
   homeLogoUrl: string;
   homeBackgroundUrl: string;
+  adPopupEnabled: boolean;
+  adPopupImageUrl: string;
+  adPopupLinkUrl: string;
   winTickerEnabled: boolean;
   bottomNavCollapsible: boolean;
+  winTickerDemoEnabled: boolean;
+  winTickerDemoEntries: { memberId: string; rankLabel: string }[];
   totals: { drawCount: number; payoutAmount: number; pointsBurned: number };
   lowestCostPrize: { id: string; rankLabel: string; name: string; cashAmount: number } | null;
   consolationPrizeId: string;
@@ -35,8 +40,13 @@ export type SettingsUpdate = Partial<
     | 'winRedemptionText'
     | 'homeLogoUrl'
     | 'homeBackgroundUrl'
+    | 'adPopupEnabled'
+    | 'adPopupImageUrl'
+    | 'adPopupLinkUrl'
     | 'winTickerEnabled'
     | 'bottomNavCollapsible'
+    | 'winTickerDemoEnabled'
+    | 'winTickerDemoEntries'
   >
 >;
 

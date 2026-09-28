@@ -5,6 +5,8 @@ import { uploadImage } from '../api/uploads.js';
 interface Props {
   value: string | null;
   onChange: (url: string | null) => void;
+  /** Server re-encodes the upload to WebP (and shrinks it to a phone canvas). */
+  convertToWebp?: boolean;
 }
 
 function proxiedImageUrl(url: string | null): string {
@@ -20,7 +22,7 @@ function proxiedImageUrl(url: string | null): string {
   return url;
 }
 
-export function ImageUploadInput({ value, onChange }: Props) {
+export function ImageUploadInput({ value, onChange, convertToWebp = false }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +32,7 @@ export function ImageUploadInput({ value, onChange }: Props) {
     setError(null);
     setBusy(true);
     try {
-      const res = await uploadImage(file);
+      const res = await uploadImage(file, { convertToWebp });
       onChange(res.url);
     } catch (err) {
       setError((err as Error).message);

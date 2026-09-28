@@ -1,6 +1,10 @@
-export async function uploadImage(file: File): Promise<{ url: string; key: string }> {
+export async function uploadImage(
+  file: File,
+  options: { convertToWebp?: boolean } = {},
+): Promise<{ url: string; key: string }> {
   const form = new FormData();
   form.append('file', file);
+  if (options.convertToWebp) form.append('convert', 'webp');
   const res = await fetch('/api/admin/uploads', {
     method: 'POST',
     credentials: 'include',

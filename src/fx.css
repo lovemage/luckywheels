@@ -822,6 +822,91 @@
   }
 }
 
+/* ---------- Entry ad popup (admin-managed creative, top-right close) ---------- */
+.ad-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding:
+    max(20px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+  background: rgba(12, 2, 22, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ad-popup.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  animation: backdropIn 240ms ease-out both;
+}
+
+.ad-popup-frame {
+  position: relative;
+  max-width: min(100%, 420px);
+  padding: 3px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #fff4b8, #e3a826 32%, #7e4200 58%, #ffd76a 100%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 32px rgba(255, 196, 70, 0.3);
+}
+
+.ad-popup.is-visible .ad-popup-frame {
+  animation: fx-panel-pop 520ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.ad-popup-frame a,
+.ad-popup-hit {
+  display: block;
+}
+
+.ad-popup-hit {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.ad-popup-frame img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(var(--app-height, 100dvh) - 96px);
+  width: auto;
+  height: auto;
+  border-radius: 15px;
+  object-fit: contain;
+}
+
+.ad-popup-close {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid #ffd76a;
+  border-radius: 50%;
+  background: rgba(24, 4, 42, 0.92);
+  color: #fff4d0;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.ad-popup-close svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.6;
+}
+
+.ad-popup-close:active {
+  transform: scale(0.94);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .win-fx,
   .wheel-sheen,

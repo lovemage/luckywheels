@@ -6,6 +6,7 @@ import { Logs } from './Logs.js';
 import { Profile } from './Profile.js';
 import { Settings } from './Settings.js';
 import { HomeSettings } from './HomeSettings.js';
+import { AdSettings } from './AdSettings.js';
 import { SubAccounts } from './SubAccounts.js';
 import { fetchAdminMe } from '../api/me.js';
 
@@ -22,6 +23,7 @@ const systemTabs: SystemTab[] = [
   { key: 'profile', label: '個人設定', element: <Profile /> },
   { key: 'settings', label: '遊戲規則', element: <Settings /> },
   { key: 'home', label: '首頁設定', element: <HomeSettings /> },
+  { key: 'ads', label: '廣告設定', element: <AdSettings /> },
 ] as const;
 
 type SystemTabKey = string;
@@ -49,7 +51,7 @@ export function SystemSettings() {
         <div>
           <p className="admin-eyebrow">System</p>
           <h1>系統設定</h1>
-          <p>集中管理子帳設定、歷史紀錄、個人設定、遊戲規則與首頁設定。</p>
+          <p>集中管理子帳設定、歷史紀錄、個人設定、遊戲規則、首頁與廣告設定。</p>
         </div>
       </header>
       <div className="system-settings-tabs" role="tablist" aria-label="系統設定分頁">

@@ -21,6 +21,7 @@ import { Onboarding } from './components/Onboarding.js';
 import { PendingApproval } from './components/PendingApproval.js';
 import { WinModal } from './components/WinModal.js';
 import { BottomDock } from './components/BottomDock.js';
+import { AdPopup } from './components/AdPopup.js';
 import { Legal, type LegalTab } from './components/Legal.js';
 
 function proxiedImageUrl(url: string | null | undefined): string | null {
@@ -93,6 +94,7 @@ const MULTI_REVEAL_OFFSET_MS = 1000;
 const LANDING_PAUSE_MS = 700;
 const LANDING_FLASH_MS = 1200;
 const WINNERS_REFRESH_MS = 60_000;
+const DEFAULT_AD_IMAGE = '/assets/ad-default.webp';
 function getRotationFromTransform(transform: string): number | null {
   if (!transform || transform === 'none') return null;
   try {
@@ -183,6 +185,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const [isWheelFrozen, setIsWheelFrozen] = useState(false);
   const [landed, setLanded] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [adDismissed, setAdDismissed] = useState(false);
   const [winners, setWinners] = useState<RecentWinner[]>([]);
   const [result, setResult] = useState<DrawResponse | null>(null);
   const [winHistory, setWinHistory] = useState<WinHistoryEntry[]>([]);
@@ -645,6 +648,14 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
             <TabButton active={view === 'mine'} icon={<HistoryTabIcon />} label="中獎紀錄" onClick={() => selectView('mine')} />
           </nav>
         </BottomDock>
+
+        {!adDismissed && settings.adPopupEnabled && (
+          <AdPopup
+            src={proxiedImageUrl(settings.adPopupImageUrl) || DEFAULT_AD_IMAGE}
+            href={settings.adPopupLinkUrl ?? ''}
+            onClose={() => setAdDismissed(true)}
+          />
+        )}
 
         {result && (
           <WinModal
