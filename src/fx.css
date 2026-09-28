@@ -1,0 +1,585 @@
+/* ==========================================================================
+   Game-feel layer: capsule CTA, wheel light sweep, win celebration.
+   Shared verbatim between luckywheels and luckywheels-juxin — keep in sync.
+   Imported after styles.css so these rules win on equal specificity.
+   ========================================================================== */
+
+/* ---------- Capsule CTA: 2/3 spin + 1/3 tier switch ---------- */
+.cta-row.cta-capsule {
+  --cta-h: clamp(58px, 16vw, 66px);
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0;
+  width: min(86%, 340px);
+  height: var(--cta-h);
+  padding: 4px;
+  margin-bottom: 16px;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, #fff7c9 0%, #f6c451 28%, #b86f0c 62%, #f9d77a 100%);
+  box-shadow:
+    0 6px 0 #6a3300,
+    0 12px 22px rgba(18, 0, 30, 0.5),
+    0 0 18px rgba(255, 204, 76, 0.42);
+  animation: fx-cta-glow 2.6s ease-in-out infinite;
+}
+
+.cta-capsule.is-busy {
+  animation: none;
+}
+
+.cta-capsule .primary-cta {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0;
+  transition:
+    transform 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.cta-capsule .primary-cta::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.72) 48%, transparent 62%);
+  transform: translateX(-130%);
+  animation: fx-cta-sheen 3.6s ease-in-out infinite;
+}
+
+.cta-capsule .primary-cta--spin {
+  border-radius: 999px 0 0 999px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, rgba(255, 255, 255, 0.82), transparent 70%),
+    linear-gradient(180deg, #fff39e 0%, #ffd43b 44%, #f0a312 80%, #c46b00 100%);
+  color: #672d00;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -5px 0 rgba(128, 52, 0, 0.26);
+}
+
+.cta-capsule .primary-cta--cycle {
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 0 999px 999px 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, rgba(255, 255, 255, 0.5), transparent 70%),
+    linear-gradient(180deg, #ffc4ee 0%, #e04fb6 40%, #9c1b90 78%, #5c0a5e 100%);
+  color: #fff4d4;
+  box-shadow:
+    inset 2px 0 0 rgba(96, 32, 0, 0.6),
+    inset 3px 0 0 rgba(255, 238, 180, 0.55),
+    inset 0 2px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -5px 0 rgba(48, 0, 60, 0.3);
+}
+
+.cta-capsule .primary-cta--cycle::after {
+  animation-delay: 0.32s;
+}
+
+.cta-capsule .primary-cta:not(:disabled):active {
+  transform: translateY(2px);
+  filter: brightness(0.93);
+}
+
+.cta-capsule .primary-cta--spin:not(:disabled):active {
+  box-shadow:
+    inset 0 3px 8px rgba(128, 52, 0, 0.35),
+    inset 0 -2px 0 rgba(128, 52, 0, 0.2);
+}
+
+.cta-capsule .primary-cta--cycle:not(:disabled):active {
+  box-shadow:
+    inset 2px 0 0 rgba(96, 32, 0, 0.6),
+    inset 0 3px 8px rgba(48, 0, 60, 0.4);
+}
+
+.cta-capsule .primary-cta:disabled::after {
+  animation: none;
+  opacity: 0;
+}
+
+/* While a draw is running the spin half stays lit (not greyed) and the sheen races. */
+.cta-capsule.is-busy .primary-cta--spin:disabled {
+  opacity: 1;
+  filter: saturate(0.85) brightness(0.96);
+}
+
+.cta-capsule.is-busy .primary-cta--spin::after {
+  opacity: 1;
+  animation: fx-cta-sheen-fast 0.9s linear infinite;
+}
+
+.cta-capsule .primary-cta svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.cta-capsule .primary-cta--cycle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cta-capsule .primary-cta-label {
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  line-height: 1;
+}
+
+.cta-capsule .primary-cta-title {
+  font-size: 20px;
+  font-weight: 950;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255, 250, 220, 0.65);
+}
+
+.cta-capsule .primary-cta-cost {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  opacity: 0.86;
+}
+
+.cta-capsule .primary-cta-cost b {
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.cta-capsule .primary-cta-cycle-label {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(60, 0, 50, 0.5);
+}
+
+@keyframes fx-cta-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 6px 0 #6a3300,
+      0 12px 22px rgba(18, 0, 30, 0.5),
+      0 0 14px rgba(255, 204, 76, 0.32);
+  }
+  50% {
+    box-shadow:
+      0 6px 0 #6a3300,
+      0 12px 22px rgba(18, 0, 30, 0.5),
+      0 0 30px rgba(255, 214, 96, 0.72),
+      0 0 54px rgba(224, 79, 182, 0.28);
+  }
+}
+
+@keyframes fx-cta-sheen {
+  0%,
+  55% {
+    transform: translateX(-130%);
+  }
+  85%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes fx-cta-sheen-fast {
+  from {
+    transform: translateX(-130%);
+  }
+  to {
+    transform: translateX(130%);
+  }
+}
+
+/* ---------- Wheel: light sweep while spinning, flash on landing ---------- */
+.wheel-sheen,
+.wheel-landing {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: calc(var(--wheel-size) * 0.76);
+  height: calc(var(--wheel-size) * 0.76);
+  margin: auto;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.wheel-sheen {
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 420ms ease;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 236, 150, 0),
+    0 0 0 rgba(255, 214, 90, 0);
+}
+
+.wheel-sheen::before,
+.wheel-sheen::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  border-radius: 50%;
+  mix-blend-mode: screen;
+}
+
+/* Comet: a bright leading edge with a fading tail, chasing around the face. */
+.wheel-sheen::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 220deg,
+    rgba(255, 226, 140, 0.14) 280deg,
+    rgba(255, 238, 180, 0.6) 335deg,
+    rgba(255, 255, 245, 1) 357deg,
+    transparent 360deg
+  );
+  -webkit-mask-image: radial-gradient(circle, transparent 14%, #000 34%, #000 100%);
+  mask-image: radial-gradient(circle, transparent 14%, #000 34%, #000 100%);
+  animation: fx-sweep 0.72s linear infinite;
+}
+
+/* Soft counter-rotating glints for depth. */
+.wheel-sheen::after {
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(255, 255, 255, 0.28) 0deg 4deg,
+      transparent 4deg 60deg
+    );
+  -webkit-mask-image: radial-gradient(circle, transparent 20%, #000 60%, transparent 100%);
+  mask-image: radial-gradient(circle, transparent 20%, #000 60%, transparent 100%);
+  animation: fx-sweep 2.4s linear infinite reverse;
+}
+
+.wheel-wrap.is-spinning .wheel-sheen {
+  opacity: 1;
+  animation: fx-rim-pulse 0.9s ease-in-out infinite alternate;
+}
+
+.wheel-wrap.is-spinning .wheel-frame:not(.wheel-frame--idle) {
+  animation: fx-frame-glow 760ms ease-in-out infinite alternate;
+}
+
+/* The landed segment always sits under the pointer (top), so the wedge is fixed. */
+.wheel-landing {
+  opacity: 0;
+  background: conic-gradient(
+    from calc(var(--seg-angle, 60deg) / -2),
+    rgba(255, 250, 214, 0.78) 0deg var(--seg-angle, 60deg),
+    transparent var(--seg-angle, 60deg)
+  );
+  -webkit-mask-image: radial-gradient(circle, transparent 12%, #000 40%);
+  mask-image: radial-gradient(circle, transparent 12%, #000 40%);
+  mix-blend-mode: screen;
+}
+
+.wheel-wrap.is-landed .wheel-landing {
+  animation: fx-landing 760ms steps(1, end) both;
+}
+
+.wheel-wrap.is-landed .hub {
+  animation: fx-hub-pop 520ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes fx-sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fx-rim-pulse {
+  from {
+    box-shadow:
+      inset 0 0 0 3px rgba(255, 236, 150, 0.35),
+      0 0 12px rgba(255, 214, 90, 0.35);
+  }
+  to {
+    box-shadow:
+      inset 0 0 0 3px rgba(255, 246, 196, 0.9),
+      0 0 30px rgba(255, 214, 90, 0.75);
+  }
+}
+
+@keyframes fx-frame-glow {
+  from {
+    filter:
+      brightness(1.02)
+      drop-shadow(0 18px 18px rgba(0, 0, 0, 0.38))
+      drop-shadow(0 0 24px rgba(255, 190, 48, 0.6));
+  }
+  to {
+    filter:
+      brightness(1.12)
+      saturate(1.1)
+      drop-shadow(0 18px 18px rgba(0, 0, 0, 0.38))
+      drop-shadow(0 0 32px rgba(255, 204, 80, 0.85))
+      drop-shadow(0 0 12px rgba(160, 80, 255, 0.5));
+  }
+}
+
+@keyframes fx-landing {
+  0% { opacity: 1; }
+  18% { opacity: 0.15; }
+  34% { opacity: 1; }
+  52% { opacity: 0.15; }
+  68% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+
+@keyframes fx-hub-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); box-shadow: 0 0 30px rgba(255, 230, 120, 0.95); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Win celebration (behind the modal panel) ---------- */
+.win-fx {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.win-fx--front {
+  z-index: 3;
+}
+
+.win-fx-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 250, 222, 0.95), rgba(255, 210, 90, 0.5) 22%, transparent 58%);
+  animation: fx-flash 760ms ease-out both;
+}
+
+.win-fx-rays {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 170vmax;
+  height: 170vmax;
+  margin: -85vmax 0 0 -85vmax;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 214, 120, 0.2) 0deg 7deg,
+    transparent 7deg 20deg
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 4%, transparent 36%);
+  mask-image: radial-gradient(circle, #000 4%, transparent 36%);
+  animation:
+    fx-rays-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both,
+    fx-sweep 26s linear infinite;
+}
+
+.win-fx-ring {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border: 3px solid rgba(255, 226, 130, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 24px rgba(255, 214, 96, 0.8), inset 0 0 18px rgba(255, 214, 96, 0.6);
+  opacity: 0;
+  animation: fx-ring 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.win-fx-ring--late {
+  border-color: rgba(240, 120, 210, 0.8);
+  animation-delay: 180ms;
+}
+
+.win-fx-coin {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: var(--size, 22px);
+  height: var(--size, 22px);
+  margin: calc(var(--size, 22px) / -2) 0 0 calc(var(--size, 22px) / -2);
+  opacity: 0;
+  animation: fx-coin 1.9s var(--delay, 0s) cubic-bezier(0.2, 0.7, 0.4, 1) both;
+}
+
+.win-fx-coin::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  content: '';
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fffbd0, #ffd845 38%, #e59a0a 70%, #a45800);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 244, 180, 0.8),
+    inset 0 0 0 4px rgba(170, 90, 0, 0.45),
+    0 0 10px rgba(255, 210, 80, 0.7);
+  animation: fx-coin-flip 0.46s linear infinite;
+}
+
+.win-fx-confetti {
+  position: absolute;
+  top: -6vh;
+  left: var(--x);
+  width: 7px;
+  height: 13px;
+  border-radius: 1px;
+  background: var(--c);
+  opacity: 0;
+  animation: fx-confetti var(--duration) var(--delay) linear 2 both;
+}
+
+.win-fx-confetti:nth-child(3n) {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+@keyframes fx-flash {
+  0% { opacity: 0; }
+  14% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes fx-rays-in {
+  from { opacity: 0; scale: 0.4; }
+  to { opacity: 1; scale: 1; }
+}
+
+@keyframes fx-ring {
+  0% { opacity: 1; transform: scale(0.2); }
+  100% { opacity: 0; transform: scale(5); }
+}
+
+@keyframes fx-coin {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.3);
+  }
+  32% {
+    opacity: 1;
+    transform: translate(var(--tx), var(--ty)) scale(1) rotate(calc(var(--rot) / 3));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--tx) * 1.35), calc(var(--ty) + 72vh)) scale(0.9) rotate(var(--rot));
+  }
+}
+
+@keyframes fx-coin-flip {
+  0%, 100% { transform: scaleX(1); }
+  50% { transform: scaleX(0.18); }
+}
+
+@keyframes fx-confetti {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate3d(1, 1, 0, 0deg);
+  }
+  50% {
+    transform: translate3d(var(--sway), 56vh, 0) rotate3d(1, 1, 0, 360deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(calc(var(--sway) * -0.5), 112vh, 0) rotate3d(1, 1, 0, 720deg);
+  }
+}
+
+/* ---------- Win modal: pop, title stamp, glowing amount, winning cells ---------- */
+.win-modal-backdrop.has-win .win-modal,
+.win-modal.is-winning {
+  animation: fx-panel-pop 680ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.win-modal-backdrop.has-win .win-modal {
+  border-color: rgba(255, 214, 120, 0.7);
+  box-shadow:
+    0 28px 100px rgba(0, 0, 0, 0.6),
+    0 0 48px rgba(255, 196, 80, 0.28),
+    inset 0 1px rgba(255, 230, 174, 0.3);
+}
+
+.win-modal-backdrop.has-win .win-modal h2,
+.win-modal.is-winning h2 {
+  animation: fx-stamp 560ms 240ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+
+.win-modal-backdrop.has-win .win-total,
+.win-modal.is-winning .win-total strong {
+  animation: fx-amount-glow 1.6s 900ms ease-in-out infinite alternate;
+}
+
+.win-emblem.is-gold,
+.win-modal.is-winning .win-modal-mark {
+  position: relative;
+  isolation: isolate;
+}
+
+.win-emblem.is-gold::after,
+.win-modal.is-winning .win-modal-mark::after {
+  position: absolute;
+  inset: -14px;
+  z-index: -1;
+  content: '';
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 40deg,
+    rgba(255, 224, 130, 0.7) 60deg,
+    transparent 80deg 200deg,
+    rgba(255, 224, 130, 0.7) 240deg,
+    transparent 260deg
+  );
+  -webkit-mask-image: radial-gradient(circle, transparent 52%, #000 56%, #000 70%, transparent 74%);
+  mask-image: radial-gradient(circle, transparent 52%, #000 56%, #000 70%, transparent 74%);
+  animation: fx-sweep 2.4s linear infinite;
+}
+
+.win-multi-cell.is-revealed.is-winning {
+  animation: fx-cell-win 560ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  box-shadow: 0 0 0 1px rgba(255, 222, 120, 0.4), 0 0 18px rgba(255, 204, 80, 0.28);
+}
+
+@keyframes fx-panel-pop {
+  0% { opacity: 0; transform: translateY(36px) scale(0.72); }
+  60% { opacity: 1; transform: translateY(-4px) scale(1.035); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes fx-stamp {
+  0% { opacity: 0; transform: scale(1.9); filter: blur(4px); }
+  60% { opacity: 1; transform: scale(0.94); filter: blur(0); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes fx-amount-glow {
+  from { filter: drop-shadow(0 0 0 rgba(255, 214, 96, 0)); }
+  to { filter: drop-shadow(0 0 14px rgba(255, 214, 96, 0.75)); }
+}
+
+@keyframes fx-cell-win {
+  0% { opacity: 0; transform: scale(0.5); filter: brightness(2.2); }
+  60% { opacity: 1; transform: scale(1.1); filter: brightness(1.35); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .win-fx,
+  .wheel-sheen,
+  .wheel-landing {
+    display: none;
+  }
+
+  .cta-row.cta-capsule,
+  .cta-capsule .primary-cta::after {
+    animation: none;
+  }
+}

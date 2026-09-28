@@ -86,6 +86,9 @@ const SOUND_SOURCES = {
 } as const;
 const MULTI_SPIN_DURATION_MS = 6000;
 const MULTI_REVEAL_OFFSET_MS = 1000;
+// Single draws hold on the landed segment briefly (flash + hub pop) before the result modal.
+const LANDING_PAUSE_MS = 700;
+const LANDING_FLASH_MS = 1200;
 function getRotationFromTransform(transform: string): number | null {
   if (!transform || transform === 'none') return null;
   try {
@@ -174,6 +177,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [isWheelFrozen, setIsWheelFrozen] = useState(false);
+  const [landed, setLanded] = useState(false);
   const [result, setResult] = useState<DrawResponse | null>(null);
   const [winHistory, setWinHistory] = useState<WinHistoryEntry[]>([]);
   const [winHistoryCursor, setWinHistoryCursor] = useState<string | null>(null);
@@ -183,6 +187,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const soundTimersRef = useRef<Partial<Record<SoundKey, number>>>({});
   const introPlayedRef = useRef(false);
   const wheelRef = useRef<HTMLDivElement>(null);
+  const landedTimerRef = useRef<number | undefined>(undefined);
 
   function playSound(key: SoundKey) {
     const audio = soundsRef.current?.[key];
@@ -315,7 +320,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const revealDelayMs =
     selectedTier.draws > 1
       ? Math.max(0, spinAnimationDurationMs - MULTI_REVEAL_OFFSET_MS)
-      : spinAnimationDurationMs;
+      : spinAnimationDurationMs + LANDING_PAUSE_MS;
   const isMultiDraw = selectedTier.draws > 1;
   const phoneShellStyle = {
     '--spin-duration': `${spinAnimationDurationMs}ms`,
@@ -331,6 +336,8 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     setError(null);
     setSpinning(true);
     setIsWheelFrozen(false);
+    window.clearTimeout(landedTimerRef.current);
+    setLanded(false);
     try {
       const res = await postDraw(selectedTier.draws);
       playSound('spinConfirm');
@@ -364,6 +371,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
             winningCashAmount: draw.winningCashAmount,
           }));
         if (winningDraws.length > 0) {
+          navigator.vibrate?.([40, 60, 90]);
           setWinHistory((current) => [
             {
               id: res.redemption.id,
@@ -393,6 +401,8 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
         window.setTimeout(() => {
           stopSound('wheelSpinning');
           setSpinning(false);
+          setLanded(true);
+          landedTimerRef.current = window.setTimeout(() => setLanded(false), LANDING_FLASH_MS);
         }, spinAnimationDurationMs);
       }
     } catch (e) {
@@ -484,25 +494,24 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
                 spinning={spinning}
                 wheelRef={wheelRef}
                 isFrozen={isMultiDraw && isWheelFrozen}
+                landed={landed}
               />
             </section>
-            <div className="cta-row">
+            <div className={`cta-row cta-capsule${spinning ? ' is-busy' : ''}`}>
               <button
                 className="primary-cta primary-cta--spin"
                 onClick={spin}
                 disabled={spinning || points < selectedTier.points}
               >
-                <Gift size={24} />
+                <Gift size={22} />
                 <span className="primary-cta-label">
-                  {spinning ? (
-                    '抽獎中'
-                  ) : (
-                    <>
-                      <span>{selectedTier.draws === 1 ? '抽獎' : `${selectedTier.draws} 連抽`}</span>
-                      <span className="primary-cta-cost">
-                        (消耗<span className="primary-cta-cost-value">{selectedTier.points}</span>積分)
-                      </span>
-                    </>
+                  <span className="primary-cta-title">
+                    {spinning ? '抽獎中' : selectedTier.draws === 1 ? '抽獎' : `${selectedTier.draws} 連抽`}
+                  </span>
+                  {!spinning && (
+                    <span className="primary-cta-cost">
+                      消耗 <b>{selectedTier.points}</b> 積分
+                    </span>
                   )}
                 </span>
               </button>
@@ -513,6 +522,7 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
                 aria-label="切換連抽次數"
               >
                 <DrawTierIcon />
+                <span className="primary-cta-cycle-label" aria-hidden="true">切換</span>
               </button>
             </div>
             {error && (
@@ -616,15 +626,20 @@ function Wheel({
   spinning,
   wheelRef,
   isFrozen,
+  landed,
 }: {
   prizes: PublicPrize[];
   rotation: number;
   spinning: boolean;
   wheelRef: React.RefObject<HTMLDivElement | null>;
   isFrozen: boolean;
+  landed: boolean;
 }) {
   return (
-    <div className="wheel-wrap">
+    <div
+      className={`wheel-wrap${spinning ? ' is-spinning' : ''}${landed ? ' is-landed' : ''}`}
+      style={{ '--seg-angle': `${360 / prizes.length}deg` } as React.CSSProperties}
+    >
       <img className="wheel-frame" src="/assets/wheel-frame.webp" alt="" aria-hidden="true" />
       <div
         ref={wheelRef}
@@ -656,6 +671,8 @@ function Wheel({
           );
         })}
       </div>
+      <div className="wheel-sheen" aria-hidden="true" />
+      <div className="wheel-landing" aria-hidden="true" />
       <div className={`hub ${spinning ? 'is-spinning' : ''}`} aria-hidden="true">
         <span />
       </div>
@@ -684,7 +701,7 @@ function CopyIcon() {
 
 function DrawTierIcon() {
   return (
-    <svg viewBox="0 0 20 20" width="24" height="24" fill="#000000" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 20 20" width="24" height="24" fill="currentColor" aria-hidden="true" focusable="false">
       <path d="M10.75 10.818v2.614A3.1 3.1 0 0 0 11.888 13c.482-.315.612-.648.612-.875s-.13-.56-.612-.875a3.1 3.1 0 0 0-1.138-.432M8.33 8.62q.08.083.184.164c.208.16.46.284.736.363V6.603a2.5 2.5 0 0 0-.35.13q-.211.098-.386.233c-.377.292-.514.627-.514.909c0 .184.058.39.202.592q.056.077.128.152" />
       <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0a8 8 0 0 1 16 0m-8-6a.75.75 0 0 1 .75.75v.316a3.8 3.8 0 0 1 1.653.713c.426.33.744.74.925 1.2a.75.75 0 0 1-1.395.55a1.35 1.35 0 0 0-.447-.563a2.2 2.2 0 0 0-.736-.363V9.3c.698.093 1.383.32 1.959.696c.787.514 1.29 1.27 1.29 2.13s-.504 1.616-1.29 2.13c-.576.377-1.261.603-1.96.696v.299a.75.75 0 1 1-1.5 0v-.3c-.697-.092-1.382-.318-1.958-.695c-.482-.315-.857-.717-1.078-1.188a.75.75 0 1 1 1.359-.636c.08.173.245.376.54.569c.313.205.706.353 1.138.432v-2.748a3.8 3.8 0 0 1-1.653-.713C6.9 9.433 6.5 8.681 6.5 7.875c0-.805.4-1.558 1.097-2.096a3.8 3.8 0 0 1 1.653-.713V4.75A.75.75 0 0 1 10 4" clipRule="evenodd" />
     </svg>

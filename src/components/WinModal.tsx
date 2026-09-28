@@ -1,6 +1,7 @@
 import type { DrawResponse } from '../api/draw.js';
 import { Check, Copy, Gift, Trophy } from 'lucide-react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { WinCelebration } from './WinCelebration.js';
 
 const formatAmount = (amount: number) => amount.toLocaleString('zh-TW');
 
@@ -112,14 +113,7 @@ export function WinModal({
 
   return (
     <div className={`win-modal-backdrop ${hasWin ? 'has-win' : ''}`} onClick={onClose}>
-      {hasWin && <div className="win-atmosphere" aria-hidden="true">
-        <div className="win-halo" />
-        {Array.from({ length: 22 }, (_, i) => <i key={i} className="win-mote" style={{
-          '--x': `${(i * 43 + 7) % 100}%`, '--drift': `${(i % 2 ? 1 : -1) * (24 + i * 3)}px`,
-          '--delay': `${(i % 7) * 0.12}s`, '--duration': `${2.4 + (i % 5) * 0.3}s`,
-          '--turn': `${i * 47}deg`,
-        } as CSSProperties} />)}
-      </div>}
+      {hasWin && <WinCelebration />}
       <div ref={panel} className={`win-modal ${complete ? 'is-complete' : ''}`} onClick={(event) => event.stopPropagation()}
         role="dialog" aria-modal="true" aria-labelledby="win-modal-title" tabIndex={-1}>
         <div className="win-modal-content-panel">
