@@ -16,6 +16,8 @@ const sidebarLinks: SidebarLink[] = [
   { to: '/users', label: '會員列表', shortLabel: '會員', nav: 'users' },
   { to: '/redemptions', label: '中獎紀錄', shortLabel: '中獎', nav: 'redemptions' },
   { to: '/prizes', label: '獎品設定', shortLabel: '獎品', nav: 'prizes' },
+  { to: '/home', label: '首頁設定', shortLabel: '首頁', nav: 'system' },
+  { to: '/ads', label: '廣告設定', shortLabel: '廣告', nav: 'system' },
   { to: '/system', label: '系統設定', shortLabel: '設定', nav: 'system' },
 ];
 
