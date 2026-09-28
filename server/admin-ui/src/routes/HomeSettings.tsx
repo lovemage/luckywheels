@@ -12,6 +12,8 @@ export function HomeSettings() {
   const { data, isLoading } = useQuery({ queryKey: ['admin', 'settings'], queryFn: fetchSettings });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [bgUrl, setBgUrl] = useState<string | null>(null);
+  const [winTickerEnabled, setWinTickerEnabled] = useState(true);
+  const [bottomNavCollapsible, setBottomNavCollapsible] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
@@ -19,11 +21,19 @@ export function HomeSettings() {
     if (data) {
       setLogoUrl(data.homeLogoUrl || null);
       setBgUrl(data.homeBackgroundUrl || null);
+      setWinTickerEnabled(data.winTickerEnabled);
+      setBottomNavCollapsible(data.bottomNavCollapsible);
     }
   }, [data]);
 
   const mut = useMutation({
-    mutationFn: () => updateSettings({ homeLogoUrl: logoUrl ?? '', homeBackgroundUrl: bgUrl ?? '' }),
+    mutationFn: () =>
+      updateSettings({
+        homeLogoUrl: logoUrl ?? '',
+        homeBackgroundUrl: bgUrl ?? '',
+        winTickerEnabled,
+        bottomNavCollapsible,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'settings'] });
       setError(null);
@@ -40,7 +50,7 @@ export function HomeSettings() {
         <div>
           <p className="admin-eyebrow">Home</p>
           <h1>首頁設定</h1>
-          <p>更換會員前台（抽獎首頁）的 LOGO 與背景圖。留空（移除）＝使用系統內建預設圖。</p>
+          <p>更換會員前台（抽獎首頁）的 LOGO、背景圖與底部區塊顯示方式。LOGO／背景留空（移除）＝使用系統內建預設圖。</p>
         </div>
       </header>
 
@@ -58,6 +68,32 @@ export function HomeSettings() {
         <Hint>
           鋪滿整個手機畫面（以 cover 裁切置中）。建議<strong>直式</strong>、約 <strong>853 × 1844</strong>（手機比例）、5MB 以內。
         </Hint>
+      </fieldset>
+
+      <fieldset className="member-detail-card member-detail-card--wide admin-fieldset-card">
+        <legend>底部區塊</legend>
+        <label className="admin-toggle">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={winTickerEnabled}
+            onChange={(e) => setWinTickerEnabled(e.target.checked)}
+          />
+          <span className="admin-toggle-track" aria-hidden="true" />
+          <span className="admin-toggle-label">中獎跑馬燈（winTickerEnabled）</span>
+        </label>
+        <Hint>開啟後，首頁底部會輪播最近 20 筆真實中獎紀錄（遊戲編號遮罩顯示，例：ab***45；不含測試帳號與已取消的兌換）。</Hint>
+        <label className="admin-toggle">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={bottomNavCollapsible}
+            onChange={(e) => setBottomNavCollapsible(e.target.checked)}
+          />
+          <span className="admin-toggle-track" aria-hidden="true" />
+          <span className="admin-toggle-label">底部導航預設收合（bottomNavCollapsible）</span>
+        </label>
+        <Hint>開啟後，底部導航平常收合成一個半透明向上箭頭，點擊才展開；關閉則導航常駐顯示。</Hint>
       </fieldset>
 
       {error && <p className="member-detail-error">{error}</p>}

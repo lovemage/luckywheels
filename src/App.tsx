@@ -4,12 +4,14 @@ import { ApiError, setUnauthorizedHandler } from './api/client.js';
 import { fetchMe } from './api/me.js';
 import {
   fetchWinHistory,
+  fetchRecentWinners,
   fetchPrizes,
   fetchSettings,
   postDraw,
   type DrawResponse,
   type PublicPrize,
   type PublicSettings,
+  type RecentWinner,
   type WinHistoryEntry,
 } from './api/draw.js';
 import { sessionStore, type MeProfile } from './state/session.js';
@@ -18,6 +20,7 @@ import { Login } from './components/Login.js';
 import { Onboarding } from './components/Onboarding.js';
 import { PendingApproval } from './components/PendingApproval.js';
 import { WinModal } from './components/WinModal.js';
+import { BottomDock } from './components/BottomDock.js';
 import { Legal, type LegalTab } from './components/Legal.js';
 
 function proxiedImageUrl(url: string | null | undefined): string | null {
@@ -89,6 +92,7 @@ const MULTI_REVEAL_OFFSET_MS = 1000;
 // Single draws hold on the landed segment briefly (flash + hub pop) before the result modal.
 const LANDING_PAUSE_MS = 700;
 const LANDING_FLASH_MS = 1200;
+const WINNERS_REFRESH_MS = 60_000;
 function getRotationFromTransform(transform: string): number | null {
   if (!transform || transform === 'none') return null;
   try {
@@ -178,6 +182,8 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
   const [spinning, setSpinning] = useState(false);
   const [isWheelFrozen, setIsWheelFrozen] = useState(false);
   const [landed, setLanded] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [winners, setWinners] = useState<RecentWinner[]>([]);
   const [result, setResult] = useState<DrawResponse | null>(null);
   const [winHistory, setWinHistory] = useState<WinHistoryEntry[]>([]);
   const [winHistoryCursor, setWinHistoryCursor] = useState<string | null>(null);
@@ -272,6 +278,29 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
       window.removeEventListener('orientationchange', onResize);
     };
   }, []);
+
+  const tickerEnabled = settings ? settings.winTickerEnabled !== false : false;
+  useEffect(() => {
+    if (!tickerEnabled) {
+      setWinners([]);
+      return;
+    }
+    let alive = true;
+    const load = () => {
+      if (document.visibilityState !== 'visible') return;
+      fetchRecentWinners()
+        .then((res) => {
+          if (alive) setWinners(res.items);
+        })
+        .catch(() => {});
+    };
+    load();
+    const timer = window.setInterval(load, WINNERS_REFRESH_MS);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [tickerEnabled]);
 
   useEffect(() => {
     if (view !== 'mine') return;
@@ -439,6 +468,11 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
     setSelectedTierIndex(next);
   }
 
+  function selectView(next: 'wheel' | 'rules' | 'mine') {
+    setView(next);
+    setNavOpen(false);
+  }
+
   function closeResult() {
     stopSound('win');
     stopSound('wheelSpinning');
@@ -599,11 +633,18 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
           </section>
         )}
 
-        <nav className="bottom-tabs">
-          <TabButton active={view === 'wheel'} icon={<WheelTabIcon />} label="輪盤" onClick={() => setView('wheel')} />
-          <TabButton active={view === 'rules'} icon={<RulesTabIcon />} label="活動規則" onClick={() => setView('rules')} />
-          <TabButton active={view === 'mine'} icon={<HistoryTabIcon />} label="中獎紀錄" onClick={() => setView('mine')} />
-        </nav>
+        <BottomDock
+          collapsible={settings.bottomNavCollapsible !== false}
+          open={navOpen}
+          onToggle={() => setNavOpen((open) => !open)}
+          winners={winners}
+        >
+          <nav className="bottom-tabs" id="bottom-tabs">
+            <TabButton active={view === 'wheel'} icon={<WheelTabIcon />} label="輪盤" onClick={() => selectView('wheel')} />
+            <TabButton active={view === 'rules'} icon={<RulesTabIcon />} label="活動規則" onClick={() => selectView('rules')} />
+            <TabButton active={view === 'mine'} icon={<HistoryTabIcon />} label="中獎紀錄" onClick={() => selectView('mine')} />
+          </nav>
+        </BottomDock>
 
         {result && (
           <WinModal

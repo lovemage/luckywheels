@@ -19,6 +19,9 @@ export const SETTINGS_KEYS = {
   // 首頁外觀：會員前台 logo 與背景圖（空字串＝使用前端內建預設圖）
   homeLogoUrl: 'homeLogoUrl',
   homeBackgroundUrl: 'homeBackgroundUrl',
+  // 首頁底部：中獎跑馬燈、底部導航是否預設收合（收合時以向上箭頭展開）
+  winTickerEnabled: 'winTickerEnabled',
+  bottomNavCollapsible: 'bottomNavCollapsible',
   // System totals — maintained atomically inside the draw transaction
   // (replaces SUM(User) aggregation; addresses Codex finding B1/D1).
   totalDrawCount: 'totalDrawCount',
@@ -54,6 +57,8 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   [SETTINGS_KEYS.consolationPrizeId]: '',
   [SETTINGS_KEYS.homeLogoUrl]: '',
   [SETTINGS_KEYS.homeBackgroundUrl]: '',
+  [SETTINGS_KEYS.winTickerEnabled]: 'true',
+  [SETTINGS_KEYS.bottomNavCollapsible]: 'true',
   [SETTINGS_KEYS.totalDrawCount]: '0',
   [SETTINGS_KEYS.totalPayoutAmount]: '0',
   [SETTINGS_KEYS.totalPointsBurned]: '0',

@@ -14,6 +14,8 @@ publicRoutes.get('/api/settings/public', async (c) => {
       SETTINGS_KEYS.winRedemptionText,
       SETTINGS_KEYS.homeLogoUrl,
       SETTINGS_KEYS.homeBackgroundUrl,
+      SETTINGS_KEYS.winTickerEnabled,
+      SETTINGS_KEYS.bottomNavCollapsible,
     ] } },
   });
   const m = new Map(rows.map((r) => [r.key, r.value]));
@@ -25,6 +27,10 @@ publicRoutes.get('/api/settings/public', async (c) => {
     winRedemptionText: m.get(SETTINGS_KEYS.winRedemptionText) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winRedemptionText],
     homeLogoUrl: m.get(SETTINGS_KEYS.homeLogoUrl) ?? '',
     homeBackgroundUrl: m.get(SETTINGS_KEYS.homeBackgroundUrl) ?? '',
+    winTickerEnabled:
+      (m.get(SETTINGS_KEYS.winTickerEnabled) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winTickerEnabled]) === 'true',
+    bottomNavCollapsible:
+      (m.get(SETTINGS_KEYS.bottomNavCollapsible) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.bottomNavCollapsible]) === 'true',
   });
 });
 

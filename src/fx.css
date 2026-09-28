@@ -571,6 +571,257 @@
   100% { opacity: 1; transform: none; filter: none; }
 }
 
+/* ---------- Member card: gold-rimmed panel matching the wheel frame ---------- */
+.member-card {
+  padding: 10px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255, 214, 110, 0.16), transparent 70%) padding-box,
+    linear-gradient(180deg, rgba(62, 12, 88, 0.94), rgba(22, 3, 38, 0.94)) padding-box,
+    linear-gradient(160deg, #fff4b8, #e3a826 32%, #7e4200 58%, #ffd76a 100%) border-box;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.42),
+    0 0 18px rgba(255, 196, 70, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.member-card .avatar {
+  border: 2px solid #ffd76a;
+  box-shadow: 0 0 0 2px rgba(92, 40, 0, 0.6), 0 0 12px rgba(255, 210, 90, 0.45);
+  object-fit: cover;
+}
+
+.member-card .member-copy strong {
+  overflow: hidden;
+  color: #fff6d8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-card .member-copy span {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe58a, #e6a51c);
+  color: #5a2600;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.member-card dl div {
+  border: 1px solid rgba(255, 214, 110, 0.22);
+  background: linear-gradient(180deg, rgba(10, 0, 22, 0.7), rgba(34, 6, 54, 0.6));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.member-card dt {
+  color: #e6cdf0;
+  font-weight: 800;
+}
+
+.member-card dd {
+  color: #ffe27a;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 0 #7a3a00, 0 0 10px rgba(255, 206, 80, 0.35);
+}
+
+/* ---------- Bottom dock: handle, win ticker, tab bar ---------- */
+.bottom-dock {
+  position: absolute;
+  right: 18px;
+  bottom: 20px;
+  left: 18px;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.dock-handle {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(255, 220, 130, 0.45);
+  border-radius: 999px;
+  background: rgba(24, 4, 42, 0.42);
+  color: rgba(255, 230, 150, 0.92);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dock-handle svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: fx-handle-bob 1.6s ease-in-out infinite;
+}
+
+.bottom-dock.is-open .dock-handle svg {
+  transform: rotate(180deg);
+  animation: none;
+}
+
+.dock-handle:active {
+  background: rgba(24, 4, 42, 0.62);
+}
+
+.win-ticker {
+  width: 100%;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 0 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 214, 110, 0.5);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(40, 6, 62, 0.82), rgba(14, 0, 26, 0.86));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.win-ticker-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff08e, #f0a412 70%, #c46b00);
+  color: #5a2600;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 1.5px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.win-ticker-badge i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e0106a;
+  box-shadow: 0 0 6px #ff3b8d;
+  animation: fx-live-dot 1s ease-in-out infinite alternate;
+}
+
+.win-ticker-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.win-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: fx-ticker linear infinite;
+}
+
+.win-ticker-item {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 22px;
+  color: #ecdcf4;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.win-ticker-item svg {
+  width: 13px;
+  height: 13px;
+  color: #ffd45a;
+}
+
+.win-ticker-item b {
+  color: #fff6d8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 800;
+}
+
+.win-ticker-item strong {
+  color: #ffe27a;
+  font-weight: 950;
+  text-shadow: 0 0 8px rgba(255, 206, 80, 0.5);
+}
+
+.bottom-dock .bottom-tabs {
+  position: static;
+  width: 100%;
+  height: 64px;
+  margin: 0;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(48, 8, 72, 0.94), rgba(18, 2, 32, 0.96)) padding-box,
+    linear-gradient(160deg, #fff4b8, #e3a826 32%, #7e4200 58%, #ffd76a 100%) border-box;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.42), 0 0 16px rgba(255, 196, 70, 0.18);
+}
+
+.bottom-dock.is-collapsible .bottom-tabs {
+  animation: fx-dock-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.bottom-dock .bottom-tabs button {
+  grid-template-rows: 22px auto;
+  gap: 4px;
+  color: #d9c2e6;
+  font-size: 12px;
+}
+
+.bottom-dock .bottom-tabs button + button {
+  box-shadow: inset 1px 0 0 rgba(255, 214, 110, 0.16);
+}
+
+.bottom-dock .bottom-tabs button.active {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, rgba(255, 255, 255, 0.6), transparent 70%),
+    linear-gradient(180deg, #fff39e 0%, #ffd43b 44%, #f0a312 80%, #c46b00 100%);
+  color: #5a2600;
+}
+
+.bottom-dock .bottom-tabs svg {
+  width: 22px;
+  height: 22px;
+}
+
+@keyframes fx-handle-bob {
+  0%, 100% { translate: 0 1px; }
+  50% { translate: 0 -2px; }
+}
+
+@keyframes fx-live-dot {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
+
+@keyframes fx-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes fx-dock-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 640px) {
+  .bottom-dock {
+    position: static;
+    flex: 0 0 auto;
+    margin: 0 14px 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .win-fx,
   .wheel-sheen,
@@ -579,7 +830,13 @@
   }
 
   .cta-row.cta-capsule,
-  .cta-capsule .primary-cta::after {
+  .cta-capsule .primary-cta::after,
+  .dock-handle svg {
+    animation: none;
+  }
+
+  /* Global reduced-motion rule would otherwise make the ticker jump; show it static. */
+  .win-ticker-track {
     animation: none;
   }
 }

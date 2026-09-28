@@ -33,6 +33,8 @@ const Body = z.object({
   // 首頁外觀：上傳後得到的圖片 URL；空字串＝清除、回退前端內建預設圖。
   homeLogoUrl: z.string().max(2000).optional(),
   homeBackgroundUrl: z.string().max(2000).optional(),
+  winTickerEnabled: z.boolean().optional(),
+  bottomNavCollapsible: z.boolean().optional(),
 });
 type BodyT = z.infer<typeof Body>;
 
@@ -101,6 +103,8 @@ adminSettingsRoutes.get('/api/admin/settings', ...requireSystemNav, async (c) =>
     winRedemptionText: m[SETTINGS_KEYS.winRedemptionText] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winRedemptionText],
     homeLogoUrl: m[SETTINGS_KEYS.homeLogoUrl] ?? '',
     homeBackgroundUrl: m[SETTINGS_KEYS.homeBackgroundUrl] ?? '',
+    winTickerEnabled: m[SETTINGS_KEYS.winTickerEnabled] === 'true',
+    bottomNavCollapsible: m[SETTINGS_KEYS.bottomNavCollapsible] === 'true',
     totals: {
       drawCount: Number(m[SETTINGS_KEYS.totalDrawCount] ?? '0'),
       payoutAmount: Number(m[SETTINGS_KEYS.totalPayoutAmount] ?? '0'),
@@ -153,6 +157,10 @@ adminSettingsRoutes.patch('/api/admin/settings', ...requireSystemNav, async (c) 
     updates.push({ key: SETTINGS_KEYS.homeLogoUrl, value: serialize(body.homeLogoUrl) });
   if (body.homeBackgroundUrl !== undefined)
     updates.push({ key: SETTINGS_KEYS.homeBackgroundUrl, value: serialize(body.homeBackgroundUrl) });
+  if (body.winTickerEnabled !== undefined)
+    updates.push({ key: SETTINGS_KEYS.winTickerEnabled, value: serialize(body.winTickerEnabled) });
+  if (body.bottomNavCollapsible !== undefined)
+    updates.push({ key: SETTINGS_KEYS.bottomNavCollapsible, value: serialize(body.bottomNavCollapsible) });
 
   if (updates.length === 0) {
     return c.json({ ok: true });

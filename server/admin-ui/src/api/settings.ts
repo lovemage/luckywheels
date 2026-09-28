@@ -13,6 +13,8 @@ export interface AdminSettings {
   winRedemptionText: string;
   homeLogoUrl: string;
   homeBackgroundUrl: string;
+  winTickerEnabled: boolean;
+  bottomNavCollapsible: boolean;
   totals: { drawCount: number; payoutAmount: number; pointsBurned: number };
   lowestCostPrize: { id: string; rankLabel: string; name: string; cashAmount: number } | null;
   consolationPrizeId: string;
@@ -33,6 +35,8 @@ export type SettingsUpdate = Partial<
     | 'winRedemptionText'
     | 'homeLogoUrl'
     | 'homeBackgroundUrl'
+    | 'winTickerEnabled'
+    | 'bottomNavCollapsible'
   >
 >;
 

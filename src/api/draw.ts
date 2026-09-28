@@ -23,6 +23,10 @@ export interface PublicSettings {
   homeLogoUrl: string;
   /** Admin-configurable home background URL; empty string ⇒ use the bundled default. */
   homeBackgroundUrl: string;
+  /** Admin toggle: bottom win ticker. Absent on older servers ⇒ treated as on. */
+  winTickerEnabled?: boolean;
+  /** Admin toggle: tab bar collapses behind an up-arrow handle. Absent ⇒ on. */
+  bottomNavCollapsible?: boolean;
 }
 
 export function fetchPrizes(): Promise<{ items: PublicPrize[] }> {
@@ -87,4 +91,15 @@ export function fetchWinHistory(
     if (value !== undefined) params.set(key, String(value));
   }
   return api(`/api/me/redemptions?${params.toString()}`);
+}
+
+export interface RecentWinner {
+  id: string;
+  maskedId: string;
+  rankLabel: string;
+  amount: number;
+}
+
+export function fetchRecentWinners(): Promise<{ items: RecentWinner[] }> {
+  return api('/api/winners/recent');
 }
