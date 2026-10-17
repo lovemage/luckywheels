@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer';
 import { Readable } from 'node:stream';
 import { Hono } from 'hono';
 import { AppError } from '../errors.js';
@@ -56,39 +55,24 @@ function extractStorageKey(rawUrl: string): string {
   return key;
 }
 
-async function objectBodyToBytes(body: unknown): Promise<Uint8Array> {
-  if (body == null) {
-    return new Uint8Array();
-  }
-
-  if (body instanceof Uint8Array) {
+function objectBodyToStream(body: unknown): ConstructorParameters<typeof Response>[0] {
+  if (body instanceof Uint8Array || typeof body === 'string' || body instanceof Blob) {
     return body;
   }
-
-  if (typeof body === 'string') {
-    return Buffer.from(body);
-  }
-
-  const maybe = body as {
-    transformToByteArray?: () => Promise<Uint8Array>;
-    arrayBuffer?: () => Promise<ArrayBuffer>;
-  };
-  if (typeof maybe.transformToByteArray === 'function') {
-    return maybe.transformToByteArray();
-  }
-  if (typeof maybe.arrayBuffer === 'function') {
-    const ab = await maybe.arrayBuffer();
-    return new Uint8Array(ab);
-  }
-
+  if (body instanceof ReadableStream) return body;
   if (body instanceof Readable || isAsyncIterable(body)) {
-    const chunks: Uint8Array[] = [];
-    for await (const chunk of body as AsyncIterable<Uint8Array>) {
-      if (chunk && chunk.byteLength > 0) {
-        chunks.push(Buffer.from(chunk));
-      }
-    }
-    return chunks.length === 0 ? new Uint8Array() : Buffer.concat(chunks);
+    const stream = body instanceof Readable
+      ? body
+      : Readable.from(body, { objectMode: false, highWaterMark: 64 * 1024 });
+    // Bound the adapter queue in bytes (not chunks), and propagate downstream
+    // cancellation to the S3 response so abandoned downloads release sockets.
+    return Readable.toWeb(stream, {
+      strategy: { highWaterMark: 64 * 1024, size: (chunk: Uint8Array) => chunk.byteLength },
+    }) as ReadableStream<Uint8Array>;
+  }
+  const maybe = body as { transformToWebStream?: () => ReadableStream<Uint8Array> };
+  if (typeof maybe.transformToWebStream === 'function') {
+    return maybe.transformToWebStream();
   }
 
   throw new AppError('MEDIA_PROXY_BODY', 'unsupported storage object body format', 500);
@@ -116,7 +100,7 @@ mediaProxyRoutes.get('/api/media-proxy', async (c) => {
     throw new AppError('MEDIA_PROXY_NOT_FOUND', 'media object not found', 404);
   }
 
-  const bytes = await objectBodyToBytes(obj.body);
+  const body = objectBodyToStream(obj.body);
   const headers = new Headers();
   headers.set('content-type', obj.contentType ?? 'application/octet-stream');
   headers.set('cache-control', 'public, max-age=31536000, immutable');
@@ -125,7 +109,7 @@ mediaProxyRoutes.get('/api/media-proxy', async (c) => {
     headers.set('content-length', String(obj.contentLength));
   }
 
-  return new Response(bytes, {
+  return new Response(body, {
     status: 200,
     headers,
   });

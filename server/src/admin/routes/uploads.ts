@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { randomUUID } from 'node:crypto';
 import { AppError } from '../../errors.js';
 import { prisma } from '../../db.js';
@@ -19,6 +20,13 @@ const ALLOWED_MIME = new Set([
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 // Originals that get re-encoded (form field convert=webp) may be larger; the stored WebP is small.
 const MAX_CONVERT_BYTES = 10 * 1024 * 1024; // 10 MB
+// Include multipart headers/fields, but reject oversized bodies before parsing.
+const uploadBodyLimit = bodyLimit({
+  maxSize: MAX_CONVERT_BYTES + 64 * 1024,
+  onError: () => {
+    throw new AppError('UPLOAD_TOO_LARGE', 'upload request exceeds 10 MB plus multipart overhead', 413);
+  },
+});
 
 const MIME_EXT: Record<string, string> = {
   'image/png': 'png',
@@ -27,7 +35,7 @@ const MIME_EXT: Record<string, string> = {
   'image/gif': 'gif',
 };
 
-adminUploadsRoutes.post('/api/admin/uploads', ...requireUploadNav, async (c) => {
+adminUploadsRoutes.post('/api/admin/uploads', ...requireUploadNav, uploadBodyLimit, async (c) => {
   let form: Record<string, unknown>;
   try {
     form = await c.req.parseBody();

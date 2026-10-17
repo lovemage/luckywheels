@@ -41,7 +41,8 @@ RUN npx tsc -p tsconfig.build.json
 # 4) Runtime
 ############################################
 FROM base AS runtime
-ENV NODE_ENV=production
+ENV NODE_ENV=production MALLOC_ARENA_MAX=2
+ENV NODE_OPTIONS="--max-old-space-size=256 --max-semi-space-size=8"
 WORKDIR /app/server
 
 # Install server deps including prisma CLI (used by `prisma migrate deploy`
@@ -65,4 +66,4 @@ COPY --from=web-builder /app/dist ./web-dist
 EXPOSE 3001
 # Apply latest migrations then start. Both happen at container start so a
 # missing migration aborts the deploy clearly.
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/src/index.js"]

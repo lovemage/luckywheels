@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { withConnectionLimit } from './database-url.js';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -6,8 +7,9 @@ declare global {
 }
 
 export const prisma: PrismaClient =
-  globalThis.__prisma ?? new PrismaClient({ log: ['error', 'warn'] });
+  globalThis.__prisma ?? new PrismaClient({
+    datasourceUrl: withConnectionLimit(process.env.DATABASE_URL),
+    log: ['error', 'warn'],
+  });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.__prisma = prisma;
-}
+globalThis.__prisma = prisma;

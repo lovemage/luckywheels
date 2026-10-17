@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { withConnectionLimit } from '../database-url.js';
 import { superadminEnv, type Site } from './env.js';
 
 // One PrismaClient per site, built lazily with a per-connection datasource
@@ -14,7 +15,7 @@ export function clientFor(site: Site): PrismaClient {
   const { siteUrls } = superadminEnv();
   const client = new PrismaClient({
     log: ['error', 'warn'],
-    datasources: { db: { url: siteUrls[site] } },
+    datasources: { db: { url: withConnectionLimit(siteUrls[site])! } },
   });
   clients.set(site, client);
   return client;
