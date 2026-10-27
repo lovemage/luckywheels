@@ -55,6 +55,27 @@ describe('GET /api/admin/users', () => {
     expect((await (await app.request('/api/admin/users?q=zzz', { headers })).json()).items).toHaveLength(0);
   });
 
+  it('orders newest signup first, and a positive points top-up floats the member to the top', async () => {
+    const admin = await createAdmin();
+    const headers = await adminHeaders(admin.id, admin.email);
+    const old = await createUser({ nickname: 'old', accountType: 'verified' });
+    await new Promise((r) => setTimeout(r, 5));
+    await createUser({ nickname: 'new', accountType: 'verified' });
+    const nicks = async () =>
+      (await (await app.request('/api/admin/users', { headers })).json()).items.map((u: { nickname: string }) => u.nickname);
+
+    expect(await nicks()).toEqual(['new', 'old']);
+
+    await new Promise((r) => setTimeout(r, 5));
+    const topUp = await app.request(`/api/admin/users/${old.id}/points`, {
+      method: 'POST',
+      headers: { ...headers, 'content-type': 'application/json' },
+      body: JSON.stringify({ delta: 100 }),
+    });
+    expect(topUp.status).toBe(200);
+    expect(await nicks()).toEqual(['old', 'new']);
+  });
+
   it('cursor pagination: take=2 + nextCursor', async () => {
     const admin = await createAdmin();
     for (let i = 0; i < 5; i++) await createUser({ nickname: `n${i}` });

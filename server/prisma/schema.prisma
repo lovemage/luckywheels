@@ -55,6 +55,9 @@ model User {
   drawLogs                 DrawLog[]
   redemptions              Redemption[]
 
+  // Admin member-list sort key: set on signup, bumped on every positive points top-up.
+  listSortedAt             DateTime     @default(now())
+
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
 }

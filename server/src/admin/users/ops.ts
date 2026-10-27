@@ -102,7 +102,7 @@ export async function listUsersOp(
       where,
       take: query.take + 1,
       ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: [{ listSortedAt: 'desc' }, { id: 'desc' }],
       select: USER_LIST_SELECT,
     }),
     client.user.count({ where: { accountType: 'pending' } }),
@@ -180,7 +180,14 @@ export async function adjustPointsOp(
     const before = user.points;
     const after = before + body.delta;
     if (after < 0) throw new AppError('POINTS_WOULD_GO_NEGATIVE', 'resulting balance would be negative', 422);
-    const u = await tx.user.update({ where: { id: userId }, data: { points: after } });
+    const u = await tx.user.update({
+      where: { id: userId },
+      data: {
+        points: after,
+        // 補點 floats the member to the top of the admin list
+        ...(body.delta > 0 ? { listSortedAt: new Date() } : {}),
+      },
+    });
     await writeAdminActionLog(tx, {
       ...actor,
       event: 'user.points_adjust',

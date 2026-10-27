@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "listSortedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+UPDATE "User" SET "listSortedAt" = "createdAt";
