@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { fetchLogs, type ActionLogRow } from '../api/logs.js';
 import { Table } from '../components/Table.js';
 import { CursorPagination } from '../components/CursorPagination.js';
 import { useCursorPagination } from '../hooks/useCursorPagination.js';
+import { TableSkeleton } from '../components/Skeleton.js';
 
 const ACTION_LABELS: Record<string, string> = {
   'admin.account_change': '管理員更新帳號資料',
@@ -72,8 +73,9 @@ export function Logs() {
   const [to, setTo] = useState('');
   const pagination = useCursorPagination();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isPlaceholderData } = useQuery({
     queryKey: ['admin', 'action-logs', action, targetType, targetId, from, to, pagination.cursor],
+    placeholderData: keepPreviousData,
     queryFn: () => fetchLogs({
       action: action || undefined,
       targetType: targetType || undefined,
@@ -101,10 +103,13 @@ export function Logs() {
         <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); pagination.reset(); }} />
         <input type="date" value={to} onChange={(e) => { setTo(e.target.value); pagination.reset(); }} />
       </div>
-      {isLoading && <p>載入中…</p>}
+      {isLoading && <TableSkeleton />}
       {data && (
         <>
-          <section className="member-detail-card member-detail-card--wide admin-table-card">
+          <section
+            className={`member-detail-card member-detail-card--wide admin-table-card${isPlaceholderData ? ' is-refreshing' : ''}`}
+            aria-busy={isPlaceholderData}
+          >
             <Table<ActionLogRow>
               rows={data.items}
               rowKey={(r) => r.id}

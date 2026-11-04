@@ -53,7 +53,7 @@ describe('admin auth flow', () => {
     const audits = await prisma.adminActionLog.findMany();
     expect(audits).toHaveLength(1);
     expect(audits[0]?.event).toBe('admin.login_failed');
-    expect(audits[0]?.payloadAfter).toMatchObject({ emailTried: 'ops@example.com' });
+    expect(audits[0]?.payloadAfter).toMatchObject({ accountTried: 'ops@example.com' });
   });
 
   it('non-existent email → 401 BAD_CREDENTIALS (same as wrong password)', async () => {

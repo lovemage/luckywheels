@@ -1,27 +1,31 @@
 import { describe, it, expect } from 'vitest';
-import { parseTier, resolveThreshold, DEFAULT_TIERS } from '../../../src/draw/tier.js';
+import { deriveTier, resolveThreshold, DEFAULT_TIERS } from '../../../src/draw/tier.js';
 
+// 抽獎 API 以 `draws`（必須等於某個 pointThreshold 的 draws）選擇方案；tier 由 draws 推導
 const thresholds = [
   { points: 6, draws: 1 },
   { points: 15, draws: 3 },
-  { points: 25, draws: 5 },
+  { points: 48, draws: 10 },
 ];
 
-describe('parseTier', () => {
-  it('accepts "single"', () => expect(parseTier('single')).toBe('single'));
-  it('accepts "multi"', () => expect(parseTier('multi')).toBe('multi'));
-  it('throws on garbage', () => expect(() => parseTier('huge')).toThrow(/TIER_INVALID/));
-});
-
 describe('resolveThreshold', () => {
-  it('single → first threshold', () => {
-    expect(resolveThreshold('single', thresholds)).toEqual({ points: 6, draws: 1 });
+  it('finds the threshold whose draws match', () => {
+    expect(resolveThreshold(1, thresholds)).toEqual({ points: 6, draws: 1 });
+    expect(resolveThreshold(10, thresholds)).toEqual({ points: 48, draws: 10 });
   });
-  it('multi → last threshold', () => {
-    expect(resolveThreshold('multi', thresholds)).toEqual({ points: 25, draws: 5 });
+  it('throws TIER_INVALID when no threshold matches', () => {
+    expect(() => resolveThreshold(2, thresholds)).toThrow(/TIER_INVALID/);
   });
   it('throws on empty threshold list', () => {
-    expect(() => resolveThreshold('single', [])).toThrow(/POINT_THRESHOLDS_EMPTY/);
+    expect(() => resolveThreshold(1, [])).toThrow(/POINT_THRESHOLDS_EMPTY/);
+  });
+});
+
+describe('deriveTier', () => {
+  it('1 draw is single, anything else is multi', () => {
+    expect(deriveTier({ points: 6, draws: 1 })).toBe('single');
+    expect(deriveTier({ points: 15, draws: 3 })).toBe('multi');
+    expect(deriveTier({ points: 48, draws: 10 })).toBe('multi');
   });
 });
 

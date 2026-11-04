@@ -18,7 +18,7 @@ describe('POST /api/draw — verified core', () => {
     const u = await createUser({ accountType: 'blacklisted', points: 100 });
     const r = await app.request('/api/draw', {
       method: 'POST', headers: await authedHeaders(u.id),
-      body: JSON.stringify({ tier: 'single' }),
+      body: JSON.stringify({ draws: 1 }),
     });
     expect(r.status).toBe(403);
     const body = await r.json();
@@ -40,7 +40,7 @@ describe('POST /api/draw — verified core', () => {
     const u = await createUser({ entertainmentMemberCode: null, points: 100 });
     const r = await app.request('/api/draw', {
       method: 'POST', headers: await authedHeaders(u.id),
-      body: JSON.stringify({ tier: 'single' }),
+      body: JSON.stringify({ draws: 1 }),
     });
     expect(r.status).toBe(403);
     expect((await r.json()).error.code).toBe('ONBOARDING_REQUIRED');
@@ -54,7 +54,7 @@ describe('POST /api/draw — verified core', () => {
     const u = await createUser({ nickname: null, points: 100 });
     const r = await app.request('/api/draw', {
       method: 'POST', headers: await authedHeaders(u.id),
-      body: JSON.stringify({ tier: 'single' }),
+      body: JSON.stringify({ draws: 1 }),
     });
     expect(r.status).toBe(403);
     expect((await r.json()).error.code).toBe('ONBOARDING_REQUIRED');
@@ -63,7 +63,7 @@ describe('POST /api/draw — verified core', () => {
   it('400 TIER_INVALID on malformed body', async () => {
     const u = await createUser();
     const r = await app.request('/api/draw', {
-      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'huge' }),
+      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ draws: 2 }),
     });
     expect(r.status).toBe(400);
     expect((await r.json()).error.code).toBe('TIER_INVALID');
@@ -73,7 +73,7 @@ describe('POST /api/draw — verified core', () => {
     const u = await createUser({ points: 5 });
     await createPrize();
     const r = await app.request('/api/draw', {
-      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
+      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ draws: 1 }),
     });
     expect(r.status).toBe(422);
     expect((await r.json()).error.code).toBe('INSUFFICIENT_POINTS');
@@ -84,7 +84,7 @@ describe('POST /api/draw — verified core', () => {
     const prize = await createPrize({ weight: 1, cashAmount: 200 });
 
     const r = await app.request('/api/draw', {
-      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
+      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ draws: 1 }),
     });
     expect(r.status).toBe(200);
     const body = await r.json();
@@ -125,7 +125,7 @@ describe('POST /api/draw — verified core', () => {
     const prize = await createPrize({ weight: 1, cashAmount: 100 });
 
     const r = await app.request('/api/draw', {
-      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'multi' }),
+      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ draws: 10 }),
     });
     expect(r.status).toBe(200);
     const body = await r.json();
@@ -155,128 +155,67 @@ describe('POST /api/draw — verified core', () => {
 
   it('401 without session', async () => {
     const r = await app.request('/api/draw', {
-      method: 'POST', body: JSON.stringify({ tier: 'single' }),
+      method: 'POST', body: JSON.stringify({ draws: 1 }),
       headers: { 'content-type': 'application/json' },
     });
     expect(r.status).toBe(401);
   });
 });
 
-describe('POST /api/draw — gates', () => {
-  beforeEach(async () => { await resetDb(); });
-
-  // NOTE: `gatedBy` lives on each sub-draw entry (`body.draws[i].gatedBy`), not at the top level —
-  // single tier has one entry, multi has 10 but all share the same gate result for the batch.
-  it('min_draws: blocks until threshold reached (post-deduct counting)', async () => {
-    await seedDefaultSettings({ minDrawsBeforeWin: '5' });
-    const consolation = await createPrize({ isConsolation: true, weight: 1 });
-    await createPrize({ weight: 1, cashAmount: 500 });
-    await prisma.appSetting.update({ where: { key: SETTINGS_KEYS.consolationPrizeId },
-                                      data: { value: consolation.id } });
-
-    // lifetimeDrawCount starts at 4; after deduct it becomes 5 → first eligible
-    const u = await createUser({ points: 100, lifetimeDrawCount: 4 });
-    const r = await app.request('/api/draw', {
-      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
-    });
-    const body = await r.json();
-    expect(body.draws[0].gatedBy).toBeNull();
-
-    // a different user starts at 3 → after deduct = 4 < 5 → gated
-    const u2 = await createUser({ points: 100, lifetimeDrawCount: 3 });
-    const r2 = await app.request('/api/draw', {
-      method: 'POST', headers: await authedHeaders(u2.id), body: JSON.stringify({ tier: 'single' }),
-    });
-    expect((await r2.json()).draws[0].gatedBy).toBe('min_draws');
-  });
-
-  it('cooldown: enforces exact boundary (< not <=)', async () => {
-    await seedDefaultSettings({ cooldownDrawsAfterWin: '3' });
-    const consolation = await createPrize({ isConsolation: true, weight: 1 });
-    await createPrize({ weight: 1, cashAmount: 500 });
-    await prisma.appSetting.update({ where: { key: SETTINGS_KEYS.consolationPrizeId },
-                                      data: { value: consolation.id } });
-
-    const cases = [
-      { startLifetime: 5, expectGated: 'cooldown' as const },
-      { startLifetime: 6, expectGated: 'cooldown' as const },
-      { startLifetime: 7, expectGated: null as null },           // boundary opens here
-      { startLifetime: 8, expectGated: null as null },
-    ];
-    for (const { startLifetime, expectGated } of cases) {
-      const u = await createUser({
-        points: 100, lifetimeDrawCount: startLifetime, lastWinDrawIndex: 5,
-      });
-      const r = await app.request('/api/draw', {
-        method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
-      });
-      expect((await r.json()).draws[0].gatedBy).toBe(expectGated);
-    }
-  }, 30000);
-
-  it('cooldown gated: freezes lastWinDrawIndex / lifetime payout', async () => {
-    await seedDefaultSettings({ cooldownDrawsAfterWin: '3' });
-    const consolation = await createPrize({ isConsolation: true, weight: 1 });
-    await createPrize({ weight: 1, cashAmount: 500 });
-    await prisma.appSetting.update({ where: { key: SETTINGS_KEYS.consolationPrizeId },
-                                      data: { value: consolation.id } });
-
-    const u = await createUser({ points: 100, lifetimeDrawCount: 5, lastWinDrawIndex: 5 });
-    await app.request('/api/draw', {
-      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
-    });
-    const after = await prisma.user.findUnique({ where: { id: u.id } });
-    expect(after?.lastWinDrawIndex).toBe(5);              // frozen
-    expect(after?.totalLuckAmount).toBe(0);               // frozen
-  });
-
-  it('payout_cap: blocked when ratio exceeded (totals stored in app_settings, not derived from User)', async () => {
-    await seedDefaultSettings({
-      payoutCapEnabled: 'true',
-      payoutCapRatio: '0.45',
-      totalPayoutAmount: '600',
-      totalPointsBurned: '1000',
-    });
-    const consolation = await createPrize({ isConsolation: true, weight: 1 });
-    await createPrize({ weight: 1, cashAmount: 500 });
-    await prisma.appSetting.update({ where: { key: SETTINGS_KEYS.consolationPrizeId },
-                                      data: { value: consolation.id } });
-
-    const u = await createUser({ points: 100 });
-    const r = await app.request('/api/draw', {
-      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
-    });
-    expect((await r.json()).draws[0].gatedBy).toBe('payout_cap');
-  });
-});
-
-describe('POST /api/draw — gated accounting', () => {
+// 2026-06-05（82e553f）起，抽獎關卡改為「全站間隔成本控制」，取代原本的 min_draws／cooldown／payout_cap：
+// 以全站累計抽數判斷，只有第 N、2N、3N… 抽依權重抽獎；其他子抽一律派目前最低金額的付費獎項（gatedBy = cost_control）。
+describe('POST /api/draw — cost control gate', () => {
   beforeEach(async () => {
     await resetDb();
-    await seedDefaultSettings({ minDrawsBeforeWin: '99' });
-    const cp = await createPrize({ isConsolation: true });
-    await prisma.appSetting.update({
-      where: { key: SETTINGS_KEYS.consolationPrizeId }, data: { value: cp.id },
-    });
-    await createPrize({ weight: 1, cashAmount: 500 });
+    await seedDefaultSettings({ costControlEnabled: 'true', costControlInterval: '3' });
   });
 
-  it('gated draw: charges points, increments lifetime, but freezes win-accounting', async () => {
-    const u = await createUser({ points: 100 });
+  const draw = async (userId: string, draws: number) => {
     const r = await app.request('/api/draw', {
-      method: 'POST', headers: await authedHeaders(u.id), body: JSON.stringify({ tier: 'single' }),
+      method: 'POST', headers: await authedHeaders(userId), body: JSON.stringify({ draws }),
     });
-    const body = await r.json();
-    expect(body.draws[0].gatedBy).toBe('min_draws');
-    expect(body.draws[0].winningCashAmount).toBe(0);
-    expect(body.redemption.totalWinAmount).toBe(0);
+    expect(r.status).toBe(200);
+    return r.json() as Promise<{ draws: { gatedBy: string | null; winningCashAmount: number; prize: { id: string } }[] }>;
+  };
 
-    const after = await prisma.user.findUnique({ where: { id: u.id } });
-    expect(after?.points).toBe(94);                  // 100 - 6
-    expect(after?.lifetimeDrawCount).toBe(1);        // counted
-    expect(after?.totalBurnAmount).toBe(6);          // counted
-    expect(after?.lifetimePayoutAmount).toBe(0);     // frozen
-    expect(after?.totalLuckAmount).toBe(0);          // frozen
-    expect(after?.lastWinDrawIndex).toBeNull();      // frozen
+  it('only every Nth global draw is weighted; the rest pay the lowest paid prize', async () => {
+    const cheap = await createPrize({ cashAmount: 50, weight: 1 });
+    await createPrize({ cashAmount: 500, weight: 1 });
+
+    // 全站第 1、2 抽受控，第 3 抽依權重
+    const results = [];
+    for (let i = 0; i < 3; i++) results.push((await draw((await createUser({ points: 100 })).id, 1)).draws[0]!);
+    expect(results.map((d) => d.gatedBy)).toEqual(['cost_control', 'cost_control', null]);
+    for (const d of results.slice(0, 2)) {
+      expect(d.prize.id).toBe(cheap.id);
+      expect(d.winningCashAmount).toBe(50);
+    }
+
+    // 連抽逐筆套用：全站第 4–13 抽 → 第 6、9、12 抽（subIndex 2、5、8）依權重
+    const multi = await draw((await createUser({ points: 100 })).id, 10);
+    expect(multi.draws.map((d, i) => (d.gatedBy === null ? i : -1)).filter((i) => i >= 0)).toEqual([2, 5, 8]);
+    expect(Number((await prisma.appSetting.findUnique({ where: { key: SETTINGS_KEYS.totalDrawCount } }))?.value)).toBe(13);
+   }, 120_000);
+
+  it('does not gate anything when disabled', async () => {
+    await prisma.appSetting.update({ where: { key: SETTINGS_KEYS.costControlEnabled }, data: { value: 'false' } });
+    await createPrize({ cashAmount: 50, weight: 1 });
+    const body = await draw((await createUser({ points: 100 })).id, 10);
+    expect(body.draws.every((d) => d.gatedBy === null)).toBe(true);
+  });
+
+  it('gated draw: charges points and counts the payout, but is not a weighted win', async () => {
+    await createPrize({ cashAmount: 50, weight: 1 });
+    const u = await createUser({ points: 100 });
+    const body = await draw(u.id, 1);
+    expect(body.draws[0]).toMatchObject({ gatedBy: 'cost_control', winningCashAmount: 50 });
+
+    const after = await prisma.user.findUniqueOrThrow({ where: { id: u.id } });
+    expect(after.points).toBe(94);               // 100 - 6
+    expect(after.lifetimeDrawCount).toBe(1);
+    expect(after.totalBurnAmount).toBe(6);
+    expect(after.lifetimePayoutAmount).toBe(50); // 受控的最低獎仍是實際派彩
+    expect(after.totalLuckAmount).toBe(50);
+    expect(after.lastWinDrawIndex).toBeNull();   // 不算依權重中獎，不重設中獎位置
   });
 });

@@ -20,7 +20,7 @@ describe('POST /api/draw — concurrency', () => {
 
     const users = await Promise.all(Array.from({ length: 5 }, () => createUser({ points: 50 })));
     const responses = await Promise.all(users.map(async (u) =>
-      app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'single' }) }),
+      app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 1 }) }),
     ));
 
     for (const r of responses) expect(r.status).toBe(200);
@@ -47,7 +47,7 @@ describe('POST /api/draw — concurrency', () => {
     await createPrize({ weight: 1, cashAmount: 100 });
     const users = await Promise.all(Array.from({ length: 10 }, () => createUser({ points: 50 })));
     const responses = await Promise.all(users.map(async (u) =>
-      app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'single' }) }),
+      app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 1 }) }),
     ));
     for (const r of responses) expect(r.status).toBe(200);
 
@@ -66,7 +66,7 @@ describe('POST /api/draw — concurrency', () => {
     await createPrize({ weight: 1_000_000, cashAmount: 100, stock: 3 });
     const consolation = await createPrize({ weight: 1, isConsolation: true });
     const u = await createUser({ points: 60 });
-    const r = await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ tier: 'multi' }) });
+    const r = await app.request('/api/draw', { method: 'POST', headers: await H(u.id), body: JSON.stringify({ draws: 10 }) });
     expect(r.status).toBe(200);
     const body = await r.json();
     const drewLimited = body.draws.filter((d: { prize: { id: string } }) => d.prize.id !== consolation.id).length;

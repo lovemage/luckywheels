@@ -15,11 +15,11 @@ enum AccountType {
 }
 
 model User {
-  id                       String       @id @default(cuid())
-  lineUserId               String       @unique
-  displayName              String
-  pictureUrl               String?
-  vipLevel                 Int          @default(0)
+  id          String  @id @default(cuid())
+  lineUserId  String  @unique
+  displayName String
+  pictureUrl  String?
+  vipLevel    Int     @default(0)
 
   // Onboarding 表單欄位（Rev 3）。LINE 註冊完成不會自動有值；會員必須透過
   // POST /api/onboarding/profile 一次原子提交 `nickname` + `entertainmentMemberCode`
@@ -27,45 +27,45 @@ model User {
   // 可由會員自己改（MVP 暫由 Admin 改）。
   nickname                 String?
   // 娛樂城會員編號。unique 防止兩個 LINE 帳號綁同一個娛樂城會員；first-bind-only。
-  entertainmentMemberCode  String?      @unique
+  entertainmentMemberCode  String?   @unique
   entertainmentCodeBoundAt DateTime?
 
   // 積分制 entry currency (sole balance)
-  points                   Int          @default(0)
+  points Int @default(0)
 
-  accountType              AccountType  @default(pending)
-  verifiedAt               DateTime     @default(now())
+  accountType AccountType @default(pending)
+  verifiedAt  DateTime    @default(now())
 
-  testSkipCost             Boolean      @default(false)
-  testForcePrizeId         String?
-  testForcePrizeIds        String[]     @default([])
-  testForcePrizeMode       String       @default("random")
+  testSkipCost       Boolean  @default(false)
+  testForcePrizeId   String?
+  testForcePrizeIds  String[] @default([])
+  testForcePrizeMode String   @default("random")
 
   blacklistedAt            DateTime?
   blacklistedByAdminUserId String?
   blacklistReason          String?
 
-  totalBurnAmount          Int          @default(0)
-  totalLuckAmount          Int          @default(0)
+  totalBurnAmount Int @default(0)
+  totalLuckAmount Int @default(0)
 
-  lifetimeDrawCount        Int          @default(0)
-  lifetimePayoutAmount     Int          @default(0)
-  lastWinDrawIndex         Int?
+  lifetimeDrawCount    Int  @default(0)
+  lifetimePayoutAmount Int  @default(0)
+  lastWinDrawIndex     Int?
 
-  drawLogs                 DrawLog[]
-  redemptions              Redemption[]
+  drawLogs    DrawLog[]
+  redemptions Redemption[]
 
   // Admin member-list sort key: set on signup, bumped on every positive points top-up.
-  listSortedAt             DateTime     @default(now())
+  listSortedAt DateTime @default(now())
 
-  createdAt                DateTime     @default(now())
-  updatedAt                DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AdminActionLog {
-  id            String    @id @default(cuid())
-  adminUserId   String?   // null for system events (e.g. draw_blocked_blacklist)
-  event         String    // e.g. draw_blocked_blacklist, user.blacklist_set, ...
+  id            String   @id @default(cuid())
+  adminUserId   String? // null for system events (e.g. draw_blocked_blacklist)
+  event         String // e.g. draw_blocked_blacklist, user.blacklist_set, ...
   targetType    String?
   targetId      String?
   payloadBefore Json?
@@ -73,43 +73,43 @@ model AdminActionLog {
   ip            String?
   userAgent     String?
   note          String?
-  createdAt     DateTime  @default(now())
+  createdAt     DateTime @default(now())
 
   @@index([event, createdAt])
   @@index([targetType, targetId, createdAt])
 }
 
 model AdminUser {
-  id                  String    @id @default(cuid())
-  email               String    @unique
-  passwordHash        String
-  role                String    @default("admin")
-  isMain              Boolean   @default(true)
-  allowedNavs         String[]  @default([])
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  passwordHash         String
+  role                 String    @default("admin")
+  isMain               Boolean   @default(true)
+  allowedNavs          String[]  @default([])
   createdByAdminUserId String?
-  lastLoginAt         DateTime?
-  passwordChangedAt   DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  lastLoginAt          DateTime?
+  passwordChangedAt    DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model Prize {
-  id            String   @id @default(cuid())
-  rankLabel     String                                // 頭獎 / 二獎 / ...
+  id            String    @id @default(cuid())
+  rankLabel     String // 頭獎 / 二獎 / ...
   name          String
   description   String?
   imageUrl      String?
-  stock         Int      @default(0)
-  weight        Float    @default(0)
-  wheelPosition Int      @default(0)
-  sortOrder     Int      @default(0)
-  cashAmount    Int      @default(0)                  // fixed payout per win (no jackpot accumulation)
-  segmentColor  String   @default("#9b3eb8")
-  textColor     String   @default("#fff5d6")
-  enabled       Boolean  @default(true)
-  isConsolation Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  stock         Int       @default(0)
+  weight        Float     @default(0)
+  wheelPosition Int       @default(0)
+  sortOrder     Int       @default(0)
+  cashAmount    Int       @default(0) // fixed payout per win (no jackpot accumulation)
+  segmentColor  String    @default("#9b3eb8")
+  textColor     String    @default("#fff5d6")
+  enabled       Boolean   @default(true)
+  isConsolation Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   drawLogs      DrawLog[]
 }
 
@@ -127,9 +127,9 @@ enum GatedBy {
 }
 
 enum RedemptionStatus {
-  pending      // 未完成 — default after draw
-  delivered    // 已派送 — admin transferred the cash to the entertainment center account
-  cancelled    // 已取消 — admin marked as invalid (e.g. fraud, duplicate screenshot)
+  pending // 未完成 — default after draw
+  delivered // 已派送 — admin transferred the cash to the entertainment center account
+  cancelled // 已取消 — admin marked as invalid (e.g. fraud, duplicate screenshot)
 }
 
 /// One Redemption represents one抽獎請求 (single = 1 prize hit, multi = 10).
@@ -137,25 +137,25 @@ enum RedemptionStatus {
 /// Lifetime: one row per `POST /api/draw` call. Owned by one user; multiple `DrawLog`
 /// children hang off it via `redemptionId`.
 model Redemption {
-  id                          String           @id @default(cuid())
-  userId                      String
-  user                        User             @relation(fields: [userId], references: [id])
-  code                        String           @unique         // Crockford Base32, e.g. K3F7-PRA2-NX9V
-  tier                        String                          // "single" | "multi"
-  totalWinAmount              Int              @default(0)    // sum of winningCashAmount across drawLogs; written once at end of tx
-  status                      RedemptionStatus @default(pending)
-  statusChangedAt             DateTime?
-  statusChangedByAdminUserId  String?
-  cancelReason                String?
-  isTest                      Boolean          @default(false) // mirrors draw_logs.isTest, for admin filtering
+  id                         String           @id @default(cuid())
+  userId                     String
+  user                       User             @relation(fields: [userId], references: [id])
+  code                       String           @unique // Crockford Base32, e.g. K3F7-PRA2-NX9V
+  tier                       String // "single" | "multi"
+  totalWinAmount             Int              @default(0) // sum of winningCashAmount across drawLogs; written once at end of tx
+  status                     RedemptionStatus @default(pending)
+  statusChangedAt            DateTime?
+  statusChangedByAdminUserId String?
+  cancelReason               String?
+  isTest                     Boolean          @default(false) // mirrors draw_logs.isTest, for admin filtering
   // Idempotency lives at the BATCH level. A multi-tier request has 10 child DrawLogs
   // that all share the same idempotency key, so the unique constraint must NOT be on
   // DrawLog (would block sub-draw 2..10). One Redemption per (user, key) is the contract.
-  idempotencyKey              String?
-  createdAt                   DateTime         @default(now())
-  updatedAt                   DateTime         @updatedAt
+  idempotencyKey             String?
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
 
-  drawLogs                    DrawLog[]
+  drawLogs DrawLog[]
 
   @@unique([userId, idempotencyKey])
   @@index([userId, createdAt])
@@ -164,33 +164,266 @@ model Redemption {
 }
 
 model DrawLog {
-  id                  String      @id @default(cuid())
-  userId              String
-  user                User        @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   // Rev 3: every draw_log belongs to a Redemption (1 for single, 10 for multi).
-  redemptionId        String
-  redemption          Redemption  @relation(fields: [redemptionId], references: [id])
-  subIndex            Int                                     // 0 for single; 0..9 for multi
+  redemptionId String
+  redemption   Redemption @relation(fields: [redemptionId], references: [id])
+  subIndex     Int // 0 for single; 0..9 for multi
 
-  prizeId             String
-  prize               Prize       @relation(fields: [prizeId], references: [id])
-  tier                String                                  // "single" | "multi"
-  tierCost            Int
-  tierDraws           Int
-  pointsBefore        Int
-  pointsAfter         Int
-  randomSeed          String
-  winningCashAmount   Int         @default(0)                 // = prize.cashAmount, or 0 if consolation/gated
-  isTest              Boolean     @default(false)
-  forcedByAdmin       Boolean     @default(false)
-  gatedBy             GatedBy?
+  prizeId           String
+  prize             Prize    @relation(fields: [prizeId], references: [id])
+  tier              String // "single" | "multi"
+  tierCost          Int
+  tierDraws         Int
+  pointsBefore      Int
+  pointsAfter       Int
+  randomSeed        String
+  winningCashAmount Int      @default(0) // = prize.cashAmount, or 0 if consolation/gated
+  isTest            Boolean  @default(false)
+  forcedByAdmin     Boolean  @default(false)
+  gatedBy           GatedBy?
   // NOTE: no idempotencyKey here — multi-tier writes 10 sub-rows that share one batch key.
   //       The unique key lives on Redemption to prevent that collision.
-  createdAt           DateTime    @default(now())
+  createdAt         DateTime @default(now())
 
-  @@unique([redemptionId, subIndex])  // each sub-draw within a batch is unique
+  @@unique([redemptionId, subIndex]) // each sub-draw within a batch is unique
   @@index([userId, createdAt])
 }
 
 // JackpotHistory and JackpotEventType deliberately omitted (Rev 3 jackpot removal).
+
+// ─── 數據助手：ATG 資料採集（docs/plans/2026-11-01-data-assistant-execution-plan.md M2）───
+// 規則：只新增資料表，不在既有 model 加欄位（計劃 0.2 第 4 點）。
+
+model GameProvider {
+  id        String   @id @default(cuid())
+  code      String   @unique // "atg"
+  name      String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  games     Game[]
+}
+
+model Game {
+  id            String         @id @default(cuid())
+  providerId    String
+  provider      GameProvider   @relation(fields: [providerId], references: [id])
+  code          String // 來源的遊戲代碼，例 "golden-seth"
+  name          String // 戰神賽特 II
+  enabled       Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  rooms         Room[]
+  collectorRuns CollectorRun[]
+
+  @@unique([providerId, code])
+}
+
+/// 選擇機台的狀態圖示：machinel_icon＝idle、other_icon＝busy、otherLock_icon＝locked（使用中且已鎖定）。
+enum RoomStatus {
+  idle
+  busy
+  locked
+}
+
+/// 一台機台。latest* 欄位是最新一次採集值（列表頁直接讀，不必 join 快照）；歷史在 RoomSnapshot。
+model Room {
+  id           String  @id @default(cuid())
+  gameId       String
+  game         Game    @relation(fields: [gameId], references: [id])
+  roomNo       String // 畫面機台號，保留前導零（"001"）
+  sourceRoomId String // 來源內部 roomId，對應即時推送 slotTableUpdated 的 key
+  enabled      Boolean @default(true) // 後台停用
+
+  status          RoomStatus?
+  statusUpdatedAt DateTime? // 列表層或即時推送最後更新時間
+  todayRtp        Decimal?    @db.Decimal(7, 2) // 百分比，例 114.44
+  listCapturedAt  DateTime?
+
+  // 細項層（輪流抓取，可能比列表層舊）
+  unopenedSpins    Int?
+  prev1Spins       Int?
+  prev2Spins       Int?
+  todayBet         Decimal?  @db.Decimal(16, 2)
+  thirtyDayBet     Decimal?  @db.Decimal(18, 2)
+  thirtyDayRtp     Decimal?  @db.Decimal(7, 2)
+  detailCapturedAt DateTime? // 輪流排序依據：null（從未抓過）優先，其次最舊
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  snapshots       RoomSnapshot[]
+  AssistantSignal AssistantSignal[]
+
+  @@unique([gameId, roomNo])
+  // 不設 unique：來源若把 roomId 改配給別台，整輪寫入不會因衝突失敗
+  @@index([gameId, sourceRoomId])
+  @@index([gameId, detailCapturedAt])
+}
+
+enum CollectorRunStatus {
+  running
+  succeeded
+  failed
+}
+
+/// 訊號 worker 的待處理狀態（計劃 1.3）
+enum CollectorEvalStatus {
+  pending
+  processing
+  done
+  skipped
+}
+
+/// 一輪採集。succeeded 時與該輪 RoomSnapshot 在同一個 transaction 寫入，並設 evalStatus = pending。
+model CollectorRun {
+  id            String               @id @default(cuid())
+  gameId        String
+  game          Game                 @relation(fields: [gameId], references: [id])
+  status        CollectorRunStatus   @default(running)
+  startedAt     DateTime             @default(now())
+  finishedAt    DateTime?
+  durationMs    Int?
+  roomsListed   Int                  @default(0)
+  roomsDetailed Int                  @default(0)
+  errorCode     String?
+  errorMessage  String?
+  evalStatus    CollectorEvalStatus?
+  evalAttempts  Int                  @default(0)
+  evalLockedAt  DateTime?
+  snapshots     RoomSnapshot[]
+
+  @@index([gameId, startedAt])
+  @@index([evalStatus, startedAt])
+}
+
+/// 每輪每台一筆。細項欄位只有該輪有抓細項的機台才有值。業主規定機台資料只保存 3 天，超過即刪除（collector 每輪清理）。
+model RoomSnapshot {
+  id             BigInt       @id @default(autoincrement())
+  roomId         String
+  room           Room         @relation(fields: [roomId], references: [id])
+  collectorRunId String
+  collectorRun   CollectorRun @relation(fields: [collectorRunId], references: [id])
+  capturedAt     DateTime
+  status         RoomStatus
+  todayRtp       Decimal      @db.Decimal(7, 2)
+  unopenedSpins  Int?
+  prev1Spins     Int?
+  prev2Spins     Int?
+  todayBet       Decimal?     @db.Decimal(16, 2)
+  thirtyDayBet   Decimal?     @db.Decimal(18, 2)
+  thirtyDayRtp   Decimal?     @db.Decimal(7, 2)
+
+  @@unique([collectorRunId, roomId])
+  @@index([roomId, capturedAt])
+  @@index([capturedAt])
+}
+
+/// 採集用的娛樂城帳號，由後台輸入。帳號與密碼以 AES-256-GCM 加密（金鑰 COLLECTOR_CREDENTIALS_KEY 只放環境變數）；
+/// API 永遠不回傳密碼。collector 使用最近更新的 enabled 帳號。
+model CollectorAccount {
+  id                   String    @id @default(cuid())
+  label                String
+  casinoUrl            String
+  accountEnc           String
+  passwordEnc          String
+  enabled              Boolean   @default(true)
+  lastUsedAt           DateTime?
+  lastErrorAt          DateTime?
+  lastError            String?
+  createdByAdminUserId String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+/// 本金推薦紀錄（計劃 M3）。每次 POST /api/assistant/recommend 一筆。
+/// userId 只存字串、不建 Prisma 關聯：不在既有 User model 加反向欄位（計劃 0.2 第 4 點）。
+model RecommendationLog {
+  id          String   @id @default(cuid())
+  userId      String
+  gameId      String
+  principal   Int
+  multiplier  Int
+  threshold   Int
+  resultCount Int
+  /// [{ roomId, roomNo, score, reasons }]
+  results     Json
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+/// 會員的數據助手使用期限（計劃 M1）。續兌時從 max(now, expiresAt) 往後加；expiresAt <= now 即過期。
+/// userId 只存字串、不建 Prisma 關聯（不在 User 加反向欄位，計劃 0.2 第 4 點）。
+model AssistantPass {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  startsAt  DateTime
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum AssistantExchangeKind {
+  points_to_time // 會員以積分兌換時長
+  admin_adjust // 管理員人工加時／扣時
+}
+
+/// 使用期限異動紀錄。會員兌換以 (userId, idempotencyKey) 防重送；人工調整的 idempotencyKey 為 null。
+model AssistantExchange {
+  id             String                @id @default(cuid())
+  userId         String
+  kind           AssistantExchangeKind
+  pointsSpent    Int                   @default(0)
+  pointsBefore   Int?
+  pointsAfter    Int?
+  /// 加減的小時數（人工扣時為負數）
+  hours          Int
+  expiresBefore  DateTime?
+  expiresAfter   DateTime
+  idempotencyKey String?
+  adminUserId    String?
+  note           String?
+  createdAt      DateTime              @default(now())
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+enum AssistantSignalEndReason {
+  member_refresh // 會員按「免遊結束，換一組」
+  bonus_detected // 綁定房間開過免遊（未開轉數歸零或「前一」轉數改變）
+  rtp_changed // 綁定房間今日 RTP 與發出時相差達門檻
+  room_unavailable // 綁定房間變成有人／被預約、停用
+  data_stale // 綁定房間資料逾時
+}
+
+/// 會員目前的訊號（計劃 M3 訊號草案）。符號組合隨機，但每則都綁一間發出當下符合條件的真實空台；
+/// 會員端不顯示房間，後台可追查。endedAt 為 null 表示仍有效，每位會員同時最多一則（以 advisory lock 保證）。
+model AssistantSignal {
+  id              String                    @id @default(cuid())
+  userId          String
+  gameId          String
+  roomId          String
+  room            Room                      @relation(fields: [roomId], references: [id])
+  /// [{ symbol, multiplier }]
+  symbols         Json
+  /// 訊號強度 %，由綁定房間的綜合分數換算
+  strength        Int
+  scoreAtIssue    Int
+  rtpAtIssue      Decimal                   @db.Decimal(7, 2)
+  unopenedAtIssue Int?
+  prev1AtIssue    Int?
+  issuedAt        DateTime                  @default(now())
+  endedAt         DateTime?
+  endReason       AssistantSignalEndReason?
+
+  @@index([userId, endedAt])
+  @@index([roomId, endedAt])
+  @@index([issuedAt])
+}

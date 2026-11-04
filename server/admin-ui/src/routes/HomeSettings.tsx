@@ -2,6 +2,7 @@ import { useState, useEffect, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchSettings, updateSettings } from '../api/settings.js';
 import { ImageUploadInput } from '../components/ImageUploadInput.js';
+import { PageSkeleton } from '../components/Skeleton.js';
 
 type DemoEntry = { memberId: string; rankLabel: string };
 
@@ -67,7 +68,7 @@ export function HomeSettings() {
     onError: (e: Error) => setError(e.message),
   });
 
-  if (isLoading || !data) return <p>載入中…</p>;
+  if (isLoading || !data) return <PageSkeleton />;
 
   const demo = parseDemoText(demoText);
   const demoInvalid = demo.invalidLines.length > 0 || demo.entries.length > 100;

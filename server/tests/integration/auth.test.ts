@@ -3,7 +3,7 @@ import { app } from '../../src/index.js';
 import { resetDb } from '../helpers/db.js';
 import { prisma } from '../../src/db.js';
 import { startMockLine, stopMockLine, MOCK_NONCE } from '../helpers/mock-line.js';
-import { SESSION_COOKIE, STATE_COOKIE, NONCE_COOKIE } from '../../src/auth/cookies.js';
+import { SESSION_COOKIE, STATE_COOKIE, NONCE_COOKIE, RETRY_COOKIE } from '../../src/auth/cookies.js';
 
 function setCookieHeaders(res: Response): string[] {
   return res.headers.getSetCookie();
@@ -73,12 +73,22 @@ describe('LINE OAuth flow', () => {
     expect(user?.accountType).toBe('pending');
   });
 
-  it('rejects mismatched state', async () => {
+  // 回呼失敗不顯示錯誤頁（2026-06-07 起）：第一次帶重試 cookie 重新走登入；重試後仍失敗就回前台首頁。兩種都不發 session。
+  it('rejects mismatched state: retries login once, then returns home without a session', async () => {
     const r = await app.request('/api/auth/line/callback?code=test_code&state=garbage', {
       headers: { cookie: `${STATE_COOKIE}=other; ${NONCE_COOKIE}=whatever` },
     });
-    expect(r.status).toBe(400);
-    expect((await r.json()).error.code).toBe('OAUTH_STATE_MISMATCH');
+    expect(r.status).toBe(302);
+    expect(r.headers.get('location')).toBe('/api/auth/line/start');
+    expect(valueOf(findCookie(setCookieHeaders(r), RETRY_COOKIE))).toBe('1');
+    expect(valueOf(findCookie(setCookieHeaders(r), SESSION_COOKIE))).toBe('');
+
+    const again = await app.request('/api/auth/line/callback?code=test_code&state=garbage', {
+      headers: { cookie: `${STATE_COOKIE}=other; ${NONCE_COOKIE}=whatever; ${RETRY_COOKIE}=1` },
+    });
+    expect(again.status).toBe(302);
+    expect(again.headers.get('location')).toBe(`${process.env.PUBLIC_FRONTEND_ORIGIN}/`);
+    expect(valueOf(findCookie(setCookieHeaders(again), SESSION_COOKIE))).toBe('');
   });
 
   it('rejects missing nonce cookie', async () => {
@@ -89,8 +99,10 @@ describe('LINE OAuth flow', () => {
       `/api/auth/line/callback?code=test_code&state=${encodeURIComponent(stateQuery)}`,
       { headers: { cookie: `${STATE_COOKIE}=${stateCookieValue}` } },
     );
-    expect(r.status).toBe(400);
-    expect((await r.json()).error.code).toBe('OAUTH_NONCE_MISSING');
+    expect(r.status).toBe(302);
+    expect(r.headers.get('location')).toBe('/api/auth/line/start');
+    expect(valueOf(findCookie(setCookieHeaders(r), SESSION_COOKIE))).toBe('');
+    expect(await prisma.user.count()).toBe(0);
   });
 
   it('logout clears session cookie', async () => {

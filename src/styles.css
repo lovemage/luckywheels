@@ -1825,3 +1825,267 @@ h1 {
 .legal-footer-links button:hover {
   opacity: 1;
 }
+
+/* ── 上線前「新版」預覽：首頁入口、帳密視窗、新版外框 ───────────── */
+
+@font-face {
+  font-family: 'WenKai TC';
+  src: url('/assets/assistant/fonts/wenkai-tc-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+.preview-entry {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 4;
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 215, 117, 0.75);
+  border-radius: 999px;
+  background: rgba(20, 6, 0, 0.72);
+  color: #ffd775;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.preview-entry:focus-visible,
+.preview-gate button:focus-visible,
+.assistant-back:focus-visible {
+  outline: 2px solid #ffd775;
+  outline-offset: 2px;
+}
+
+.preview-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 2, 14, 0.78);
+}
+
+.preview-gate-panel {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  width: min(100%, 360px);
+  padding: 26px 22px 22px;
+  border: 1px solid rgba(255, 215, 117, 0.45);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1d1208, #0d0805);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  color: #fff3d0;
+}
+
+.preview-gate-panel h2 {
+  margin: 0;
+  font-family: 'WenKai TC', 'Noto Sans TC', serif;
+  font-size: 24px;
+  color: #ffd775;
+}
+
+.preview-gate-hint {
+  margin: -6px 0 0;
+  color: #cbb98f;
+  font-size: 14px;
+}
+
+.preview-gate-panel label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: #e9d9b0;
+}
+
+.preview-gate-panel input {
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 215, 117, 0.35);
+  border-radius: 10px;
+  background: #050302;
+  color: #fff7df;
+  font-size: 16px; /* iOS：小於 16px 會在聚焦時自動放大 */
+}
+
+.preview-gate-panel input:focus {
+  outline: none;
+  border-color: #ffd775;
+}
+
+.preview-gate-error {
+  margin: 0;
+  color: #ff9a8a;
+  font-size: 14px;
+}
+
+.preview-gate-submit {
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffe08a, #d9a227);
+  color: #2a1600;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.preview-gate-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: #cbb98f;
+}
+
+.assistant-shell {
+  min-height: min(890px, var(--app-height, 100dvh));
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255, 196, 64, 0.16), transparent 70%),
+    #0b0705;
+  color: #fff3d0;
+}
+
+.assistant-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 0;
+}
+
+.assistant-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: #e9d9b0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.assistant-back svg {
+  width: 18px;
+  height: 18px;
+}
+
+.assistant-badge {
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 215, 117, 0.5);
+  border-radius: 999px;
+  color: #ffd775;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.assistant-body {
+  display: grid;
+  gap: 18px;
+  padding: 20px 16px 32px;
+}
+
+.assistant-title {
+  font-family: 'WenKai TC', 'Noto Sans TC', serif;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #ffd775;
+  text-shadow: 0 0 18px rgba(255, 196, 64, 0.35);
+}
+
+.assistant-lede {
+  margin: -8px 0 0;
+  color: #cbb98f;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.assistant-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 215, 117, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 215, 117, 0.04);
+}
+
+.assistant-panel h2 {
+  margin: 0;
+  font-size: 16px;
+  color: #fff3d0;
+}
+
+.assistant-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+}
+
+.assistant-stats div {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.assistant-stats .assistant-stats-wide {
+  grid-column: 1 / -1;
+}
+
+.assistant-stats dt {
+  color: #b9a77d;
+  font-size: 12px;
+}
+
+.assistant-stats dd {
+  margin: 2px 0 0;
+  color: #fff7df;
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.assistant-stats dd small {
+  margin-left: 4px;
+  color: #cbb98f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.assistant-plans {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assistant-plans li {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #ffe7a6;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.assistant-muted {
+  margin: 0;
+  color: #9f906d;
+  font-size: 13px;
+}
+
+.assistant-error {
+  margin: 0;
+  color: #ff9a8a;
+  font-size: 14px;
+}

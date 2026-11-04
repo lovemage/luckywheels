@@ -19,6 +19,9 @@ const sidebarLinks: SidebarLink[] = [
   { to: '/home', label: '首頁設定', shortLabel: '首頁', nav: 'system' },
   { to: '/ads', label: '廣告設定', shortLabel: '廣告', nav: 'system' },
   { to: '/system', label: '系統設定', shortLabel: '設定', nav: 'system' },
+  { to: '/assistant/collector', label: '數據採集', shortLabel: '採集', nav: 'assistant' },
+  { to: '/assistant/recommend', label: '推薦與訊號', shortLabel: '推薦', nav: 'assistant' },
+  { to: '/assistant/exchange', label: '兌換管理', shortLabel: '兌換', nav: 'exchange' },
 ];
 
 export function AppShell() {
@@ -30,7 +33,11 @@ export function AppShell() {
     enabled: canSeeUsers,
     refetchInterval: 30_000,
   });
-  const visibleLinks = sidebarLinks.filter((l) => me.data?.isMain || me.data?.allowedNavs.includes(l.nav));
+  const visibleLinks = sidebarLinks.filter(
+    (l) =>
+      (me.data?.isMain || me.data?.allowedNavs.includes(l.nav)) &&
+      ((l.nav !== 'assistant' && l.nav !== 'exchange') || me.data?.features?.dataAssistant),
+  );
 
   function alertCount(nav: AdminNavKey): number {
     if (nav === 'users') {

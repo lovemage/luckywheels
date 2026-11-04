@@ -1,0 +1,49 @@
+# atg-collector — a SEPARATE Railway service from the same repo (luckyds.com only).
+# Long-running worker: logs into the casino with Playwright, reads ATG room data
+# and writes it into luckyds.com's DB (DATABASE_URL). No HTTP port, no migrations
+# (the luckyds.com member service owns and migrates that DB).
+#
+# The runtime image tag MUST match the `playwright` version in server/package.json
+# (pinned exactly) — the image ships the browser build that version expects.
+
+############################################
+# 1) Build server (tsc) + prisma client
+############################################
+FROM node:22-bookworm-slim AS server-builder
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY server/package.json server/package-lock.json ./
+RUN npm ci
+COPY server/tsconfig.json server/tsconfig.build.json ./
+COPY server/prisma ./prisma
+COPY server/src ./src
+COPY server/scripts ./scripts
+RUN npx prisma generate
+RUN npx tsc -p tsconfig.build.json
+
+############################################
+# 2) Runtime: official Playwright image (Chromium + system deps preinstalled)
+############################################
+FROM mcr.microsoft.com/playwright:v1.60.0-noble AS runtime
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false
+ENV NODE_ENV=production MALLOC_ARENA_MAX=2
+# Node heap only; Chromium runs as its own processes outside this limit.
+ENV NODE_OPTIONS="--max-old-space-size=384"
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /app/server
+
+COPY server/package.json server/package-lock.json ./
+RUN npm ci
+COPY server/prisma ./prisma
+RUN npx prisma generate
+
+COPY --from=server-builder /app/dist ./dist
+
+# Run as the image's unprivileged user (browsers in /ms-playwright are world-readable).
+USER pwuser
+
+# Graceful stop: the worker finishes the current round on SIGTERM.
+CMD ["node", "dist/src/collector/index.js"]

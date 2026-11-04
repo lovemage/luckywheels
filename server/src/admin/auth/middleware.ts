@@ -5,7 +5,7 @@ import { prisma } from '../../db.js';
 import { verifyAdminSession } from './jwt.js';
 import { ADMIN_SESSION_COOKIE } from './cookies.js';
 
-export const ADMIN_NAV_KEYS = ['users', 'redemptions', 'prizes', 'system'] as const;
+export const ADMIN_NAV_KEYS = ['users', 'redemptions', 'prizes', 'system', 'assistant', 'exchange'] as const;
 export type AdminNavKey = (typeof ADMIN_NAV_KEYS)[number];
 
 declare module 'hono' {

@@ -20,8 +20,8 @@ describe('POST /api/draw — idempotency (Redemption-scoped)', () => {
     const u = await createUser({ points: 50 });
     await createPrize({ weight: 1, cashAmount: 100 });
     const h = await H(u.id, 'abc-123');
-    const r1 = await app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ tier: 'single' }) });
-    const r2 = await app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ tier: 'single' }) });
+    const r1 = await app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ draws: 1 }) });
+    const r2 = await app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ draws: 1 }) });
     expect(r1.status).toBe(200);
     expect(r2.status).toBe(200);
     const b1 = await r1.json();
@@ -39,8 +39,8 @@ describe('POST /api/draw — idempotency (Redemption-scoped)', () => {
     const u = await createUser({ points: 60 });
     await createPrize({ weight: 1, cashAmount: 100 });
     const h = await H(u.id, 'multi-1');
-    const r1 = await app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ tier: 'multi' }) });
-    const r2 = await app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ tier: 'multi' }) });
+    const r1 = await app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ draws: 10 }) });
+    const r2 = await app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ draws: 10 }) });
     const b1 = await r1.json();
     const b2 = await r2.json();
     expect(b1.redemption.id).toBe(b2.redemption.id);
@@ -59,8 +59,8 @@ describe('POST /api/draw — idempotency (Redemption-scoped)', () => {
     const u1 = await createUser({ points: 50 });
     const u2 = await createUser({ points: 50 });
     await createPrize({ weight: 1, cashAmount: 100 });
-    const r1 = await app.request('/api/draw', { method: 'POST', headers: await H(u1.id, 'shared'), body: JSON.stringify({ tier: 'single' }) });
-    const r2 = await app.request('/api/draw', { method: 'POST', headers: await H(u2.id, 'shared'), body: JSON.stringify({ tier: 'single' }) });
+    const r1 = await app.request('/api/draw', { method: 'POST', headers: await H(u1.id, 'shared'), body: JSON.stringify({ draws: 1 }) });
+    const r2 = await app.request('/api/draw', { method: 'POST', headers: await H(u2.id, 'shared'), body: JSON.stringify({ draws: 1 }) });
     const b1 = await r1.json();
     const b2 = await r2.json();
     expect(b1.redemption.id).not.toBe(b2.redemption.id);
@@ -73,8 +73,8 @@ describe('POST /api/draw — idempotency (Redemption-scoped)', () => {
     await createPrize({ weight: 1, cashAmount: 100 });
     const h = await H(u.id, 'race-1');
     const [r1, r2] = await Promise.all([
-      app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ tier: 'single' }) }),
-      app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ tier: 'single' }) }),
+      app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ draws: 1 }) }),
+      app.request('/api/draw', { method: 'POST', headers: h, body: JSON.stringify({ draws: 1 }) }),
     ]);
     expect([r1.status, r2.status].sort()).toEqual([200, 200]);
     const b1 = await r1.json();

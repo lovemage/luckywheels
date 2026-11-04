@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { fetchRedemptions, setRedemptionStatus, type RedemptionRow } from '../api/redemptions.js';
 import { Table } from '../components/Table.js';
@@ -9,6 +9,7 @@ import { ConfirmModal } from '../components/ConfirmModal.js';
 import { drawTierLabel } from '../utils/drawLabel.js';
 import { CursorPagination } from '../components/CursorPagination.js';
 import { useCursorPagination } from '../hooks/useCursorPagination.js';
+import { TableSkeleton } from '../components/Skeleton.js';
 
 type StatusFilter = 'pending' | 'delivered' | 'cancelled' | 'all';
 type QuickStatusAction = { row: RedemptionRow; action: 'claim' | 'unclaim' } | null;
@@ -58,8 +59,9 @@ export function Redemptions() {
   const [code, setCode] = useState('');
   const [quickAction, setQuickAction] = useState<QuickStatusAction>(null);
   const pagination = useCursorPagination();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isPlaceholderData } = useQuery({
     queryKey: ['admin', 'redemptions', status, code, pagination.cursor],
+    placeholderData: keepPreviousData,
     queryFn: () => fetchRedemptions({ status, code: code || undefined, take: 25, cursor: pagination.cursor }),
   });
   const mut = useMutation({
@@ -99,10 +101,13 @@ export function Redemptions() {
           />
         </label>
       </div>
-      {isLoading && <p>載入中…</p>}
+      {isLoading && <TableSkeleton />}
       {data && (
         <>
-          <section className="member-detail-card member-detail-card--wide admin-table-card">
+          <section
+            className={`member-detail-card member-detail-card--wide admin-table-card${isPlaceholderData ? ' is-refreshing' : ''}`}
+            aria-busy={isPlaceholderData}
+          >
             <Table<RedemptionRow>
             rows={data.items}
             rowKey={(r) => r.id}

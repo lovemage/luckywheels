@@ -54,7 +54,7 @@ beforeEach(() => {
 });
 
 describe('Prizes', () => {
-  it('renders rows and opens create modal on button click', async () => {
+  it('renders rows and opens the edit modal for a prize', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={qc}>
@@ -66,7 +66,9 @@ describe('Prizes', () => {
     expect(await screen.findByText('頭獎')).toBeDefined();
     expect(screen.getByText('萬元現金')).toBeDefined();
     expect(screen.getByText('安慰')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: '新增獎品' }));
+    // 獎品為固定組合，只能編輯不能新增（601f774 起）
+    fireEvent.click(screen.getAllByRole('button', { name: '編輯' })[0]!);
     expect(screen.getByRole('dialog')).toBeDefined();
+    expect(screen.getByText('編輯：頭獎')).toBeDefined();
   });
 });

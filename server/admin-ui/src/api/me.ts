@@ -1,6 +1,6 @@
 import { api } from './client.js';
 
-export type AdminNavKey = 'users' | 'redemptions' | 'prizes' | 'system';
+export type AdminNavKey = 'users' | 'redemptions' | 'prizes' | 'system' | 'assistant' | 'exchange';
 
 export interface AdminMe {
   id: string;
@@ -11,6 +11,7 @@ export interface AdminMe {
   allowedNavs: AdminNavKey[];
   lastLoginAt: string | null;
   passwordChangedAt: string | null;
+  features?: { dataAssistant: boolean };
 }
 
 export function fetchAdminMe(): Promise<AdminMe> {

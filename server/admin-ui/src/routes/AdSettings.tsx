@@ -2,6 +2,7 @@ import { useState, useEffect, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchSettings, updateSettings } from '../api/settings.js';
 import { ImageUploadInput } from '../components/ImageUploadInput.js';
+import { PageSkeleton } from '../components/Skeleton.js';
 
 function Hint({ children }: { children: ReactNode }) {
   return <small>{children}</small>;
@@ -41,7 +42,7 @@ export function AdSettings() {
     onError: (e: Error) => setError(e.message),
   });
 
-  if (isLoading || !data) return <p>載入中…</p>;
+  if (isLoading || !data) return <PageSkeleton />;
 
   const linkInvalid = linkUrl.trim() !== '' && !LINK_PATTERN.test(linkUrl.trim());
 

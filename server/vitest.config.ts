@@ -10,5 +10,7 @@ export default defineConfig({
     poolOptions: { forks: { singleFork: true } },
     sequence: { concurrent: false },
     testTimeout: 15000,
+    // 測試 DB 在 Railway（luckywheels-test）時，每支測試前的清表＋seed 來回延遲較高
+    hookTimeout: 60000,
   },
 });

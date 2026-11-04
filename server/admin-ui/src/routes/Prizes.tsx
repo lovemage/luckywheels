@@ -12,6 +12,7 @@ import {
 import { Modal } from '../components/Modal.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
 import { ImageUploadInput } from '../components/ImageUploadInput.js';
+import { TableSkeleton } from '../components/Skeleton.js';
 
 const EMPTY_PRIZE: PrizeCreate = {
   rankLabel: '',
@@ -81,7 +82,7 @@ export function Prizes() {
           </p>
         </div>
       </header>
-      {isLoading && <p>載入中…</p>}
+      {isLoading && <TableSkeleton />}
       <section className="member-detail-card member-detail-card--wide admin-table-card">
         <table className="admin-prize-table">
           <thead>

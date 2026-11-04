@@ -8,7 +8,7 @@ import {
   updateSubAccount,
   type SubAccount,
 } from '../api/sub-accounts.js';
-import type { AdminNavKey } from '../api/me.js';
+import { fetchAdminMe, type AdminNavKey } from '../api/me.js';
 import { ApiError } from '../api/client.js';
 
 const navOptions: Array<{ key: AdminNavKey; label: string }> = [
@@ -16,6 +16,8 @@ const navOptions: Array<{ key: AdminNavKey; label: string }> = [
   { key: 'redemptions', label: '中獎紀錄' },
   { key: 'prizes', label: '獎品設定' },
   { key: 'system', label: '系統設定' },
+  { key: 'assistant', label: '數據助手' },
+  { key: 'exchange', label: '兌換管理' },
 ];
 
 function emptyForm() {
@@ -25,6 +27,8 @@ function emptyForm() {
 export function SubAccounts() {
   const qc = useQueryClient();
   const list = useQuery({ queryKey: ['admin', 'sub-accounts'], queryFn: fetchSubAccounts });
+  const me = useQuery({ queryKey: ['admin', 'me'], queryFn: fetchAdminMe });
+  const visibleNavOptions = navOptions.filter((nav) => (nav.key !== 'assistant' && nav.key !== 'exchange') || me.data?.features?.dataAssistant);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState<string | null>(null);
@@ -156,7 +160,7 @@ export function SubAccounts() {
             <fieldset>
               <legend>可看到的 Admin 導覽</legend>
               <div className="admin-checkbox-grid">
-                {navOptions.map((nav) => (
+                {visibleNavOptions.map((nav) => (
                   <label key={nav.key}>
                     <input
                       type="checkbox"

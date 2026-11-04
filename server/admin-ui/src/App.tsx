@@ -22,9 +22,14 @@ import { Settings } from './routes/Settings.js';
 import { HomeSettings } from './routes/HomeSettings.js';
 import { AdSettings } from './routes/AdSettings.js';
 import { SystemSettings } from './routes/SystemSettings.js';
+import { AssistantCollector } from './routes/AssistantCollector.js';
+import { AssistantRecommend } from './routes/AssistantRecommend.js';
+import { AssistantExchange } from './routes/AssistantExchange.js';
+import { PageSkeleton } from './components/Skeleton.js';
 
+// staleTime：30 秒內切回同一頁直接用快取，不重打 API（存檔後仍由 invalidateQueries 立即更新）
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } },
+  defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
 });
 
 function GlobalSessionWire() {
@@ -36,8 +41,9 @@ function GlobalSessionWire() {
 
 function AdminNavGate({ nav }: { nav: AdminNavKey }) {
   const { data, isLoading } = useQuery({ queryKey: ['admin', 'me'], queryFn: fetchAdminMe });
-  if (isLoading) return <p>載入中…</p>;
+  if (isLoading) return <PageSkeleton />;
   if (!data?.isMain && !data?.allowedNavs.includes(nav)) return <Navigate to="/" replace />;
+  if ((nav === 'assistant' || nav === 'exchange') && !data?.features?.dataAssistant) return <Navigate to="/" replace />;
   return <Outlet />;
 }
 
@@ -69,6 +75,13 @@ export function App() {
                 <Route path="home" element={<HomeSettings />} />
                 <Route path="ads" element={<AdSettings />} />
                 <Route path="system" element={<SystemSettings />} />
+              </Route>
+              <Route element={<AdminNavGate nav="assistant" />}>
+                <Route path="assistant/collector" element={<AssistantCollector />} />
+                <Route path="assistant/recommend" element={<AssistantRecommend />} />
+              </Route>
+              <Route element={<AdminNavGate nav="exchange" />}>
+                <Route path="assistant/exchange" element={<AssistantExchange />} />
               </Route>
             </Route>
           </Route>

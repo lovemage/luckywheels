@@ -22,7 +22,7 @@ describe('GET /api/me', () => {
     const r = await app.request('/api/me', { headers: { cookie: `${SESSION_COOKIE}=${t}` } });
     expect(r.status).toBe(200);
     expect(await r.json()).toMatchObject({
-      id: u.id, displayName: 'Alice', points: 28, accountType: 'verified',
+      id: u.id, displayName: 'Alice', points: 28, accountType: 'pending', // 會員審核流程上線後新會員預設待審核
     });
   });
 

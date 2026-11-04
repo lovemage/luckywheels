@@ -14,6 +14,8 @@ import { publicRoutes } from './routes/public.js';
 import { winnersRoutes } from './routes/winners.js';
 import { mediaProxyRoutes } from './routes/media-proxy.js';
 import { onboardingRoutes } from './routes/onboarding.js';
+import { assistantRoutes } from './routes/assistant.js';
+import { previewRoutes } from './routes/preview.js';
 import { adminAuthRoutes } from './admin/routes/auth.js';
 import { adminUsersRoutes } from './admin/routes/users.js';
 import { adminRedemptionsRoutes } from './admin/routes/redemptions.js';
@@ -23,6 +25,8 @@ import { adminPrizesRoutes } from './admin/routes/prizes.js';
 import { adminSettingsRoutes } from './admin/routes/settings.js';
 import { adminUploadsRoutes } from './admin/routes/uploads.js';
 import { adminSubAccountsRoutes } from './admin/routes/sub-accounts.js';
+import { adminAssistantCollectorRoutes } from './admin/routes/assistant-collector.js';
+import { adminAssistantSettingsRoutes } from './admin/routes/assistant-settings.js';
 import { bootstrapAdminIfRequested } from './admin/bootstrap.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -53,6 +57,8 @@ app.use('*', compress({ threshold: 1024 }));
 
 app.onError((err, c) => {
   const { status, body } = formatError(err);
+  // 非預期錯誤（非 AppError）會被包成 500 INTERNAL；記下原始錯誤，否則正式站無從追查
+  if (status >= 500) console.error(`[${c.req.method} ${c.req.path}] unhandled error`, err);
   return c.json(body, status as 400 | 401 | 403 | 404 | 409 | 413 | 415 | 422 | 500 | 502);
 });
 
@@ -67,6 +73,8 @@ app.route('/', publicRoutes);
 app.route('/', winnersRoutes);
 app.route('/', mediaProxyRoutes);
 app.route('/', onboardingRoutes);
+app.route('/', assistantRoutes);
+app.route('/', previewRoutes);
 app.route('/', adminAuthRoutes);
 app.route('/', adminUsersRoutes);
 app.route('/', adminRedemptionsRoutes);
@@ -76,6 +84,11 @@ app.route('/', adminPrizesRoutes);
 app.route('/', adminSettingsRoutes);
 app.route('/', adminUploadsRoutes);
 app.route('/', adminSubAccountsRoutes);
+app.route('/', adminAssistantCollectorRoutes);
+app.route('/', adminAssistantSettingsRoutes);
+
+// 沒有對應路由的 /api/* 一律回 JSON 404，不落到下面的 SPA catch-all（否則會回 200 + 首頁 HTML）
+app.all('/api/*', (c) => c.json({ error: { code: 'NOT_FOUND', message: 'not found' } }, 404));
 
 app.use('/admin/assets/*', async (c, next) => {
   await next();

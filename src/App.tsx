@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Gift, LayoutList } from 'lucide-react';
 import { ApiError, setUnauthorizedHandler } from './api/client.js';
 import { fetchMe } from './api/me.js';
@@ -23,6 +23,26 @@ import { WinModal } from './components/WinModal.js';
 import { BottomDock } from './components/BottomDock.js';
 import { AdPopup } from './components/AdPopup.js';
 import { Legal, type LegalTab } from './components/Legal.js';
+import { PreviewGate } from './components/PreviewGate.js';
+import { AssistantPreview } from './assistant/AssistantPreview.js';
+import { fetchPreviewStatus, type PreviewStatus } from './api/preview.js';
+
+// 會員上次停留在新版時記住，重新整理後直接回新版（仍需預覽閘門已通過）
+const LAYOUT_KEY = 'lw_layout';
+function readStoredLayout(): 'classic' | 'assistant' {
+  try {
+    return localStorage.getItem(LAYOUT_KEY) === 'assistant' ? 'assistant' : 'classic';
+  } catch {
+    return 'classic';
+  }
+}
+function storeLayout(layout: 'classic' | 'assistant') {
+  try {
+    localStorage.setItem(LAYOUT_KEY, layout);
+  } catch {
+    /* 無痕模式等情況：不記住即可 */
+  }
+}
 
 function proxiedImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -120,6 +140,32 @@ export function App() {
   const [legalTab, setLegalTab] = useState<LegalTab | null>(null);
   const [publicSettings, setPublicSettings] = useState<PublicSettings | null>(null);
   const openLegal = (tab: LegalTab) => setLegalTab(tab);
+  const [preview, setPreview] = useState<PreviewStatus | null>(null);
+  const [layout, setLayout] = useState<'classic' | 'assistant'>(readStoredLayout);
+  const [gateOpen, setGateOpen] = useState(false);
+  const isReady = session.phase === 'ready';
+
+  const switchLayout = useCallback((next: 'classic' | 'assistant') => {
+    setLayout(next);
+    storeLayout(next);
+  }, []);
+
+  // 只有已登入會員的首頁才需要知道新版入口狀態
+  useEffect(() => {
+    if (!isReady) return;
+    let alive = true;
+    fetchPreviewStatus()
+      .then((s) => alive && setPreview(s))
+      .catch(() => alive && setPreview(null));
+    return () => {
+      alive = false;
+    };
+  }, [isReady]);
+
+  const lockPreview = useCallback(() => {
+    setPreview((p) => (p ? { ...p, unlocked: false } : p));
+    switchLayout('classic');
+  }, [switchLayout]);
 
   useEffect(() => {
     setUnauthorizedHandler(() => sessionStore.getState().setAnonymous());
@@ -163,19 +209,49 @@ export function App() {
         <p>請聯絡客服了解詳情。</p>
       </main>
     );
+  } else if (layout === 'assistant' && preview?.unlocked) {
+    body = <AssistantPreview me={session.me!} onExit={() => switchLayout('classic')} onLocked={lockPreview} />;
   } else {
-    body = <MainApp me={session.me!} onShowLegal={openLegal} />;
+    const canEnter = Boolean(preview && (preview.entry || preview.unlocked));
+    body = (
+      <MainApp
+        me={session.me!}
+        onShowLegal={openLegal}
+        onOpenPreview={
+          canEnter ? () => (preview!.unlocked ? switchLayout('assistant') : setGateOpen(true)) : undefined
+        }
+      />
+    );
   }
 
   return (
     <>
       {body}
       {legalTab && <Legal initialTab={legalTab} onClose={() => setLegalTab(null)} />}
+      {gateOpen && (
+        <PreviewGate
+          onClose={() => setGateOpen(false)}
+          onUnlocked={() => {
+            setGateOpen(false);
+            setPreview((p) => ({ entry: p?.entry ?? true, unlocked: true }));
+            switchLayout('assistant');
+          }}
+        />
+      )}
     </>
   );
 }
 
-function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalTab) => void }) {
+function MainApp({
+  me,
+  onShowLegal,
+  onOpenPreview,
+}: {
+  me: MeProfile;
+  onShowLegal: (tab: LegalTab) => void;
+  /** 有值才顯示「新版」入口（預覽模式或已上線） */
+  onOpenPreview?: () => void;
+}) {
   const [view, setView] = useState<'wheel' | 'rules' | 'mine'>('wheel');
   const [prizes, setPrizes] = useState<PublicPrize[] | null>(null);
   const [settings, setSettings] = useState<PublicSettings | null>(null);
@@ -492,6 +568,11 @@ function MainApp({ me, onShowLegal }: { me: MeProfile; onShowLegal: (tab: LegalT
         <div className="floating shard-b" />
 
         <header className="hero">
+          {onOpenPreview && (
+            <button type="button" className="preview-entry" onClick={onOpenPreview}>
+              新版預覽
+            </button>
+          )}
           <div className="title-lockup">
             <img
               className="logo-image"

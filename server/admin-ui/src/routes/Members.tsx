@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { adjustPoints, approveUser, fetchUsers, type AdminUserRow } from '../api/users.js';
 import { Modal } from '../components/Modal.js';
@@ -7,6 +7,7 @@ import { Table } from '../components/Table.js';
 import { AccountTypeBadge } from '../components/AccountTypeBadge.js';
 import { CursorPagination } from '../components/CursorPagination.js';
 import { useCursorPagination } from '../hooks/useCursorPagination.js';
+import { TableSkeleton } from '../components/Skeleton.js';
 
 const PAGE_SIZE_OPTIONS = [50, 100, 150] as const;
 type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
@@ -114,8 +115,9 @@ export function Members() {
   const [pointsModalUser, setPointsModalUser] = useState<AdminUserRow | null>(null);
   const pagination = useCursorPagination();
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isPlaceholderData } = useQuery({
     queryKey: ['admin', 'users', tab, q, pageSize, pagination.cursor],
+    placeholderData: keepPreviousData,
     queryFn: () => fetchUsers({ tab, q: q || undefined, take: pageSize, cursor: pagination.cursor }),
   });
   const alerts = data?.alerts ?? { pendingApprovalCount: 0, pendingRedemptionCount: 0 };
@@ -173,10 +175,13 @@ export function Members() {
           <Link to="/redemptions">前往中獎紀錄</Link>
         </div>
       )}
-      {isLoading && <p>載入中…</p>}
+      {isLoading && <TableSkeleton />}
       {data && (
         <>
-          <section className="member-detail-card member-detail-card--wide admin-table-card">
+          <section
+            className={`member-detail-card member-detail-card--wide admin-table-card${isPlaceholderData ? ' is-refreshing' : ''}`}
+            aria-busy={isPlaceholderData}
+          >
             <Table<AdminUserRow>
             rows={data.items}
             rowKey={(u) => u.id}

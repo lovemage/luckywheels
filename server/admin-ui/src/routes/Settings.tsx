@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchSettings, updateSettings, type SettingsUpdate } from '../api/settings.js';
+import { PageSkeleton } from '../components/Skeleton.js';
 
 function Hint({ children }: { children: ReactNode }) {
   return <small>{children}</small>;
@@ -39,7 +40,7 @@ export function Settings() {
     onError: (e: Error) => setError(e.message),
   });
 
-  if (isLoading || !data) return <p>載入中…</p>;
+  if (isLoading || !data) return <PageSkeleton />;
   const thresholds = form.pointThresholds ?? [];
 
   return (

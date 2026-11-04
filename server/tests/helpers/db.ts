@@ -8,6 +8,17 @@ const TABLES = [
   'AdminActionLog',
   'AdminUser',
   'User',
+  // 數據助手
+  'AssistantSignal',
+  'AssistantExchange',
+  'AssistantPass',
+  'RoomSnapshot',
+  'CollectorRun',
+  'Room',
+  'Game',
+  'GameProvider',
+  'CollectorAccount',
+  'RecommendationLog',
 ] as const;
 
 export async function resetDb(): Promise<void> {

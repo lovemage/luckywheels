@@ -25,6 +25,8 @@ import { CursorPagination } from '../components/CursorPagination.js';
 import { useCursorPagination } from '../hooks/useCursorPagination.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { drawTierLabel } from '../utils/drawLabel.js';
+import { PageSkeleton } from '../components/Skeleton.js';
+import { AssistantPassCard } from '../components/AssistantPassCard.js';
 
 function formatDateTime(value: string | null | undefined) {
   return value ? new Date(value).toLocaleString() : '—';
@@ -154,7 +156,7 @@ export function MemberDetail() {
     });
   }
 
-  if (isLoading || !data) return <p>載入中…</p>;
+  if (isLoading || !data) return <PageSkeleton />;
   return (
     <section className="member-detail-page">
       <header className="member-detail-hero">
@@ -277,6 +279,8 @@ export function MemberDetail() {
               </article>
             </div>
           </section>
+
+          <AssistantPassCard userId={data.id} />
 
           <section className="member-detail-card member-detail-card--wide">
             <h2>新增積分紀錄</h2>

@@ -30,6 +30,34 @@ export const SETTINGS_KEYS = {
   // 金額依同名獎項的 cashAmount 即時帶入，找不到獎項或金額為 0 的會略過。
   winTickerDemoEnabled: 'winTickerDemoEnabled',
   winTickerDemoEntries: 'winTickerDemoEntries',
+  // 數據助手 ATG 採集：每輪間隔（分鐘；測試期 10、正式 20）、每輪輪流抓取細項的機台數。
+  // 機台歷史資料固定只保存 3 天（業主規定，不開放設定）。
+  atgCollectIntervalMinutes: 'atgCollectIntervalMinutes',
+  atgDetailBatchSize: 'atgDetailBatchSize',
+  // 數據助手房間資料的逾時門檻（秒）：列表層（狀態、今日 RTP）每輪都更新；細項層（未開轉數、下注額等）
+  // 輪流抓取，本來就比較舊，門檻另計。逾時的房間不顯示狀態、不參與推薦（計劃 1.5）。
+  assistantDataMaxAgeSeconds: 'assistantDataMaxAgeSeconds',
+  assistantDetailMaxAgeSeconds: 'assistantDetailMaxAgeSeconds',
+  // 數據助手綜合分數與本金推薦（計劃 M3 草案）。權重 JSON：{unopened, todayRtp, thirtyDayRtp, todayBet}，會自動正規化。
+  // 級距 JSON：[{minPrincipal, minScore, maxMultiplier}]，第一筆 minPrincipal 必須為 0、依金額遞增。
+  // 門檻 = 級距 minScore +（目標倍數 − 1）× assistantMultiplierStepScore。
+  assistantScoreWeights: 'assistantScoreWeights',
+  assistantRecommendTiers: 'assistantRecommendTiers',
+  assistantMultiplierStepScore: 'assistantMultiplierStepScore',
+  assistantRecommendCount: 'assistantRecommendCount',
+  assistantMinBetAdvice: 'assistantMinBetAdvice',
+  assistantPremiumPercent: 'assistantPremiumPercent',
+  // 數據助手訊號：綁定房間最低分數、今日 RTP 變動換組門檻（百分點）、每間房同時有效訊號上限、
+  // 會員手動換組冷卻（秒）、訊號強度 % 的上下限（由綁定房間分數換算）。
+  assistantSignalMinScore: 'assistantSignalMinScore',
+  assistantSignalRtpChangePoints: 'assistantSignalRtpChangePoints',
+  assistantSignalMaxPerRoom: 'assistantSignalMaxPerRoom',
+  assistantSignalRefreshCooldownSeconds: 'assistantSignalRefreshCooldownSeconds',
+  assistantSignalStrengthMin: 'assistantSignalStrengthMin',
+  assistantSignalStrengthMax: 'assistantSignalStrengthMax',
+  // 數據助手使用期限兌換方案 JSON：[{points, hours}]（積分與輪盤共用 User.points）。
+  // 前台介紹頁與兌換頁的文案由這份方案動態產生。
+  assistantTimePlans: 'assistantTimePlans',
   // System totals — maintained atomically inside the draw transaction
   // (replaces SUM(User) aggregation; addresses Codex finding B1/D1).
   totalDrawCount: 'totalDrawCount',
@@ -106,6 +134,31 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   // 此站已正式營運：展示名單預設關閉，由後台自行開啟。
   [SETTINGS_KEYS.winTickerDemoEnabled]: 'false',
   [SETTINGS_KEYS.winTickerDemoEntries]: JSON.stringify(DEFAULT_WIN_TICKER_DEMO_ENTRIES),
+  [SETTINGS_KEYS.atgCollectIntervalMinutes]: '10',
+  [SETTINGS_KEYS.atgDetailBatchSize]: '1000',
+  [SETTINGS_KEYS.assistantDataMaxAgeSeconds]: '1800',
+  [SETTINGS_KEYS.assistantDetailMaxAgeSeconds]: '10800',
+  [SETTINGS_KEYS.assistantScoreWeights]: JSON.stringify({ unopened: 35, todayRtp: 25, thirtyDayRtp: 20, todayBet: 20 }),
+  [SETTINGS_KEYS.assistantRecommendTiers]: JSON.stringify([
+    { minPrincipal: 0, minScore: 60, maxMultiplier: 2 },
+    { minPrincipal: 5000, minScore: 70, maxMultiplier: 3 },
+    { minPrincipal: 10000, minScore: 80, maxMultiplier: 5 },
+  ]),
+  [SETTINGS_KEYS.assistantMultiplierStepScore]: '3',
+  [SETTINGS_KEYS.assistantRecommendCount]: '5',
+  [SETTINGS_KEYS.assistantMinBetAdvice]: '10',
+  [SETTINGS_KEYS.assistantPremiumPercent]: '5',
+  [SETTINGS_KEYS.assistantSignalMinScore]: '70',
+  [SETTINGS_KEYS.assistantSignalRtpChangePoints]: '5',
+  [SETTINGS_KEYS.assistantSignalMaxPerRoom]: '2',
+  [SETTINGS_KEYS.assistantSignalRefreshCooldownSeconds]: '30',
+  [SETTINGS_KEYS.assistantSignalStrengthMin]: '30',
+  [SETTINGS_KEYS.assistantSignalStrengthMax]: '90',
+  [SETTINGS_KEYS.assistantTimePlans]: JSON.stringify([
+    { points: 1, hours: 3 },
+    { points: 2, hours: 8 },
+    { points: 3, hours: 24 },
+  ]),
   [SETTINGS_KEYS.totalDrawCount]: '0',
   [SETTINGS_KEYS.totalPayoutAmount]: '0',
   [SETTINGS_KEYS.totalPointsBurned]: '0',

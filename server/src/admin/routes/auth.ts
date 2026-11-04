@@ -15,6 +15,7 @@ import {
   isLoginLocked,
 } from '../auth/rate-limit.js';
 import { audit } from '../audit/helper.js';
+import { dataAssistantEnabled } from '../../assistant/feature.js';
 
 const LoginSchema = z.object({
   account: z.string().min(1).optional(),
@@ -84,5 +85,6 @@ adminAuthRoutes.get('/api/admin/me', requireAdmin, (c) => {
     allowedNavs: a.allowedNavs,
     lastLoginAt: a.lastLoginAt,
     passwordChangedAt: a.passwordChangedAt,
+    features: { dataAssistant: dataAssistantEnabled() },
   });
 });

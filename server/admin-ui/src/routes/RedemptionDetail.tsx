@@ -6,6 +6,7 @@ import { CodeChip } from '../components/CodeChip.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { DoubleConfirmModal } from '../components/DoubleConfirmModal.js';
 import { drawTierLabel } from '../utils/drawLabel.js';
+import { PageSkeleton } from '../components/Skeleton.js';
 
 type ActionKind = 'claim' | 'void' | 'unclaim';
 
@@ -59,7 +60,7 @@ export function RedemptionDetail() {
     },
   });
 
-  if (isLoading || !data) return <p>載入中…</p>;
+  if (isLoading || !data) return <PageSkeleton />;
   const copy = action ? ACTION_COPY[action] : null;
   return (
     <section className="member-detail-page">

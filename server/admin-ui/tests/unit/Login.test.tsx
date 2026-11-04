@@ -8,7 +8,7 @@ describe('Login', () => {
     vi.stubGlobal('fetch', vi.fn());
   });
 
-  it('renders the email + password inputs and a 登入 button', () => {
+  it('renders the account + password inputs and a 登入 button', () => {
     render(<MemoryRouter><Login /></MemoryRouter>);
     expect(screen.getByRole('button', { name: '登入' })).toBeDefined();
   });
@@ -19,7 +19,7 @@ describe('Login', () => {
         { status: 401, headers: { 'content-type': 'application/json' } }),
     );
     render(<MemoryRouter><Login /></MemoryRouter>);
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } });
+    fireEvent.change(screen.getByLabelText('帳號'), { target: { value: 'ops' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'pw' } });
     fireEvent.click(screen.getByRole('button', { name: '登入' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('帳號或密碼錯誤');

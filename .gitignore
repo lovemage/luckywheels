@@ -24,3 +24,19 @@ public/lucky-logo.svg
 *.log
 .DS_Store
 Thumbs.db
+
+# ATG 偵察錄製（含遊戲 session 資料）
+.atg-capture/
+
+# 設計過程素材（設計稿、參考圖、影片、提案 PDF/HTML）——只留在本機，不進版控
+.impeccable/
+assets/plates/
+docs/midjourney/
+docs/PWA示意圖/
+docs/assistant-assets/raw/
+docs/*.png
+docs/*.jpg
+docs/*.mp4
+docs/*.pdf
+docs/曜金數據助手_提案與AI交接_V4.html
+docs/老虎機數據助手_新提案參考.html

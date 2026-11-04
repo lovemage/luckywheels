@@ -1,4 +1,4 @@
-import type { AccountType } from '@prisma/client';
+import { Prisma, type AccountType } from '@prisma/client';
 import { prisma } from '../../src/db.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEYS } from '../../prisma/seed.js';
 
@@ -123,11 +123,23 @@ export async function createDrawLog(o: Partial<{
 }
 
 export async function seedDefaultSettings(over: Record<string, string> = {}) {
-  for (const [key, value] of Object.entries({ ...DEFAULT_SETTINGS, ...over })) {
-    await prisma.appSetting.upsert({
-      where: { key }, create: { key, value }, update: { value },
-    });
-  }
+  // 一句批次 upsert（遠端測試 DB 逐筆 upsert 太慢）
+  const values = Prisma.join(
+    Object.entries({ ...DEFAULT_SETTINGS, ...over }).map(([key, value]) => Prisma.sql`(${key}, ${value}, now())`),
+  );
+  await prisma.$executeRaw`
+    INSERT INTO "AppSetting" ("key", "value", "updatedAt") VALUES ${values}
+    ON CONFLICT ("key") DO UPDATE SET "value" = EXCLUDED."value", "updatedAt" = EXCLUDED."updatedAt"`;
 }
 
 export { SETTINGS_KEYS };
+
+/** 數據助手：直接開通使用期限（預設 24 小時） */
+export async function grantAssistantPass(userId: string, hours = 24) {
+  const now = new Date();
+  return prisma.assistantPass.upsert({
+    where: { userId },
+    create: { userId, startsAt: now, expiresAt: new Date(now.getTime() + hours * 3_600_000) },
+    update: { expiresAt: new Date(now.getTime() + hours * 3_600_000) },
+  });
+}
