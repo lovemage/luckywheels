@@ -24,7 +24,7 @@ import { BottomDock } from './components/BottomDock.js';
 import { AdPopup } from './components/AdPopup.js';
 import { Legal, type LegalTab } from './components/Legal.js';
 import { PreviewGate } from './components/PreviewGate.js';
-import { AssistantPreview } from './assistant/AssistantPreview.js';
+import { AssistantApp } from './assistant/AssistantApp.js';
 import { fetchPreviewStatus, type PreviewStatus } from './api/preview.js';
 
 // 會員上次停留在新版時記住，重新整理後直接回新版（仍需預覽閘門已通過）
@@ -141,6 +141,8 @@ export function App() {
   const [publicSettings, setPublicSettings] = useState<PublicSettings | null>(null);
   const openLegal = (tab: LegalTab) => setLegalTab(tab);
   const [preview, setPreview] = useState<PreviewStatus | null>(null);
+  // 上次停在新版的會員：預覽狀態查回來之前先不掛原版（避免原版進場音效、廣告閃一下）
+  const [previewLoaded, setPreviewLoaded] = useState(false);
   const [layout, setLayout] = useState<'classic' | 'assistant'>(readStoredLayout);
   const [gateOpen, setGateOpen] = useState(false);
   const isReady = session.phase === 'ready';
@@ -156,7 +158,8 @@ export function App() {
     let alive = true;
     fetchPreviewStatus()
       .then((s) => alive && setPreview(s))
-      .catch(() => alive && setPreview(null));
+      .catch(() => alive && setPreview(null))
+      .finally(() => alive && setPreviewLoaded(true));
     return () => {
       alive = false;
     };
@@ -209,8 +212,10 @@ export function App() {
         <p>請聯絡客服了解詳情。</p>
       </main>
     );
+  } else if (layout === 'assistant' && !previewLoaded) {
+    body = <main className="splash"><p>載入中…</p></main>;
   } else if (layout === 'assistant' && preview?.unlocked) {
-    body = <AssistantPreview me={session.me!} onExit={() => switchLayout('classic')} onLocked={lockPreview} />;
+    body = <AssistantApp me={session.me!} onExit={() => switchLayout('classic')} onLocked={lockPreview} />;
   } else {
     const canEnter = Boolean(preview && (preview.entry || preview.unlocked));
     body = (
