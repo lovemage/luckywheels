@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../api/client.js';
-import { fetchTopRooms, type AssistantMe, type RoomsResponse } from '../../api/assistant.js';
+import { fetchTeaserRooms, fetchTopRooms, type AssistantMe, type RoomsResponse } from '../../api/assistant.js';
 import { LightPillars } from '../LightPillars.js';
 import { HeroCat } from '../HeroCat.js';
 import { InkIcon, InkTitle, inkTitleSrc } from '../InkTitle.js';
@@ -34,21 +34,19 @@ export function AssistantHome({
   // 進入首頁先跑約 4.5 秒「數據助手採集中」動畫，結束後才顯示排行（資料同時在背景抓取）
   const [introDone, setIntroDone] = useState(false);
 
+  const loaded = me !== null;
   useEffect(() => {
-    if (!active) return;
+    if (!loaded) return;
     const t = window.setTimeout(() => setIntroDone(true), COLLECT_INTRO_MS);
     return () => window.clearTimeout(t);
-  }, [active]);
+  }, [loaded]);
 
   useEffect(() => {
     if (!me) return;
-    if (!active) {
-      setTop({ kind: 'locked' });
-      return;
-    }
     let alive = true;
+    // 未開通：顯示預覽排行（房號遮蔽、霧化），引導開通
     const load = () =>
-      fetchTopRooms(5)
+      (active ? fetchTopRooms(5) : fetchTeaserRooms())
         .then((data) => alive && setTop({ kind: 'ready', data }))
         .catch((e: unknown) => {
           if (!alive) return;
@@ -65,7 +63,7 @@ export function AssistantHome({
     };
   }, [me, active]);
 
-  const collecting = active && (!introDone || top.kind === 'loading');
+  const collecting = loaded && (!introDone || top.kind === 'loading');
   const game = !collecting && top.kind === 'ready' ? top.data.game : null;
 
   return (
@@ -147,14 +145,19 @@ export function AssistantHome({
               <p>{top.data.game.stale ? '採集暫停中，恢復更新後會顯示空台排行。' : '目前沒有空台，稍後再來看看。'}</p>
             </div>
           ) : (
-            <ol className="aa-rooms is-reveal">
+            <>
+            <ol className={`aa-rooms is-reveal${top.data.masked ? ' is-masked' : ''}`}>
               {top.data.items.map((room, i) => (
                 <li key={room.id} className="aa-room" style={{ '--i': i } as React.CSSProperties}>
                   <span className="aa-room-rank" aria-label={`第 ${i + 1} 名`}>{RANK[i]}</span>
-                  <img className="aa-room-icon" src={slotIconFor(room.roomNo)} alt="" width="56" height="56" loading="lazy" />
+                  <img className="aa-room-icon" src={slotIconFor(top.data.masked ? room.id : room.roomNo)} alt="" width="56" height="56" loading="lazy" />
                   <div className="aa-room-main">
                     <p className="aa-room-title">
-                      <span className="aa-room-no">#{room.roomNo}</span>
+                      {top.data.masked ? (
+                        <span className="aa-room-no aa-room-no--masked" aria-label="開通後顯示機台編號">#{room.roomNo}</span>
+                      ) : (
+                        <span className="aa-room-no">#{room.roomNo}</span>
+                      )}
                       {i < 2 && <img className="aa-rec-label" src="/assets/assistant/rec-label.webp" alt="推薦" width="52" height="28" />}
                       <span className="aa-chip">空台</span>
                       {room.premium && <span className="aa-chip aa-chip--solid">精品</span>}
@@ -172,6 +175,15 @@ export function AssistantHome({
                 </li>
               ))}
             </ol>
+            {top.data.masked && (
+              <div className="aa-unlock">
+                <p>機台編號開通後顯示</p>
+                <button type="button" className="aa-button" onClick={() => onNavigate('exchange')}>
+                  用積分開通
+                </button>
+              </div>
+            )}
+            </>
           ))}
 
         <p className="aa-disclaimer">數據僅供參考，不保證獲利</p>

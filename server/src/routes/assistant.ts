@@ -127,6 +127,25 @@ const RoomsQuery = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+// 未開通也能看的精選空台預覽：分數前 5 的空台，房號與房間 id 在伺服器端遮蔽（前端再霧化），
+// 不提供真實房號，避免未開通就能直接找到機台。須註冊在 /rooms/:id 之前。
+const TEASER_SIZE = 5;
+assistantRoutes.get('/api/assistant/rooms/teaser', async (c) => {
+  const now = new Date();
+  const [freshness, rs] = await Promise.all([readFreshnessSettings(prisma), readRecommendSettings(prisma)]);
+  const game = pickGame(await listGames(prisma, now, freshness), c.req.query('game') || undefined);
+  const scores = await scoresFor(now, freshness, rs)(game.id);
+  const { items } = await listRooms(
+    prisma,
+    { gameId: game.id, status: 'idle', sort: 'score', page: 1, pageSize: TEASER_SIZE },
+    now,
+    freshness,
+    scores,
+  );
+  const masked = items.map((r, i) => ({ ...r, id: `teaser-${i + 1}`, roomNo: '8888', masked: true }));
+  return c.json({ game, items: masked, total: masked.length, page: 1, pageSize: TEASER_SIZE, masked: true, serverTime: now.toISOString() });
+});
+
 assistantRoutes.get('/api/assistant/rooms', paid, async (c) => {
   const raw = c.req.query();
   let query: z.infer<typeof RoomsQuery>;

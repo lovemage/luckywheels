@@ -63,6 +63,8 @@ export interface RoomsResponse {
   game: GameView;
   items: ScoredRoom[];
   total: number;
+  /** 未開通的預覽：房號已在伺服器端遮蔽 */
+  masked?: boolean;
   serverTime: string;
 }
 
@@ -127,6 +129,9 @@ export const fetchAssistantMe = () => api<AssistantMe>('/api/assistant/me');
 
 export const fetchTopRooms = (pageSize = 5) =>
   api<RoomsResponse>(`/api/assistant/rooms?sort=score&status=idle&pageSize=${pageSize}`);
+
+/** 未開通也能看的精選空台預覽（房號遮蔽） */
+export const fetchTeaserRooms = () => api<RoomsResponse>('/api/assistant/rooms/teaser');
 
 export const fetchRecommendConfig = () => api<RecommendConfig>('/api/assistant/recommend/config');
 

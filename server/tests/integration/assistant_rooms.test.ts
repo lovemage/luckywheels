@@ -129,6 +129,26 @@ describe('member assistant rooms API', { timeout: 60_000 }, () => {
     expect((await get('/api/assistant/me', h)).status).toBe(200);
   });
 
+  it('shows a teaser of the top idle rooms without a pass, with room numbers and ids masked', async () => {
+    const { rooms } = await seedGame();
+    const u = await createUser({});
+    const headers = { cookie: `${SESSION_COOKIE}=${await signSession({ userId: u.id })}` };
+    // 未開通：付費排行 403，預覽 200
+    expect((await get('/api/assistant/rooms?sort=score&status=idle', headers)).body.error.code).toBe('ASSISTANT_EXPIRED');
+    const r = await app.request('/api/assistant/rooms/teaser', { headers });
+    expect(r.status).toBe(200);
+    const text = await r.text();
+    const body = JSON.parse(text);
+    expect(body.masked).toBe(true);
+    // 只有未逾時的空台（001、1001），使用中與逾時、停用的不列入
+    expect(body.items).toHaveLength(2);
+    for (const item of body.items) expect(item).toMatchObject({ roomNo: '8888', masked: true, status: 'idle' });
+    // 回應中不得出現真實房號或房間 id
+    for (const room of Object.values(rooms)) expect(text).not.toContain(room.id);
+    expect(text).not.toMatch(/"roomNo":"(001|1001)"/);
+    expect((await get('/api/assistant/rooms/teaser', {})).status).toBe(401);
+  });
+
   it('respects the freshness settings from AppSetting', async () => {
     await seedGame();
     await prisma.appSetting.create({ data: { key: 'assistantDataMaxAgeSeconds', value: '180' } });

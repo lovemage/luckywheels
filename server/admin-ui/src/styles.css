@@ -240,6 +240,26 @@ th {
   list-style: none;
 }
 
+.admin-nav-section + .admin-nav-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-nav-section-title {
+  margin: 0 0 6px;
+  padding: 0 11px;
+  color: var(--admin-accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+/* 手機底部導航：桌機不顯示 */
+.admin-mnav {
+  display: none;
+}
+
 .admin-nav-link {
   display: flex;
   align-items: center;
@@ -1160,14 +1180,18 @@ th {
     align-items: start;
   }
 
+  /* 手機：側欄隱藏，改用底部導航（最多 5 個，其餘收進子選單） */
   .admin-nav {
+    display: none;
+  }
+
+  .admin-mnav {
     position: fixed;
-    top: auto;
     right: 10px;
     bottom: calc(10px + env(safe-area-inset-bottom));
     left: 10px;
     z-index: 40;
-    height: auto;
+    display: block;
     padding: 7px;
     border: 1px solid var(--admin-line);
     border-radius: 14px;
@@ -1176,49 +1200,117 @@ th {
     backdrop-filter: blur(18px);
   }
 
-  .admin-nav ul {
+  .admin-mnav ul {
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     gap: 3px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .admin-nav-link {
+  .admin-mnav-group {
+    position: relative;
+  }
+
+  .admin-mnav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
+    width: 100%;
     min-height: 50px;
     padding: 7px 2px;
+    border: 0;
     border-radius: 10px;
-    font-size: 11px;
+    background: none;
+    color: var(--admin-muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
     line-height: 1.1;
     text-align: center;
+    text-decoration: none;
+    cursor: pointer;
   }
 
-  .admin-nav-link.is-active {
+  .admin-mnav-item:hover {
+    text-decoration: none;
+  }
+
+  .admin-mnav-item.is-active {
+    color: var(--admin-ink);
+    font-weight: 850;
     text-decoration: underline;
     text-decoration-color: var(--admin-accent);
     text-decoration-thickness: 2px;
     text-underline-offset: 5px;
   }
 
-  .admin-nav-dot {
-    display: none;
+  .admin-mnav-item.is-open {
+    background: var(--admin-nav-soft);
+    color: var(--admin-ink);
   }
 
-  .admin-nav-link::after {
-    content: attr(data-short-label);
+  .admin-mnav-caret {
+    font-size: 9px;
+    opacity: 0.7;
+    transition: transform 160ms ease;
   }
 
-  .admin-nav-link .admin-nav-label {
-    display: none;
+  .admin-mnav-item.is-open .admin-mnav-caret {
+    transform: rotate(180deg);
   }
 
-  .admin-nav-alert-count {
+  .admin-mnav-item .admin-nav-alert-count {
+    position: absolute;
+    top: 3px;
+    right: 6px;
     min-width: 18px;
     height: 18px;
     margin-left: 0;
     padding-inline: 4px;
     font-size: 10px;
+  }
+
+  /* 子選單：從按鈕上方彈出 */
+  .admin-mnav-menu {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 12px);
+    display: grid;
+    gap: 2px;
+    min-width: 148px;
+    padding: 6px;
+    border: 1px solid var(--admin-line);
+    border-radius: 12px;
+    background: rgba(23, 12, 42, 0.98);
+    box-shadow: 0 14px 36px rgba(8, 4, 18, 0.5);
+  }
+
+  .admin-mnav-menu-link {
+    display: block;
+    padding: 11px 12px;
+    border-radius: 8px;
+    color: var(--admin-muted);
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .admin-mnav-menu-link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--admin-ink);
+    text-decoration: none;
+  }
+
+  .admin-mnav-menu-link.is-active {
+    background: var(--admin-nav-soft);
+    color: var(--admin-ink);
+    font-weight: 850;
   }
 
   table {
