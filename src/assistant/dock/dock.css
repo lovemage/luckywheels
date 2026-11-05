@@ -218,3 +218,93 @@ html.is-dock body {
     transform: none;
   }
 }
+
+/* 標題列的「目前」小字 */
+.aa-dock-label {
+  color: var(--aa-muted);
+  font-size: 12px;
+}
+
+.aa-dock-section {
+  margin: 10px 0 0;
+  color: var(--aa-muted);
+  font-size: 12px;
+}
+
+.aa-dock-picks {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 推薦機台：整列是一顆按鈕，點了由 App 在遊戲裡切換過去 */
+.aa-dock-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--aa-line);
+  border-radius: 10px;
+  background: var(--aa-surface);
+  color: var(--aa-ink);
+  font: inherit;
+  text-align: left;
+}
+
+.aa-dock-pick:disabled {
+  opacity: 1;
+}
+
+.aa-dock-pick:active:not(:disabled) {
+  background: #1a140c;
+}
+
+.aa-dock-pick:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: 2px;
+}
+
+.aa-dock-pick-no {
+  flex: none;
+  color: var(--aa-gold-hi);
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-dock-pick-meta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--aa-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.aa-dock-pick-meta b {
+  color: var(--aa-ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-dock-pick-score {
+  flex: none;
+  color: var(--aa-gold);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-dock-pick-go {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe3a6, #e8c274 55%, #b9852f);
+  color: #1a1206;
+  font-size: 12px;
+  font-weight: 800;
+}

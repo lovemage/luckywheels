@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.view.View
 import android.view.WindowManager
@@ -29,6 +31,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import org.json.JSONArray
+import org.json.JSONObject
 import kotlin.concurrent.thread
 import kotlin.math.max
 import kotlin.math.min
@@ -57,10 +61,24 @@ class MainActivity : AppCompatActivity() {
     private var expanded = false
     private var lastBackAt = 0L
 
-    /** 面板模式：dock＝駐守小卡（不擋遊戲操作），full＝完整助手 */
-    @Volatile private var mode = MODE_DOCK
+    /** 面板模式：full＝全螢幕網站（開 App 的畫面），dock＝遊戲中的駐守小卡（不擋遊戲操作） */
+    @Volatile private var mode = MODE_FULL
+    /** 會員按過「進入遊戲」（之後才載入娛樂城，避免網站畫面背後播放娛樂城的聲音） */
+    private var enteredGame = false
     /** 駐守小卡的內容高度（px，由網頁回報） */
     private var dockHeightPx = 0
+
+    /** 注入遊戲頁的輔助程式（assets/game-bridge.js）：讀目前機台、切換機台 */
+    private val gameBridge by lazy { assets.open("game-bridge.js").bufferedReader().use { it.readText() } }
+    private val ui = Handler(Looper.getMainLooper())
+    private var lastHud: String? = null
+    private var resumed = false
+    private val hudPoll = object : Runnable {
+        override fun run() {
+            pollHud()
+            if (resumed) ui.postDelayed(this, HUD_INTERVAL_MS)
+        }
+    }
 
     /** 系統列、瀏海、鍵盤佔用的範圍（沉浸模式下系統列通常為 0） */
     private var safe = WindowInsetsCompat.CONSUMED.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -89,14 +107,14 @@ class MainActivity : AppCompatActivity() {
         setupGame()
         setupPanel()
 
-        bubble = FloatingBubble(bubbleView, root, 12 * dp) { expand() }
+        bubble = FloatingBubble(bubbleView, root, 12 * dp) { expand(MODE_DOCK) }
         root.addOnLayoutChangeListener { _, l, t, r, b, ol, ot, or, ob ->
             if (r - l != or - ol || b - t != ob - ot) {
                 bubble.place()
                 layoutPanel()
             }
         }
-        scrim.setOnClickListener { setMode(MODE_DOCK) }
+        scrim.setOnClickListener { collapse() }
         findViewById<View>(R.id.gameRetry).setOnClickListener {
             gameError.visibility = View.GONE
             if (gameLoaded) gameWeb.reload() else gameWeb.loadUrl(casinoUrl)
@@ -113,6 +131,9 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread { applyConfig(config) }
         }
 
+        // 開 App 先顯示全螢幕網站；按網站底部「進入遊戲」才切到娛樂城
+        bubbleView.visibility = View.INVISIBLE
+        expand(MODE_FULL, animate = false)
         panelWeb.loadUrl(BuildConfig.ASSISTANT_ORIGIN + "/")
         handleDeepLink(intent)
     }
@@ -129,11 +150,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        resumed = true
+        ui.removeCallbacks(hudPoll)
+        ui.post(hudPoll)
         gameWeb.onResume()
         panelWeb.onResume()
     }
 
     override fun onPause() {
+        resumed = false
+        ui.removeCallbacks(hudPoll)
         // 確保登入狀態（cookie）寫回磁碟
         CookieManager.getInstance().flush()
         gameWeb.onPause()
@@ -153,8 +179,7 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed) return
         if (!gameLoaded) {
             casinoUrl = config.casinoUrl
-            gameLoaded = true
-            gameWeb.loadUrl(casinoUrl)
+            if (enteredGame) loadGame()
         }
         val latest = config.latestVersionCode
         val download = config.downloadUrl
@@ -167,6 +192,89 @@ class MainActivity : AppCompatActivity() {
                 .show()
         }
     }
+
+    private fun loadGame() {
+        if (gameLoaded) return
+        gameLoaded = true
+        gameWeb.loadUrl(casinoUrl)
+    }
+
+    // ── 遊戲頁：讀目前機台、切換機台 ─────────────────
+
+    private fun isGamePage(): Boolean {
+        val host = Uri.parse(gameWeb.url ?: return false).host ?: return false
+        return host == GAME_HOST || host.endsWith(".$GAME_HOST")
+    }
+
+    /** 在遊戲頁執行 expr（先確保輔助程式已注入），回傳 JSON 字串（或 null） */
+    private fun evalGame(expr: String, done: (String?) -> Unit) {
+        if (!isGamePage()) return done(null)
+        gameWeb.evaluateJavascript("$gameBridge\n;JSON.stringify($expr)") { raw ->
+            val json = try {
+                if (raw == null || raw == "null") null else JSONArray("[$raw]").optString(0, null)
+            } catch (_: Exception) {
+                null
+            }
+            done(json)
+        }
+    }
+
+    private fun sendToPanel(event: String, detailJson: String) {
+        panelWeb.evaluateJavascript("window.dispatchEvent(new CustomEvent('$event',{detail:$detailJson}))", null)
+    }
+
+    /** 每 2 秒讀一次遊戲畫面上的機台號、點數、贏分、押注，有變化才通知網頁 */
+    private fun pollHud() {
+        if (!enteredGame) return
+        evalGame("window.__lwApp.hud()") { json ->
+            val hud = json?.takeIf { it != "null" } ?: "null"
+            if (hud != lastHud) {
+                lastHud = hud
+                sendToPanel("luckyapp:game", hud)
+            }
+        }
+    }
+
+    /** 駐守小卡點推薦機台：收合小卡，由輔助程式在遊戲裡切換到該機台 */
+    private fun switchRoom(roomNo: String) {
+        if (!Regex("^\\d{1,6}$").matches(roomNo)) return
+        if (!isGamePage()) {
+            Toast.makeText(this, R.string.switch_need_game, Toast.LENGTH_LONG).show()
+            return
+        }
+        collapse()
+        evalGame("window.__lwApp.switchRoom(${JSONObject.quote(roomNo)})") {}
+        val deadline = SystemClock.elapsedRealtime() + SWITCH_TIMEOUT_MS
+        val check = object : Runnable {
+            override fun run() {
+                evalGame("{s: window.__lwApp.switchState(), h: window.__lwApp.hud()}") { json ->
+                    val o = try { json?.let { JSONObject(it) } } catch (_: Exception) { null }
+                    val st = o?.optJSONObject("s")
+                    val room = o?.optJSONObject("h")?.optString("room")
+                    val status = st?.optString("status")
+                    when {
+                        room == roomNo -> toast(getString(R.string.switch_done, roomNo))
+                        st?.optString("target") == roomNo && status == "error" ->
+                            toast(switchError(st.optString("error"), roomNo))
+                        // 已按下確定、遊戲重新載入中（載入後由玩家按「開始遊戲」）
+                        st?.optString("target") == roomNo && status == "switching" || (o != null && o.isNull("h")) ->
+                            toast(getString(R.string.switch_loading, roomNo))
+                        SystemClock.elapsedRealtime() > deadline -> toast(getString(R.string.switch_failed, roomNo))
+                        else -> ui.postDelayed(this, 500)
+                    }
+                }
+            }
+        }
+        ui.postDelayed(check, 500)
+    }
+
+    private fun switchError(code: String, roomNo: String): String = when (code) {
+        "ROOM_UNAVAILABLE" -> getString(R.string.switch_unavailable, roomNo)
+        "NOT_READY", "NOT_IN_GAME", "LIST_NOT_OPEN" -> getString(R.string.switch_need_game)
+        else -> getString(R.string.switch_failed, roomNo)
+    }
+
+    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
 
     // ── 畫面配置 ─────────────────────────────────────
 
@@ -190,7 +298,7 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * 駐守小卡：直向貼在上方、橫向在右上角，高度跟著內容，遊戲其他區域照常可以操作。
-     * 完整助手：直向底部抽屜（約 80% 高）、橫向右側面板，背後加遮罩。鍵盤出現時讓出空間。
+     * 網站（full）：全螢幕，沒有外框圓角。鍵盤出現時讓出空間。
      */
     private fun layoutPanel() {
         val w = root.width
@@ -200,6 +308,9 @@ class MainActivity : AppCompatActivity() {
         val bottom = max(safe.bottom, imeBottom) + m
         val lp = panel.layoutParams as FrameLayout.LayoutParams
         if (mode == MODE_DOCK) {
+            panel.setBackgroundResource(R.drawable.panel_bg)
+            panel.setPadding((1 * dp).toInt(), (1 * dp).toInt(), (1 * dp).toInt(), (1 * dp).toInt())
+            panel.clipToOutline = true
             val content = if (dockHeightPx > 0) dockHeightPx + panel.paddingTop + panel.paddingBottom else (120 * dp).toInt()
             if (w < h) {
                 lp.width = min(w - safe.left - safe.right - 2 * m, (460 * dp).toInt())
@@ -215,17 +326,13 @@ class MainActivity : AppCompatActivity() {
             panel.layoutParams = lp
             return
         }
-        if (w < h) {
-            lp.width = FrameLayout.LayoutParams.MATCH_PARENT
-            lp.height = min((h * 0.82f).toInt(), h - safe.top - bottom - m)
-            lp.gravity = android.view.Gravity.BOTTOM
-            lp.setMargins(safe.left + m, 0, safe.right + m, bottom)
-        } else {
-            lp.width = min((440 * dp).toInt(), (w * 0.56f).toInt())
-            lp.height = h - safe.top - m - bottom
-            lp.gravity = android.view.Gravity.END or android.view.Gravity.TOP
-            lp.setMargins(0, safe.top + m, safe.right + m, bottom)
-        }
+        panel.background = null
+        panel.setPadding(0, 0, 0, 0)
+        panel.clipToOutline = false
+        lp.width = FrameLayout.LayoutParams.MATCH_PARENT
+        lp.height = FrameLayout.LayoutParams.MATCH_PARENT
+        lp.gravity = android.view.Gravity.TOP
+        lp.setMargins(safe.left, safe.top, safe.right, max(safe.bottom, imeBottom))
         panel.layoutParams = lp
     }
 
@@ -234,10 +341,7 @@ class MainActivity : AppCompatActivity() {
         if (next != MODE_DOCK && next != MODE_FULL) return
         val changed = mode != next
         mode = next
-        if (expanded) {
-            layoutPanel()
-            showScrim(next == MODE_FULL)
-        }
+        if (expanded) layoutPanel()
         if (changed) {
             panelWeb.evaluateJavascript(
                 "window.dispatchEvent(new CustomEvent('luckyapp:mode',{detail:'$next'}))", null,
@@ -255,8 +359,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 點金色按鈕：一律先開駐守小卡 */
-    private fun expand(target: String = MODE_DOCK) {
+    /** 打開面板：金色按鈕開駐守小卡，「完整助手」與開 App 時是全螢幕網站 */
+    private fun expand(target: String, animate: Boolean = true) {
         if (expanded) {
             setMode(target)
             return
@@ -264,15 +368,22 @@ class MainActivity : AppCompatActivity() {
         expanded = true
         setMode(target)
         layoutPanel()
-        showScrim(target == MODE_FULL)
-        panel.alpha = 0f
-        panel.translationY = 24 * dp
         panel.visibility = View.VISIBLE
-        panel.animate().alpha(1f).translationY(0f).setDuration(220).start()
+        if (animate) {
+            panel.alpha = 0f
+            panel.translationY = 24 * dp
+            panel.animate().alpha(1f).translationY(0f).setDuration(220).start()
+        } else {
+            panel.alpha = 1f
+            panel.translationY = 0f
+        }
         bubbleView.animate().alpha(0f).setDuration(120).withEndAction { bubbleView.visibility = View.INVISIBLE }.start()
     }
 
+    /** 收合面板 → 顯示遊戲（網站的「進入遊戲」、小卡的「收合」都走這裡） */
     private fun collapse() {
+        enteredGame = true
+        loadGame()
         if (!expanded) return
         expanded = false
         currentFocus?.let { focused ->
@@ -287,7 +398,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun onBack() {
         when {
-            expanded && mode == MODE_FULL -> setMode(MODE_DOCK)
+            // 網站畫面：玩過遊戲就回遊戲，否則離開 App
+            expanded && mode == MODE_FULL -> if (enteredGame) collapse() else confirmExit()
             expanded -> collapse()
             gameError.visibility == View.VISIBLE -> confirmExit()
             gameWeb.canGoBack() -> gameWeb.goBack()
@@ -373,6 +485,7 @@ class MainActivity : AppCompatActivity() {
                 onCollapse = { runOnUiThread { collapse() } },
                 onSetMode = { m -> runOnUiThread { setMode(m) } },
                 currentMode = { mode },
+                onSwitchRoom = { roomNo -> runOnUiThread { switchRoom(roomNo) } },
                 onResize = { cssHeight ->
                     runOnUiThread {
                         dockHeightPx = (cssHeight * dp).toInt()
@@ -395,6 +508,11 @@ class MainActivity : AppCompatActivity() {
                 // 面板只顯示助手本身；其他網址（LINE 官方帳號、說明連結…）開到外部
                 openExternal(url)
                 return true
+            }
+
+            override fun onPageFinished(view: WebView, url: String?) {
+                // 網頁重新載入後要重送一次遊戲資訊
+                lastHud = null
             }
 
             override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
@@ -435,7 +553,7 @@ class MainActivity : AppCompatActivity() {
         if (!code.isNullOrBlank()) {
             panelWeb.loadUrl("${BuildConfig.ASSISTANT_ORIGIN}/api/app/redeem?code=${Uri.encode(code)}")
         }
-        expand(MODE_DOCK)
+        expand(MODE_FULL)
     }
 
     private fun openExternal(uri: Uri) {
@@ -458,5 +576,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val MODE_DOCK = "dock"
         const val MODE_FULL = "full"
+        const val GAME_HOST = "godeebxp.com"
+        const val HUD_INTERVAL_MS = 2000L
+        const val SWITCH_TIMEOUT_MS = 20_000L
     }
 }

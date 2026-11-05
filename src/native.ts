@@ -2,8 +2,8 @@
 // App 的 WebView 會在 User-Agent 後面加上 `LuckyDsApp/<versionName>`，並注入 window.LuckyApp。
 //
 // 面板有兩種模式（App 1.1.0 起）：
-//   dock：駐守小卡，疊在遊戲上方、不擋操作，只放機台數據與「換一台」
-//   full：完整助手（兌換、本金推薦、規則），從小卡的「完整助手」進入
+//   full：全螢幕的網站（App 開啟時的畫面），底部「進入遊戲」切到遊戲畫面
+//   dock：遊戲中點金色按鈕出現的駐守小卡，疊在遊戲上方、不擋操作；「完整助手」回到 full
 // App 端掌管目前模式；網頁以 setMode() 要求切換，App 套用後以 `luckyapp:mode` 事件通知回來。
 
 export type DockMode = 'dock' | 'full';
@@ -17,6 +17,16 @@ interface LuckyAppBridge {
   getMode?(): string;
   /** 1.1.0+：駐守小卡的內容高度（CSS px），App 依此調整小卡高度 */
   resize?(cssHeight: number): void;
+  /** 1.2.0+：在遊戲裡切換到指定機台（只切換、不下注） */
+  switchRoom?(roomNo: string): void;
+}
+
+/** 遊戲畫面上讀到的資訊（App 1.2.0+ 每 2 秒更新；不在遊戲頁時為 null） */
+export interface GameHud {
+  room: string | null;
+  balance: string | null;
+  win: string | null;
+  stake: string | null;
 }
 
 declare global {
@@ -59,4 +69,29 @@ export function onDockModeChange(fn: (mode: DockMode) => void): () => void {
   const handler = (e: Event) => fn((e as CustomEvent<string>).detail === 'full' ? 'full' : 'dock');
   window.addEventListener('luckyapp:mode', handler);
   return () => window.removeEventListener('luckyapp:mode', handler);
+}
+
+/** App 支援在遊戲裡自動切換機台（1.2.0+） */
+export const hasRoomSwitch = isNativeApp && typeof window !== 'undefined' && typeof window.LuckyApp?.switchRoom === 'function';
+
+export function switchGameRoom(roomNo: string): void {
+  call(() => window.LuckyApp?.switchRoom?.(roomNo), undefined);
+}
+
+// App 只在數值變化時通知，所以從頁面載入起就記住最新一筆（小卡重新掛載時直接取用）
+let latestHud: GameHud | null = null;
+const hudListeners = new Set<(hud: GameHud | null) => void>();
+if (isNativeApp && typeof window !== 'undefined') {
+  window.addEventListener('luckyapp:game', (e) => {
+    latestHud = ((e as CustomEvent<GameHud | null>).detail ?? null) as GameHud | null;
+    hudListeners.forEach((fn) => fn(latestHud));
+  });
+}
+
+export const currentGameHud = () => latestHud;
+
+/** 訂閱遊戲畫面資訊（目前機台等） */
+export function onGameHud(fn: (hud: GameHud | null) => void): () => void {
+  hudListeners.add(fn);
+  return () => hudListeners.delete(fn);
 }

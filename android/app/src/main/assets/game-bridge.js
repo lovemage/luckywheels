@@ -1,0 +1,159 @@
+// 注入 ATG 遊戲頁（play.godeebxp.com，Cocos Creator 3.7）的輔助程式，掛在 window.__lwApp。
+// 只做兩件事：讀畫面上的文字（目前機台、點數、贏分、押注）、替會員切換到指定機台。
+// 不按 Spin、不下注、不鎖定機台、不碰網路請求。節點路徑見 docs/plans/2026-11-05-app-in-game-recon.md。
+(function () {
+  if (window.__lwApp) return;
+  var cc = function () { return window.cc; };
+  var scene = function () { return cc().director.getScene(); };
+
+  function walk(node, fn) {
+    fn(node);
+    for (var i = 0; i < node.children.length; i++) walk(node.children[i], fn);
+  }
+  function textOf(node) {
+    if (!node || !node.getComponent) return null;
+    var l = node.getComponent('cc.Label') || node.getComponent('cc.RichText');
+    return l ? l.string : null;
+  }
+  function find(pred) {
+    var out = [];
+    walk(scene(), function (n) { if (pred(n)) out.push(n); });
+    return out;
+  }
+  function child(node, path) {
+    var n = node;
+    var parts = path.split('/');
+    for (var i = 0; i < parts.length && n; i++) n = n.getChildByName(parts[i]);
+    return n;
+  }
+  function byName(name, active) {
+    return find(function (n) { return n.name === name && (!active || n.activeInHierarchy); })[0] || null;
+  }
+  function clickable(node) {
+    for (var n = node, i = 0; n && i < 6; n = n.parent, i++) {
+      var c = n.getComponent && (n.getComponent('cc.Button') || n.getComponent('cc.Toggle'));
+      if (c) return { node: n, comp: c };
+    }
+    return null;
+  }
+  // 按鈕有 clickEvents 就觸發它；沒有的（例如切換確認視窗）送觸控事件給節點
+  function press(node) {
+    var t = clickable(node);
+    if (!t) return false;
+    if (t.comp.clickEvents && t.comp.clickEvents.length) {
+      var EH = cc().EventHandler || cc().Component.EventHandler;
+      EH.emitEvents(t.comp.clickEvents, { target: t.node });
+      t.node.emit('click', t.comp);
+      return true;
+    }
+    var v = new (cc().Vec2)(0, 0);
+    var mk = function (type) {
+      return {
+        type: type, target: t.node, currentTarget: t.node, propagationStopped: false, propagationImmediateStopped: false,
+        bubbles: true, preventSwallow: false,
+        touch: { getLocation: function () { return v; }, getUILocation: function () { return v; }, getID: function () { return 0; } },
+        getLocation: function () { return v; }, getUILocation: function () { return v; }, getID: function () { return 0; },
+        getTouches: function () { return []; }, getAllTouches: function () { return []; },
+      };
+    };
+    t.node.emit('touch-start', mk('touch-start'));
+    t.node.emit('touch-end', mk('touch-end'));
+    return true;
+  }
+  function ready() {
+    try { return !!(cc() && cc().director && scene()); } catch (e) { return false; }
+  }
+  function listItems() {
+    return find(function (n) { return n.name === 'SlotTableItem2' && n.activeInHierarchy; });
+  }
+  function pageButton(page) {
+    var hit = null;
+    walk(scene(), function (n) {
+      if (hit || n.name !== 'SlotTablePageTabsItem' || !n.activeInHierarchy) return;
+      if (textOf(child(n, 'content/title')) === String(page)) hit = n;
+    });
+    return hit;
+  }
+  function detailRoom() {
+    var n = byName('slotTableNumber', true);
+    return n ? textOf(n) : null;
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  async function until(fn, ms) {
+    var end = Date.now() + ms;
+    while (Date.now() < end) {
+      try { var v = fn(); if (v) return v; } catch (e) { /* 場景切換中 */ }
+      await sleep(200);
+    }
+    return null;
+  }
+
+  var state = { target: null, status: 'idle', error: null };
+
+  async function switchRoom(roomNo) {
+    state = { target: roomNo, status: 'running', error: null };
+    try {
+      if (!ready()) throw new Error('NOT_READY');
+      // 1. 開「選擇機台」（遊戲中按機台按鈕；剛進遊戲時清單本來就開著）
+      if (listItems().length === 0) {
+        var btn = byName('slotTable2Btn', true);
+        if (!btn) throw new Error('NOT_IN_GAME');
+        press(btn);
+        if (!(await until(function () { return listItems().length > 0; }, 8000))) throw new Error('LIST_NOT_OPEN');
+      }
+      // 2. 切到該分頁（每頁 500 台）
+      var n = Number(roomNo);
+      var page = Math.floor((n - 1) / 500) + 1;
+      var lo = (page - 1) * 500 + 1;
+      var hi = page * 500;
+      var inPage = function () {
+        var items = listItems();
+        return items.length > 0 && items.every(function (it) {
+          var no = Number(textOf(child(it, 'content/number')));
+          return no >= lo && no <= hi;
+        });
+      };
+      if (!inPage()) {
+        var pb = pageButton(page);
+        if (!pb) throw new Error('PAGE_NOT_FOUND');
+        press(pb);
+        if (!(await until(inPage, 8000))) throw new Error('PAGE_TIMEOUT');
+      }
+      // 3. 點機台，等細項面板換成這台
+      var item = listItems().filter(function (it) { return textOf(child(it, 'content/number')) === roomNo; })[0];
+      if (!item) throw new Error('ROOM_NOT_FOUND');
+      press(item);
+      if (!(await until(function () { return detailRoom() === roomNo; }, 8000))) throw new Error('DETAIL_TIMEOUT');
+      // 4. 遊戲中是「確定」，剛進遊戲是「選取」＋確認視窗
+      var confirm = byName('confirmBtn', true) || byName('selectBtn', true);
+      if (!confirm) throw new Error('NO_CONFIRM');
+      var c = clickable(confirm);
+      if (c && c.comp.interactable === false) throw new Error('ROOM_UNAVAILABLE');
+      press(confirm);
+      var alertBtn = await until(function () {
+        var a = byName('GameAlert', true);
+        return a && child(a, 'content/button/confirm');
+      }, 3000);
+      if (alertBtn) press(alertBtn);
+      state.status = 'switching';
+    } catch (e) {
+      state.status = 'error';
+      state.error = String((e && e.message) || e);
+    }
+  }
+
+  window.__lwApp = {
+    hud: function () {
+      if (!ready()) return null;
+      var roomNode = byName('slotTable2Btn', true);
+      var room = roomNode ? textOf(child(roomNode, 'num')) : null;
+      var bal = byName('balanceLabel', true);
+      var win = byName('totalWinLabel', true);
+      var stake = find(function (n) { return n.name === 'stake' && n.activeInHierarchy && n.parent && n.parent.name === 'stakeContent'; })[0];
+      if (!room && !bal) return null;
+      return { room: room, balance: textOf(bal), win: textOf(win), stake: textOf(stake) };
+    },
+    switchRoom: function (roomNo) { switchRoom(String(roomNo)); return true; },
+    switchState: function () { return state; },
+  };
+})();

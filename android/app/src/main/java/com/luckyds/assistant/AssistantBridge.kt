@@ -12,7 +12,12 @@ class AssistantBridge(
     private val onSetMode: (String) -> Unit,
     private val currentMode: () -> String,
     private val onResize: (Double) -> Unit,
+    private val onSwitchRoom: (String) -> Unit,
 ) {
+    /** 1.2.0+：在遊戲裡切換到指定機台（只切換、不下注） */
+    @JavascriptInterface
+    fun switchRoom(roomNo: String) = onSwitchRoom(roomNo)
+
     /** 收合面板，回到遊戲 */
     @JavascriptInterface
     fun collapse() = onCollapse()

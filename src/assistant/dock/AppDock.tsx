@@ -3,61 +3,36 @@ import { ApiError, api } from '../../api/client.js';
 import { fetchAssistantMe, type AssistantMe, type RoomsResponse, type ScoredRoom } from '../../api/assistant.js';
 import { BrandMark } from '../BrandMark.js';
 import { fmtAgo, fmtInt, fmtRemainingDetail, fmtRtp } from '../format.js';
-import { backToGame, reportDockHeight } from '../../native.js';
+import {
+  backToGame,
+  currentGameHud,
+  hasRoomSwitch,
+  onGameHud,
+  reportDockHeight,
+  switchGameRoom,
+  type GameHud,
+} from '../../native.js';
 import '../assistant.css';
 import './dock.css';
 
-// App 駐守小卡：疊在遊戲上方，只放「目前機台的數據」與「換一台」。助手只是輔助，不放其他訊息。
-// 機台來源：先帶入推薦的第一台空台；會員也可以輸入自己正在玩的房號。
-// （之後讀得到遊戲畫面時，改為自動帶入會員所在的房號。）
+// App 駐守小卡：疊在遊戲上方。助手只是輔助，只放兩件事：
+//   1. 會員目前所在機台的數據（App 從遊戲畫面讀出機台號）
+//   2. 兩台推薦空台，點一下由 App 在遊戲裡切換過去（只切換、不下注）；「換一組」換下兩台
 
-const ROOM_KEY = 'aa-dock-room';
 const CANDIDATES = 20;
+const PICKS = 2;
 const REFRESH_MS = 60_000;
 
 const fetchCandidates = () =>
   api<RoomsResponse>(`/api/assistant/rooms?sort=score&status=idle&pageSize=${CANDIDATES}`);
 
-async function fetchRoomByNo(roomNo: string): Promise<{ room: ScoredRoom | null; game: RoomsResponse['game'] }> {
+async function fetchRoomByNo(roomNo: string): Promise<ScoredRoom | null> {
   const r = await api<RoomsResponse>(`/api/assistant/rooms?q=${encodeURIComponent(roomNo)}&pageSize=20`);
-  return { room: r.items.find((i) => i.roomNo === roomNo) ?? null, game: r.game };
+  return r.items.find((i) => i.roomNo === roomNo) ?? null;
 }
 
-function storedRoom(): string | null {
-  try {
-    return sessionStorage.getItem(ROOM_KEY);
-  } catch {
-    return null;
-  }
-}
-function storeRoom(roomNo: string) {
-  try {
-    sessionStorage.setItem(ROOM_KEY, roomNo);
-  } catch {
-    /* 不記住即可 */
-  }
-}
-
-type RoomState =
-  | { kind: 'loading' }
-  | { kind: 'ready'; room: ScoredRoom; gameName: string; at: number }
-  | { kind: 'missing'; roomNo: string }
-  | { kind: 'empty' }
-  | { kind: 'error' };
-
-export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => void }) {
+function useDockHeight() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [me, setMe] = useState<AssistantMe | null>(null);
-  const [meError, setMeError] = useState(false);
-  const [roomNo, setRoomNo] = useState<string | null>(storedRoom);
-  const [room, setRoom] = useState<RoomState>({ kind: 'loading' });
-  const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [now, setNow] = useState(() => Date.now());
-  const seen = useRef(new Set<string>());
-
-  // 小卡高度跟著內容走
   useLayoutEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -67,6 +42,23 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  return rootRef;
+}
+
+export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => void }) {
+  const rootRef = useDockHeight();
+  const [me, setMe] = useState<AssistantMe | null>(null);
+  const [meError, setMeError] = useState(false);
+  const [hud, setHud] = useState<GameHud | null>(currentGameHud);
+  const [current, setCurrent] = useState<ScoredRoom | null>(null);
+  const [gameName, setGameName] = useState('');
+  const [picks, setPicks] = useState<ScoredRoom[] | null>(null);
+  const [picksError, setPicksError] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const seen = useRef(new Set<string>());
+
+  useEffect(() => onGameHud(setHud), []);
 
   const loadMe = useCallback(() => {
     fetchAssistantMe()
@@ -79,86 +71,70 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
   useEffect(loadMe, [loadMe]);
 
   const active = me?.pass.active ?? false;
+  const roomNo = hud?.room ?? null;
 
-  const pickNext = useCallback(async (exclude: string | null) => {
+  // 挑兩台：排除目前所在機台，先挑這次還沒看過的，看完一輪再重來
+  const pickTwo = useCallback(async () => {
     const list = await fetchCandidates();
-    const pool = list.items.filter((r) => r.roomNo !== exclude);
-    if (pool.length === 0) return null;
-    // 先挑這次還沒看過的，看完一輪再重來
-    let next = pool.find((r) => !seen.current.has(r.roomNo));
-    if (!next) {
+    setGameName(list.game.name);
+    const pool = list.items.filter((r) => r.roomNo !== roomNo);
+    let fresh = pool.filter((r) => !seen.current.has(r.roomNo));
+    if (fresh.length < PICKS) {
       seen.current.clear();
-      next = pool[0]!;
+      fresh = pool;
     }
-    seen.current.add(next.roomNo);
-    return { room: next, gameName: list.game.name };
-  }, []);
+    const next = fresh.slice(0, PICKS);
+    next.forEach((r) => seen.current.add(r.roomNo));
+    return next;
+  }, [roomNo]);
 
-  const load = useCallback(
-    async (target: string | null) => {
-      try {
-        if (target) {
-          const { room: r, game } = await fetchRoomByNo(target);
-          setRoom(r ? { kind: 'ready', room: r, gameName: game.name, at: Date.now() } : { kind: 'missing', roomNo: target });
-          return;
-        }
-        const next = await pickNext(null);
-        if (!next) {
-          setRoom({ kind: 'empty' });
-          return;
-        }
-        setRoomNo(next.room.roomNo);
-        storeRoom(next.room.roomNo);
-        setRoom({ kind: 'ready', room: next.room, gameName: next.gameName, at: Date.now() });
-      } catch (e) {
-        if (e instanceof ApiError && e.code === 'ASSISTANT_EXPIRED') loadMe();
-        else setRoom({ kind: 'error' });
-      }
-    },
-    [pickNext, loadMe],
-  );
+  const refreshPicks = useCallback(async () => {
+    try {
+      setPicks(await pickTwo());
+      setPicksError(false);
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'ASSISTANT_EXPIRED') loadMe();
+      else setPicksError(true);
+    }
+  }, [pickTwo, loadMe]);
 
-  // 開通中才抓機台；每分鐘更新一次數據
+  // 開通後自動挑一組；之後由「換一組」換（refreshPicks 只在所在機台改變時更新）
+  const autoPicked = useRef(false);
   useEffect(() => {
-    if (!active) return;
-    if (roomNo) seen.current.add(roomNo);
-    void load(roomNo);
-    const t = window.setInterval(() => void load(roomNo), REFRESH_MS);
-    return () => window.clearInterval(t);
-    // 換一台／輸入房號會改 roomNo，這裡重新載入並重設每分鐘更新
-  }, [active, roomNo, load]);
+    if (!active || autoPicked.current) return;
+    autoPicked.current = true;
+    void refreshPicks();
+  }, [active, refreshPicks]);
+
+  // 目前所在機台的數據：機台號變了就重抓，之後每分鐘更新
+  useEffect(() => {
+    if (!active || !roomNo) {
+      setCurrent(null);
+      return;
+    }
+    let alive = true;
+    const load = () =>
+      fetchRoomByNo(roomNo)
+        .then((r) => alive && setCurrent(r))
+        .catch(() => alive && setCurrent(null));
+    void load();
+    const t = window.setInterval(load, REFRESH_MS);
+    return () => {
+      alive = false;
+      window.clearInterval(t);
+    };
+  }, [active, roomNo]);
 
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 15_000);
     return () => window.clearInterval(t);
   }, []);
 
-  async function changeRoom() {
+  async function nextPair() {
     if (busy) return;
     setBusy(true);
-    try {
-      const next = await pickNext(roomNo);
-      if (!next) setRoom({ kind: 'empty' });
-      else {
-        storeRoom(next.room.roomNo);
-        setRoomNo(next.room.roomNo);
-      }
-    } catch {
-      setRoom({ kind: 'error' });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function submitRoom(e: React.FormEvent) {
-    e.preventDefault();
-    const v = draft.replace(/\D/g, '');
-    if (!v) return;
-    setEditing(false);
-    setDraft('');
-    storeRoom(v);
-    setRoom({ kind: 'loading' });
-    setRoomNo(v);
+    await refreshPicks();
+    setBusy(false);
   }
 
   const remaining = me?.pass.expiresAt
@@ -172,10 +148,11 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
           <BrandMark />
         </span>
         <p className="aa-dock-title">
-          {room.kind === 'ready' ? (
+          {roomNo ? (
             <>
-              <span className="aa-dock-room">#{room.room.roomNo}</span>
-              <span className="aa-dock-game">{room.gameName}</span>
+              <span className="aa-dock-label">目前</span>
+              <span className="aa-dock-room">#{roomNo}</span>
+              {gameName && <span className="aa-dock-game">{gameName}</span>}
             </>
           ) : (
             <span className="aa-dock-game">駐守助手</span>
@@ -207,43 +184,43 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
 
       {me && active && (
         <>
-          {room.kind === 'loading' && <p className="aa-dock-note">讀取機台數據…</p>}
-          {room.kind === 'empty' && <p className="aa-dock-note">目前沒有可推薦的空台</p>}
-          {room.kind === 'error' && <p className="aa-dock-note">數據暫時無法載入</p>}
-          {room.kind === 'missing' && <p className="aa-dock-note">找不到房號 #{room.roomNo} 的數據</p>}
-          {room.kind === 'ready' && <RoomStats room={room.room} now={now} />}
+          {roomNo && current && <RoomStats room={current} now={now} />}
 
-          {editing ? (
-            <form className="aa-dock-form" onSubmit={submitRoom}>
-              <input
-                inputMode="numeric"
-                autoFocus
-                placeholder="輸入房號"
-                aria-label="正在玩的房號"
-                value={draft}
-                maxLength={6}
-                onChange={(e) => setDraft(e.target.value.replace(/\D/g, ''))}
-              />
-              <button type="submit" className="aa-dock-btn aa-dock-btn--solid">
-                查看
-              </button>
-              <button type="button" className="aa-dock-btn" onClick={() => setEditing(false)}>
-                取消
-              </button>
-            </form>
-          ) : (
-            <div className="aa-dock-actions">
-              <button type="button" className="aa-dock-btn aa-dock-btn--solid" onClick={changeRoom} disabled={busy} aria-busy={busy}>
-                {busy ? '挑選中…' : '換一台'}
-              </button>
-              <button type="button" className="aa-dock-btn" onClick={() => setEditing(true)}>
-                輸入房號
-              </button>
-              <button type="button" className="aa-dock-btn" onClick={() => onOpenFull()}>
-                完整助手
-              </button>
-            </div>
+          <p className="aa-dock-section">推薦機台</p>
+          {picksError && <p className="aa-dock-note">推薦暫時無法載入</p>}
+          {!picksError && picks === null && <p className="aa-dock-note">挑選中…</p>}
+          {!picksError && picks?.length === 0 && <p className="aa-dock-note">目前沒有可推薦的空台</p>}
+          {picks && picks.length > 0 && (
+            <ul className="aa-dock-picks">
+              {picks.map((r) => (
+                <li key={r.roomNo}>
+                  <button
+                    type="button"
+                    className="aa-dock-pick"
+                    disabled={!hasRoomSwitch}
+                    onClick={() => switchGameRoom(r.roomNo)}
+                    aria-label={`切換到 ${r.roomNo} 號機台`}
+                  >
+                    <span className="aa-dock-pick-no">#{r.roomNo}</span>
+                    <span className="aa-dock-pick-meta">
+                      未開 <b>{fmtInt(r.unopenedSpins)}</b> · RTP <b>{fmtRtp(r.todayRtp)}</b>
+                    </span>
+                    {r.score !== null && <span className="aa-dock-pick-score">{r.score}</span>}
+                    {hasRoomSwitch && <span className="aa-dock-pick-go">前往</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
+
+          <div className="aa-dock-actions">
+            <button type="button" className="aa-dock-btn" onClick={nextPair} disabled={busy} aria-busy={busy}>
+              {busy ? '挑選中…' : '換一組'}
+            </button>
+            <button type="button" className="aa-dock-btn" onClick={() => onOpenFull()}>
+              完整助手
+            </button>
+          </div>
 
           <p className="aa-dock-foot">
             剩 {fmtRemainingDetail(remaining)} · 數據攻略僅供參考
@@ -280,7 +257,6 @@ function RoomStats({ room, now }: { room: ScoredRoom; now: number }) {
     </>
   );
 }
-
 
 /** 駐守小卡的簡單狀態（載入中、未登入、暫停服務），版面與小卡一致 */
 export function DockMessage({ note, action }: { note: string; action?: { label: string; onClick: () => void } }) {

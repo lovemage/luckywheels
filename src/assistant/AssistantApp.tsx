@@ -10,7 +10,7 @@ import { AssistantHome } from './views/AssistantHome.js';
 import { RecommendView } from './views/RecommendView.js';
 import { ExchangeView } from './views/ExchangeView.js';
 import { RulesView } from './views/RulesView.js';
-import { backToGame, hasDock, isNativeApp, requestDockMode } from '../native.js';
+import { backToGame, hasDock, isNativeApp } from '../native.js';
 import './assistant.css';
 
 // 新版（數據助手）。上線前只有通過預覽閘門的人看得到（DATA_ASSISTANT_ENABLED=preview）。
@@ -109,13 +109,8 @@ export function AssistantApp({
           <TabButton active={view === 'recommend'} icon={<InkIcon name="recommend" />} label="本金推薦" onClick={() => go('recommend')} />
           <TabButton active={view === 'exchange'} icon={<InkIcon name="exchange" />} label="兌換" onClick={() => go('exchange')} />
           {isNativeApp ? (
-            // App 內：遊戲就在面板後面。1.1.0+ 回到駐守小卡；舊版直接收合面板
-            <TabButton
-              active={false}
-              icon={<Gamepad2 aria-hidden="true" />}
-              label={hasDock ? '駐守' : '回遊戲'}
-              onClick={() => (hasDock ? requestDockMode('dock') : backToGame())}
-            />
+            // App 內：網站是全螢幕，遊戲在後面；按這顆才切到遊戲畫面（1.1.0+ 的文字為「進入遊戲」）
+            <TabButton active={false} icon={<Gamepad2 aria-hidden="true" />} label={hasDock ? '進入遊戲' : '回遊戲'} onClick={backToGame} />
           ) : (
             <TabButton active={false} icon={<InkIcon name="wheel" />} label="輪盤" onClick={onExit} />
           )}

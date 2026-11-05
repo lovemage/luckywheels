@@ -11,4 +11,9 @@
     <string name="update_download">下載更新</string>
     <string name="update_later">稍後</string>
     <string name="no_browser">找不到可以開啟登入頁的瀏覽器</string>
+    <string name="switch_need_game">請先進入遊戲畫面，再點推薦機台</string>
+    <string name="switch_loading">正在切換到 #%1$s，載入後請按「開始遊戲」</string>
+    <string name="switch_done">已切換到 #%1$s</string>
+    <string name="switch_unavailable">#%1$s 目前無法選取，請換一台</string>
+    <string name="switch_failed">無法自動切換到 #%1$s，請在遊戲裡手動選擇</string>
 </resources>
