@@ -8,6 +8,7 @@ import { COLLECT_INTRO_MS, CollectingLoader } from '../CollectingLoader.js';
 import { fmtAgo, fmtClock, fmtInt, fmtRemainingDetail, fmtRtp, fmtStamp, slotIconFor } from '../format.js';
 import type { AssistantView } from '../AssistantApp.js';
 import { isNativeApp } from '../../native.js';
+import { SignalCard } from '../SignalCard.js';
 
 // Android 手機的瀏覽器（不在 App 內）才顯示安裝 App 的入口
 const showAppInstall = !isNativeApp && typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
@@ -102,6 +103,8 @@ export function AssistantHome({
         <EntryTile icon={<InkIcon name="exchange" />} title="積分兌換" sub="開通・延長時間" onClick={() => onNavigate('exchange')} />
         <EntryTile icon={<InkIcon name="history" />} title="兌換紀錄" sub="開通與到期" onClick={() => onNavigate('exchange', 'aa-history')} />
       </nav>
+
+      {me && active && <SignalCard onExpired={onExpired} />}
 
       <section className="aa-top" id="aa-top" aria-labelledby="aa-top-title">
         <div className="aa-section-head">

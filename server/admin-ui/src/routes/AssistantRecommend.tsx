@@ -33,6 +33,11 @@ const END_REASONS: Record<SignalEndReason, string> = {
 };
 
 const SYMBOL_LABELS: Record<string, string> = {
+  silver: '銀',
+  gold: '黃金',
+  platinum: '白金',
+  obsidian: '曜金',
+  // 2026-11-05 以前發出的舊訊號
   yellow_gem: '黃寶石',
   red_gem: '紅寶石',
   blue_gem: '藍寶石',

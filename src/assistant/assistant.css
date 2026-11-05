@@ -1623,3 +1623,169 @@ fieldset.aa-field {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── 曜金訊號（首頁）──────────────────────
+   一塊牌面、2–3 個轉軸窗格（細金線分隔，不做成各自的卡片）；元寶後方一圈暖光，讓黑色的曜金也看得清楚。
+   新訊號出現時符號依序「停輪」落下，是本區唯一的動態。 */
+
+.aa-signal {
+  padding: 30px 16px 0;
+}
+
+.aa-signal-plate {
+  margin-top: 14px;
+  padding: 6px 0 14px;
+  border: 1px solid var(--aa-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--aa-surface-hi), var(--aa-surface) 70%);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.aa-signal-symbols {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aa-signal-cell {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 6px 4px;
+}
+
+.aa-signal-cell + .aa-signal-cell::before {
+  position: absolute;
+  inset: 14px auto 10px 0;
+  width: 1px;
+  content: '';
+  background: linear-gradient(180deg, transparent, var(--aa-line-strong), transparent);
+}
+
+.aa-signal-cell img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  background: radial-gradient(closest-side, rgba(255, 214, 140, 0.24), rgba(255, 214, 140, 0) 100%);
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55));
+}
+
+.aa-signal-mult {
+  color: var(--aa-gold-hi);
+  font-size: 26px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-signal-name {
+  color: var(--aa-muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.aa-signal-plate.is-skeleton .aa-signal-cell {
+  padding-block: 18px 22px;
+}
+
+.aa-signal-plate.is-skeleton .aa-skel--icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+
+.aa-signal-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 16px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--aa-line);
+}
+
+.aa-signal-meter-label {
+  flex-shrink: 0;
+  color: var(--aa-muted);
+  font-size: 13px;
+}
+
+.aa-signal-meter-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(232, 194, 116, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(232, 194, 116, 0.18);
+}
+
+.aa-signal-meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--aa-gold-deep), var(--aa-gold-hi));
+  transition: width 600ms var(--aa-ease);
+}
+
+.aa-signal-meter-value {
+  flex-shrink: 0;
+  min-width: 3.2em;
+  color: var(--aa-gold-hi);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.aa-signal-note {
+  margin: 12px 0 0;
+  color: var(--aa-gold);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.aa-signal .aa-button--block {
+  margin-top: 14px;
+}
+
+/* 停輪：從上方帶一點模糊落下，依序 90ms */
+.aa-signal-plate:not(.is-skeleton) .aa-signal-cell {
+  animation: aa-signal-land 620ms var(--aa-ease) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+.aa-signal-plate:not(.is-skeleton) .aa-signal-meter-fill {
+  animation: aa-signal-meter 900ms var(--aa-ease) 280ms both;
+}
+
+@keyframes aa-signal-land {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(-18px);
+  }
+}
+
+@keyframes aa-signal-meter {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aa-signal-plate .aa-signal-cell,
+  .aa-signal-plate .aa-signal-meter-fill {
+    animation: none;
+  }
+}
+
+.aa-signal-x {
+  margin-right: 2px;
+  color: var(--aa-gold);
+  font-size: 0.62em;
+  vertical-align: 0.18em;
+}

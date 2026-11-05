@@ -5,13 +5,13 @@ import { loadScoreBoard } from './board.js';
 import type { FreshnessSettings, RecommendSettings, SignalSettings } from './settings.js';
 
 // 訊號（計劃 M3 訊號草案，2026-11-03 折衷做法）：
-// - 符號組合隨機（2–3 種原創寶石符號，各配 ×2–×6），但每則都綁一間「發出當下」未逾時、分數 ≥ 門檻的真實空台
+// - 符號組合隨機（2–3 種金屬：銀／黃金／白金／曜金，各配 ×2–×6；2026-11-05 由寶石改為金屬），但每則都綁一間「發出當下」未逾時、分數 ≥ 門檻的真實空台
 // - 會員端不顯示綁定的房間，後台可追查；強度 % 由綁定房間的分數換算，不是亂數
 // - 換組條件（任一成立）：會員按「免遊結束，換一組」、綁定房間開過免遊、今日 RTP 變動達門檻、
 //   房間變成有人／被預約／停用、資料逾時
 // - 每位會員同時只有一則有效訊號；在讀取時檢查換組條件（之後的推播 worker 沿用 endReasonFor）
 
-export const SIGNAL_SYMBOLS = ['yellow_gem', 'red_gem', 'blue_gem', 'green_gem', 'purple_gem', 'scarab'] as const;
+export const SIGNAL_SYMBOLS = ['silver', 'gold', 'platinum', 'obsidian'] as const;
 export type SignalSymbol = (typeof SIGNAL_SYMBOLS)[number];
 export interface SignalSymbolPick {
   symbol: SignalSymbol;
@@ -41,6 +41,10 @@ export function randomSymbols(rand: Rand = randomInt): SignalSymbolPick[] {
   }
   return out;
 }
+
+const hasCurrentSymbols = (s: Pick<AssistantSignal, 'symbols'>) =>
+  Array.isArray(s.symbols) &&
+  (s.symbols as unknown as SignalSymbolPick[]).every((x) => (SIGNAL_SYMBOLS as readonly string[]).includes(x?.symbol));
 
 /** 分數 0 → strengthMin、100 → strengthMax */
 export const strengthFor = (score: number, s: SignalSettings) =>
@@ -162,9 +166,12 @@ export async function currentSignal(ctx: SignalContext, refresh = false): Promis
         } else {
           reason = endReasonFor(active, active.room, ctx.now, ctx.freshness, ctx.signal);
         }
+        // 2026-11-05 以前發出的寶石訊號：直接換成金屬新訊號，不提示會員
+        const legacy = !refresh && !hasCurrentSymbols(active);
+        if (legacy) reason = 'member_refresh';
         if (!reason) return { signal: present(active), replaced: null, message: null, disclaimer: SIGNAL_DISCLAIMER };
         await tx.assistantSignal.update({ where: { id: active.id }, data: { endedAt: ctx.now, endReason: reason } });
-        replaced = { reason, message: END_MESSAGES[reason] };
+        replaced = legacy ? null : { reason, message: END_MESSAGES[reason] };
       }
 
       const next = await issue(tx, ctx, active?.roomId ?? null);

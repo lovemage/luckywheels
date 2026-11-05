@@ -149,3 +149,31 @@ export const postExchange = (plan: TimePlan, idempotencyKey: string) =>
   });
 
 export const fetchExchanges = () => api<{ items: ExchangeRecord[] }>('/api/assistant/exchanges');
+
+// ── 訊號 ──
+/** 銀／黃金／白金／曜金（server/src/assistant/signal.ts SIGNAL_SYMBOLS） */
+export type SignalSymbol = 'silver' | 'gold' | 'platinum' | 'obsidian';
+
+export interface SignalView {
+  id: string;
+  symbols: { symbol: SignalSymbol; multiplier: number }[];
+  /** 強度 %，由綁定機台的綜合分數換算 */
+  strength: number;
+  issuedAt: string;
+}
+
+export interface SignalResponse {
+  game: { code: string; name: string };
+  signal: SignalView | null;
+  /** 這次讀取時自動換掉了舊訊號 */
+  replaced: { reason: string; message: string } | null;
+  /** 沒有可用訊號時的說明 */
+  message: string | null;
+  disclaimer: string;
+  serverTime: string;
+}
+
+export const fetchSignal = () => api<SignalResponse>('/api/assistant/signal');
+
+/** 「免遊結束，換一組」；冷卻中回 429 SIGNAL_REFRESH_COOLDOWN */
+export const refreshSignal = () => api<SignalResponse>('/api/assistant/signal/refresh', { method: 'POST' });
