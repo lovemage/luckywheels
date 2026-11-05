@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight, Coins, Hourglass, Search } from 'lucide-react';
+import { BookOpen, Coins, Hourglass } from 'lucide-react';
 import { ApiError } from '../../api/client.js';
 import { fetchTopRooms, type AssistantMe, type RoomsResponse } from '../../api/assistant.js';
 import { LightPillars } from '../LightPillars.js';
+import { HeroCat } from '../HeroCat.js';
 import { COLLECT_INTRO_MS, CollectingLoader } from '../CollectingLoader.js';
 import { fmtAgo, fmtClock, fmtInt, fmtRemaining, fmtRtp, fmtStamp, slotIconFor } from '../format.js';
 import type { AssistantView } from '../AssistantApp.js';
@@ -83,17 +84,7 @@ export function AssistantHome({
             機台數據<span className="aa-hero-gap" /> 一眼看清
           </h1>
           <p className="aa-hero-sub">ATG 房間整理 · 本金條件篩選</p>
-          {me && (
-            active ? (
-              <button type="button" className="aa-cta" onClick={() => onNavigate('recommend')}>
-                輸入本金找機台 <ChevronRight aria-hidden="true" />
-              </button>
-            ) : (
-              <button type="button" className="aa-cta" onClick={() => onNavigate('exchange')}>
-                用積分開通 <ChevronRight aria-hidden="true" />
-              </button>
-            )
-          )}
+          <HeroCat />
           <p className="aa-hero-pass">
             {!me ? ' ' : active ? `使用中 · 剩 ${fmtRemaining(me.pass.remainingSeconds)}` : `目前積分 ${fmtInt(me.points)}`}
           </p>
@@ -101,7 +92,7 @@ export function AssistantHome({
       </section>
 
       <nav className="aa-entries" aria-label="功能入口">
-        <EntryTile icon={<Search />} title="精選空台" sub="即時空台排行" onClick={() => document.getElementById('aa-top')?.scrollIntoView({ behavior: 'smooth' })} />
+        <EntryTile icon={<BookOpen />} title="曜金規則" sub="數據怎麼看" onClick={() => onNavigate('rules')} />
         <EntryTile icon={<Coins />} title="本金推薦" sub="依本金篩選" onClick={() => onNavigate('recommend')} />
         <EntryTile icon={<Hourglass />} title="積分兌換" sub="開通・延長時間" onClick={() => onNavigate('exchange')} />
         <EntryTile icon={<SlotIcon />} title="兌換紀錄" sub="開通與到期" onClick={() => onNavigate('exchange', 'aa-history')} />

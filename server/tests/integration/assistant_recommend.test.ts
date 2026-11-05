@@ -103,8 +103,10 @@ describe('member assistant recommend API', { timeout: 60_000 }, () => {
       minBetAdvice: '建議單注 10 元以上',
       disclaimer: '排序參考，不代表遊戲結果',
     });
-    expect(nos(body)).toEqual(['001']);
-    expect(body.items[0]).toMatchObject({ score: 75, premium: true });
+    // 只有 001 達 70 分；其餘名額以未達門檻的空台補上（不含使用中的 002 與逾時的 006）
+    expect(nos(body)).toEqual(['001', '005', '003', '004']);
+    expect(body.items[0]).toMatchObject({ score: 75, premium: true, belowThreshold: false });
+    expect(body.items.slice(1).every((i: { belowThreshold: boolean }) => i.belowThreshold)).toBe(true);
     expect(body.items[0].reasons).toEqual([
       '未開 900 轉，多於同遊戲 60% 的機台',
       '今日 RTP 50%，低於同遊戲 60% 的機台',
@@ -113,17 +115,24 @@ describe('member assistant recommend API', { timeout: 60_000 }, () => {
 
     const logs = await prisma.recommendationLog.findMany();
     expect(logs).toHaveLength(1);
-    expect(logs[0]).toMatchObject({ userId: user.id, principal: 8000, multiplier: 1, threshold: 70, resultCount: 1 });
+    expect(logs[0]).toMatchObject({ userId: user.id, principal: 8000, multiplier: 1, threshold: 70, resultCount: 4 });
     expect((logs[0]!.results as { roomNo: string }[])[0]!.roomNo).toBe('001');
   });
 
-  it('raises the threshold per extra multiplier and returns an empty list when nothing qualifies', async () => {
+  it('raises the threshold per extra multiplier and still recommends the best idle rooms when nothing qualifies', async () => {
     await seedRooms();
     const { headers } = await member();
     const r = await post({ principal: 10000, multiplier: 5 }, headers);
     expect(r.status).toBe(200);
     expect(r.body.threshold).toBe(92);
-    expect(r.body.items).toEqual([]);
+    expect(nos(r.body)).toEqual(['001', '005', '003', '004']);
+    expect(r.body.items.every((i: { belowThreshold: boolean }) => i.belowThreshold)).toBe(true);
+
+    // 補上的機台也會分散：每次 1 間時，三次拿到不同房間
+    await prisma.appSetting.create({ data: { key: 'assistantRecommendCount', value: '1' } });
+    const got = new Set<string>();
+    for (let i = 0; i < 3; i++) got.add(nos((await post({ principal: 30000, multiplier: 5 }, headers)).body)[0]!);
+    expect(got.size).toBe(3);
   });
 
   it('spreads members over the pool and avoids rooms recommended in the last minutes', async () => {

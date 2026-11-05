@@ -8,16 +8,18 @@ import { BrandMark } from './BrandMark.js';
 import { AssistantHome } from './views/AssistantHome.js';
 import { RecommendView } from './views/RecommendView.js';
 import { ExchangeView } from './views/ExchangeView.js';
+import { RulesView } from './views/RulesView.js';
 import './assistant.css';
 
 // 新版（數據助手）。上線前只有通過預覽閘門的人看得到（DATA_ASSISTANT_ENABLED=preview）。
 
-export type AssistantView = 'home' | 'recommend' | 'exchange';
+export type AssistantView = 'home' | 'recommend' | 'exchange' | 'rules';
 
 const TITLES: Record<AssistantView, string> = {
   home: ASSISTANT_BRAND,
   recommend: '本金推薦',
   exchange: '積分兌換',
+  rules: '曜金規則',
 };
 
 export function AssistantApp({ me: profile, onExit, onLocked }: { me: MeProfile; onExit: () => void; onLocked: () => void }) {
@@ -80,6 +82,8 @@ export function AssistantApp({ me: profile, onExit, onLocked }: { me: MeProfile;
             <AssistantHome me={me} nickname={profile.nickname ?? profile.displayName} onNavigate={go} />
           ) : view === 'recommend' ? (
             <RecommendView me={me} onNavigate={go} />
+          ) : view === 'rules' ? (
+            <RulesView me={me} onNavigate={go} />
           ) : (
             <ExchangeView me={me} onChanged={reload} />
           )}

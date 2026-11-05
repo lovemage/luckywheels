@@ -82,6 +82,8 @@ export interface RecommendItem {
   room: RoomView;
   score: number;
   premium: boolean;
+  /** 分數未達門檻、因符合門檻的機台不足而補上 */
+  belowThreshold: boolean;
   reasons: string[];
 }
 

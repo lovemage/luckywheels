@@ -206,6 +206,34 @@ body:has(.aa-stage) {
   text-align: center;
 }
 
+/* Hero 金色胖貓（精靈條逐幀播放） */
+.aa-cat {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 126px;
+  margin-top: 2px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(232, 194, 116, 0.18));
+}
+
+.aa-cat-frame {
+  overflow: hidden;
+}
+
+.aa-cat-strip {
+  display: block;
+  max-width: none;
+  animation: aa-cat-play 2.6s steps(16) infinite;
+  user-select: none;
+  pointer-events: none;
+}
+
+@keyframes aa-cat-play {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
 .aa-hero h1 {
   margin: 0;
   font-size: clamp(30px, 9vw, 38px);
@@ -743,7 +771,8 @@ body:has(.aa-stage) {
 }
 
 /* 動畫結束後，TOP 5 逐列浮現 */
-.aa-rooms.is-reveal .aa-room {
+.aa-rooms.is-reveal .aa-room,
+.aa-picks.is-reveal .aa-pick {
   animation: aa-room-in 0.5s var(--aa-ease) both;
   animation-delay: calc(var(--i, 0) * 70ms);
 }
@@ -871,6 +900,119 @@ body:has(.aa-stage) {
   margin: 28px 0 12px;
   color: var(--aa-gold-hi);
   font-size: 19px;
+}
+
+.aa-results-fill {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--aa-surface);
+  color: var(--aa-muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+/* 曜金規則 */
+
+.aa-rules-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.aa-rules-toc a {
+  padding: 5px 12px;
+  border: 1px solid var(--aa-line-strong);
+  border-radius: 999px;
+  color: var(--aa-gold);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.aa-rule {
+  padding-top: 28px;
+  scroll-margin-top: 64px;
+}
+
+.aa-rule-weight {
+  margin: 10px 0 0;
+  color: var(--aa-gold);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.aa-rule-meaning {
+  margin: 6px 0 0;
+  color: var(--aa-ink);
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.aa-reasons.aa-rule-points {
+  margin: 12px 0 0;
+  gap: 8px;
+}
+
+.aa-rule-points li {
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.aa-rule-example {
+  display: grid;
+  gap: 2px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--aa-line-strong);
+  border-radius: 8px;
+}
+
+.aa-rule-example-label {
+  margin-bottom: 2px;
+  color: var(--aa-gold);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.aa-rule-example p {
+  margin: 0;
+  color: var(--aa-ink);
+  font-size: 13.5px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-rule-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 28px;
+  padding: 14px 16px;
+  border: 1px solid var(--aa-line);
+  border-radius: 10px;
+  background: var(--aa-surface);
+}
+
+.aa-rule-note-title {
+  margin: 0 0 4px;
+  color: var(--aa-gold-hi);
+  font-size: 15px;
+}
+
+.aa-rule-note p {
+  margin: 0;
+  color: var(--aa-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.aa-rules-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
 }
 
 /* 本金推薦表單 */
@@ -1258,13 +1400,17 @@ fieldset.aa-field {
   .aa-streaks {
     display: none;
   }
+  .aa-cat-strip {
+    animation: none;
+  }
   .aa-pillars-rise,
   .aa-skel,
   .aa-collect,
   .aa-collect-stream-track,
   .aa-collect-sweep,
   .aa-collect-dot,
-  .aa-rooms.is-reveal .aa-room {
+  .aa-rooms.is-reveal .aa-room,
+  .aa-picks.is-reveal .aa-pick {
     animation: none;
   }
   .aa-collect-sweep {

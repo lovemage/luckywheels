@@ -10,6 +10,7 @@ import {
   type RecommendTier,
 } from '../../api/assistant.js';
 import { fmtClock, fmtInt, fmtRtp, slotIconFor } from '../format.js';
+import { COLLECT_INTRO_MS, CollectingLoader, RECOMMEND_STEPS } from '../CollectingLoader.js';
 import type { AssistantView } from '../AssistantApp.js';
 
 // 本金推薦：輸入本金與目標倍數 → 伺服器依級距門檻篩出符合條件的空台（前端只顯示）
@@ -69,10 +70,14 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
     }
     setBusy(true);
     setError(null);
+    setResult(null);
+    // 與精選空台相同：先播約 4.5 秒「數據助手採集中」動畫，再顯示結果（請求同時在背景送出；失敗則立即提示）
+    requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    const intro = new Promise((resolve) => window.setTimeout(resolve, COLLECT_INTRO_MS));
     try {
       const r = await postRecommend(principal, multiplier);
+      await intro;
       setResult(r);
-      requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     } catch (err) {
       if (err instanceof ApiError && err.code === 'ASSISTANT_EXPIRED') setError('使用期限已到期，請先兌換開通');
       else setError(err instanceof ApiError ? ERRORS[err.code] ?? '推薦暫時無法取得，請稍後再試' : '連線失敗，請稍後再試');
@@ -163,7 +168,16 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
         {config && <p className="aa-footnote">{config.minBetAdvice}</p>}
       </form>
 
-      {result && (
+      {busy && (
+        <section className="aa-results" ref={resultRef} aria-labelledby="aa-results-title">
+          <div className="aa-section-head">
+            <h2 id="aa-results-title" className="aa-display">符合條件的機台</h2>
+          </div>
+          <CollectingLoader steps={RECOMMEND_STEPS} />
+        </section>
+      )}
+
+      {!busy && result && (
         <section className="aa-results" ref={resultRef} aria-labelledby="aa-results-title" aria-live="polite">
           <div className="aa-section-head">
             <h2 id="aa-results-title" className="aa-display">符合條件的機台</h2>
@@ -173,12 +187,20 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
 
           {result.items.length === 0 ? (
             <div className="aa-notice">
-              <p>目前沒有分數達到 {result.threshold} 分的空台。可以降低目標倍數，或過幾分鐘資料更新後再試。</p>
+              <p>目前沒有可推薦的空台，請過幾分鐘資料更新後再試。</p>
             </div>
           ) : (
-            <ol className="aa-picks">
+            <>
+            {result.items.some((i) => i.belowThreshold) && (
+              <p className="aa-results-fill">
+                {result.items.every((i) => i.belowThreshold)
+                  ? `目前沒有達到 ${result.threshold} 分的空台，以下為分數最高的空台`
+                  : `達到 ${result.threshold} 分的空台不足 ${result.items.length} 間，其餘以分數最高的空台補上`}
+              </p>
+            )}
+            <ol className="aa-picks is-reveal">
               {result.items.map((item, i) => (
-                <li key={item.room.id} className="aa-pick">
+                <li key={item.room.id} className="aa-pick" style={{ '--i': i } as React.CSSProperties}>
                   <div className="aa-pick-head">
                     <span className="aa-room-rank">{i + 1}</span>
                     <img className="aa-room-icon" src={slotIconFor(item.room.roomNo)} alt="" width="48" height="48" loading="lazy" />
@@ -209,6 +231,7 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
                 </li>
               ))}
             </ol>
+            </>
           )}
           <p className="aa-footnote">{result.minBetAdvice}</p>
           <p className="aa-disclaimer">{result.disclaimer} · 數據僅供參考，不保證獲利</p>

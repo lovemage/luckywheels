@@ -10,6 +10,8 @@ export { MAX_TARGET_MULTIPLIER, readRecommendSettings, type RecommendSettings, t
 // 輸入本金＋今日目標倍數 → 本金級距決定分數門檻與最高倍數 → 門檻 = 級距分數 +（倍數 − 1）× 每倍加分
 // → 未逾時的空台、分數 ≥ 門檻 → 取分數前 poolSize 間為候選池 → 從中分散挑 N 間（2026-11-05 業主：
 //   同條件的會員不要都拿到同一批、擠進同一間；近 avoidMinutes 分鐘已推薦過的房間優先避開）
+// → 符合門檻的不足 N 間時，從其餘空台依分數補滿（2026-11-05 業主：任何本金都要有推薦機台），
+//   補上的機台標 belowThreshold
 // → 依分數排序顯示，每間附 2–3 條由實際數據產生的理由。
 // 措辭只能是「排序參考」，不得暗示中獎機率、預測或保證獲利（計劃 1.2）。
 
@@ -109,6 +111,8 @@ export interface RecommendItem {
   score: number;
   /** 未逾時空台中分數前 premiumPercent%（精品） */
   premium: boolean;
+  /** 分數未達門檻、因符合門檻的機台不足而補上 */
+  belowThreshold: boolean;
   reasons: string[];
 }
 
@@ -144,16 +148,28 @@ export async function recommend(
   // board 已依分數排序
   const idle = board.rooms.filter((x) => x.room.status === 'idle');
 
-  const pool = idle.filter((x) => x.score.score >= threshold).slice(0, Math.max(settings.poolSize, settings.count));
+  const poolSize = Math.max(settings.poolSize, settings.count);
+  const qualified = idle.filter((x) => x.score.score >= threshold);
   const recent = await recentlyRecommended(prisma, gameId, now, settings.avoidMinutes);
 
-  const items = pickSpread(pool, settings.count, recent)
-    .map((x) => ({
-      room: x.room,
-      score: x.score.score,
-      premium: x.premium,
-      reasons: buildReasons(x.room, x.score),
-    }));
+  let picked: typeof idle;
+  if (qualified.length >= settings.count) {
+    picked = pickSpread(qualified.slice(0, poolSize), settings.count, recent);
+  } else {
+    // 符合門檻的全部列出，其餘名額從未達門檻的空台（依分數取前段）分散補滿
+    const rest = idle.filter((x) => x.score.score < threshold);
+    const fill = pickSpread(rest.slice(0, Math.max(poolSize - qualified.length, settings.count - qualified.length)), settings.count - qualified.length, recent);
+    const chosen = new Set([...qualified, ...fill]);
+    picked = idle.filter((x) => chosen.has(x));
+  }
+
+  const items = picked.map((x) => ({
+    room: x.room,
+    score: x.score.score,
+    premium: x.premium,
+    belowThreshold: x.score.score < threshold,
+    reasons: buildReasons(x.room, x.score),
+  }));
 
   return {
     tier: { label, minScore: tier.minScore, maxMultiplier: tier.maxMultiplier },
