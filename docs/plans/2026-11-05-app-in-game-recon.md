@@ -14,7 +14,29 @@
 | 押注 | `GameView/content/uiLayer/SpinBarLandScape/stakeContent/stake` | `1` |
 | JP（GRAND/MAJOR/MINOR/MINI） | `GameView/content/uiLayer/TopBar/JpBarL/content/*/num` | `135,313.27` |
 
-直式畫面的節點名稱可能不同（`SpinBarLandScape` 是橫式），手機上需再確認。
+### 直式版面（2026-11-05 第二次實測）
+
+遊戲預設是橫式，直式手機上是橫式畫面加上下黑邊；右上 `rotateScreenBtn` 跳確認視窗
+「是否將遊戲畫面變更為橫向或直向?」，按確定後**重新載入遊戲，並且會換到另一台機台**
+（實測 #1072 → #2566、#183 → #1751、#574 → #2746），玩家要知道這件事。
+
+| 項目 | 直式節點（`GameView/content/uiLayer/` 之下） |
+| --- | --- |
+| 機台按鈕／目前機台號 | `SpinBarP/spinContent/slotTableBtn`（文字在子節點） |
+| 押注 | `InfoBarP/content/betAmount`（文字在子節點） |
+| 點數／贏分 | 同橫式：`balanceLabel`／`totalWinLabel` |
+| Spin | `SpinBarP/spinContent/SpineButton` |
+| 押注加減 | `SpinBarP/spinContent/plusBtn`／`minusBtn` |
+| 選擇機台清單 | `SlotTableViewP`，內部結構與橫式相同（`SlotTablePageTabsItem`、`SlotTableItem2`、`slotTableNumber`、`confirmBtn`／`selectBtn`） |
+
+`game-bridge.js` 的 HUD 與切換機台已同時支援兩種版面（1.2.1）。
+
+### 切換機台的兩個坑（1.2.1 修正）
+
+- 遊戲中打開清單後，清單會先載入目前那一頁；這時立刻換頁，兩個請求互撞，清單停在空白（`PAGE_TIMEOUT`）。
+  要等 `loadingContent` 消失再多等 1 秒才換頁。1.2.0 只驗證過同一頁內切換，所以沒抓到。
+- 分頁籤只觸發 clickEvents，不可再 `emit('click')`（會清空不載入）；機台格則一定要 `emit('click')`，細項才會更新。
+- 細項的確定／選取鈕 `interactable=false` 代表有人在玩（實測對照清單狀態皆為 busy）；遊戲中有時顯示的是 `selectBtn` 而非 `confirmBtn`。
 
 ## 切換機台流程
 
@@ -27,5 +49,6 @@
 
 ## 遊玩紀錄（待測）
 
-點數為 0 無法轉動，尚未驗證：每轉時點數／贏分的變化順序、免費遊戲期間的顯示、押注切換。
-需要帳號有 ATG 點數後實測，再定義每轉紀錄（押注、贏分、轉前／轉後點數）。
+第二組測試帳號（`.env` 的 `TEST_ACCOUNT`）ATG 點數 0.50，戰神賽特 II **最低押注 1**（按「−」降不下去，按「+」為 2、3），
+點數不足一注，所以仍無法轉動。尚未驗證：每轉時點數／贏分的變化順序、免費遊戲期間的顯示、押注切換。
+需要帳號至少有幾十點 ATG 點數再實測，定義每轉紀錄（押注、贏分、轉前／轉後點數）。

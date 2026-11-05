@@ -19,8 +19,8 @@ android {
         applicationId = "com.luckyds.assistant"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.2.1"
 
         // 助手（會員 SPA）所在網域；娛樂城網址由 /api/public/app-config 下發，這裡只是預設值
         // 本機測試可用 ./gradlew assembleDebug -PassistantOrigin=http://localhost:5199 指向開發伺服器

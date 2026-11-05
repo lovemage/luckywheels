@@ -36,14 +36,15 @@
     }
     return null;
   }
-  // 按鈕有 clickEvents 就觸發它；沒有的（例如切換確認視窗）送觸控事件給節點
-  function press(node) {
+  // 按鈕有 clickEvents 就觸發它；沒有的（例如切換確認視窗）送觸控事件給節點。
+  // 機台格要再 emit('click') 細項才會更新；分頁籤多送 click 會讓直式清單清空後不再載入，所以換頁時傳 noClick。
+  function press(node, noClick) {
     var t = clickable(node);
     if (!t) return false;
     if (t.comp.clickEvents && t.comp.clickEvents.length) {
       var EH = cc().EventHandler || cc().Component.EventHandler;
       EH.emitEvents(t.comp.clickEvents, { target: t.node });
-      t.node.emit('click', t.comp);
+      if (!noClick) t.node.emit('click', t.comp);
       return true;
     }
     var v = new (cc().Vec2)(0, 0);
@@ -78,6 +79,21 @@
     var n = byName('slotTableNumber', true);
     return n ? textOf(n) : null;
   }
+  // 節點底下第一個符合的文字（直式版面的文字節點名稱和橫式不同，用內容找）
+  function textUnder(node, re) {
+    var hit = null;
+    if (!node) return null;
+    walk(node, function (n) {
+      if (hit || !n.activeInHierarchy) return;
+      var t = textOf(n);
+      if (t && re.test(t.trim())) hit = t.trim();
+    });
+    return hit;
+  }
+  // 機台按鈕：橫式 slotTable2Btn、直式 slotTableBtn
+  function roomButton() {
+    return byName('slotTable2Btn', true) || byName('slotTableBtn', true);
+  }
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   async function until(fn, ms) {
     var end = Date.now() + ms;
@@ -96,11 +112,14 @@
       if (!ready()) throw new Error('NOT_READY');
       // 1. 開「選擇機台」（遊戲中按機台按鈕；剛進遊戲時清單本來就開著）
       if (listItems().length === 0) {
-        var btn = byName('slotTable2Btn', true);
+        var btn = roomButton();
         if (!btn) throw new Error('NOT_IN_GAME');
         press(btn);
         if (!(await until(function () { return listItems().length > 0; }, 8000))) throw new Error('LIST_NOT_OPEN');
       }
+      // 清單第一次打開時還在載入目前那一頁；這時候換頁會兩個請求互撞、清單停在空白，所以等載入完再動
+      await until(function () { var l = byName('loadingContent', true); return !l; }, 8000);
+      await sleep(1000);
       // 2. 切到該分頁（每頁 500 台）
       var n = Number(roomNo);
       var page = Math.floor((n - 1) / 500) + 1;
@@ -116,8 +135,8 @@
       if (!inPage()) {
         var pb = pageButton(page);
         if (!pb) throw new Error('PAGE_NOT_FOUND');
-        press(pb);
-        if (!(await until(inPage, 8000))) throw new Error('PAGE_TIMEOUT');
+        press(pb, true);
+        if (!(await until(inPage, 15000))) throw new Error('PAGE_TIMEOUT');
       }
       // 3. 點機台，等細項面板換成這台
       var item = listItems().filter(function (it) { return textOf(child(it, 'content/number')) === roomNo; })[0];
@@ -125,10 +144,17 @@
       press(item);
       if (!(await until(function () { return detailRoom() === roomNo; }, 8000))) throw new Error('DETAIL_TIMEOUT');
       // 4. 遊戲中是「確定」，剛進遊戲是「選取」＋確認視窗
-      var confirm = byName('confirmBtn', true) || byName('selectBtn', true);
+      var findConfirm = function () { return byName('confirmBtn', true) || byName('selectBtn', true); };
+      var confirm = await until(findConfirm, 3000);
       if (!confirm) throw new Error('NO_CONFIRM');
-      var c = clickable(confirm);
-      if (c && c.comp.interactable === false) throw new Error('ROOM_UNAVAILABLE');
+      // 細項剛換成這台時按鈕可能還沒啟用，等一下再判斷是否被占用
+      var usable = await until(function () {
+        var b = findConfirm();
+        var cb = b && clickable(b);
+        return cb && cb.comp.interactable !== false ? b : null;
+      }, 3000);
+      if (!usable) throw new Error('ROOM_UNAVAILABLE');
+      confirm = usable;
       press(confirm);
       var alertBtn = await until(function () {
         var a = byName('GameAlert', true);
@@ -145,13 +171,14 @@
   window.__lwApp = {
     hud: function () {
       if (!ready()) return null;
-      var roomNode = byName('slotTable2Btn', true);
-      var room = roomNode ? textOf(child(roomNode, 'num')) : null;
+      var room = textUnder(roomButton(), /^\d+$/);
       var bal = byName('balanceLabel', true);
       var win = byName('totalWinLabel', true);
-      var stake = find(function (n) { return n.name === 'stake' && n.activeInHierarchy && n.parent && n.parent.name === 'stakeContent'; })[0];
+      // 押注：橫式 stakeContent/stake、直式 InfoBarP/content/betAmount
+      var stakeNode = find(function (n) { return n.name === 'stake' && n.activeInHierarchy && n.parent && n.parent.name === 'stakeContent'; })[0];
+      var stake = stakeNode ? textOf(stakeNode) : textUnder(byName('betAmount', true), /^[\d.,]+$/);
       if (!room && !bal) return null;
-      return { room: room, balance: textOf(bal), win: textOf(win), stake: textOf(stake) };
+      return { room: room, balance: textOf(bal), win: textOf(win), stake: stake };
     },
     switchRoom: function (roomNo) { switchRoom(String(roomNo)); return true; },
     switchState: function () { return state; },
