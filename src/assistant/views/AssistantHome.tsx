@@ -190,7 +190,7 @@ export function AssistantHome({
             </>
           ))}
 
-        <p className="aa-disclaimer">數據僅供參考，不保證獲利</p>
+        <p className="aa-disclaimer">數據攻略僅供參考</p>
       </section>
 
       {showAppInstall && (

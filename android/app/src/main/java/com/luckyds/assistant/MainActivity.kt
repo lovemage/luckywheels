@@ -57,6 +57,11 @@ class MainActivity : AppCompatActivity() {
     private var expanded = false
     private var lastBackAt = 0L
 
+    /** 面板模式：dock＝駐守小卡（不擋遊戲操作），full＝完整助手 */
+    @Volatile private var mode = MODE_DOCK
+    /** 駐守小卡的內容高度（px，由網頁回報） */
+    private var dockHeightPx = 0
+
     /** 系統列、瀏海、鍵盤佔用的範圍（沉浸模式下系統列通常為 0） */
     private var safe = WindowInsetsCompat.CONSUMED.getInsets(WindowInsetsCompat.Type.systemBars())
     private var imeBottom = 0
@@ -91,8 +96,7 @@ class MainActivity : AppCompatActivity() {
                 layoutPanel()
             }
         }
-        scrim.setOnClickListener { collapse() }
-        findViewById<View>(R.id.panelCollapse).setOnClickListener { collapse() }
+        scrim.setOnClickListener { setMode(MODE_DOCK) }
         findViewById<View>(R.id.gameRetry).setOnClickListener {
             gameError.visibility = View.GONE
             if (gameLoaded) gameWeb.reload() else gameWeb.loadUrl(casinoUrl)
@@ -184,7 +188,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 直向：底部抽屜（約 80% 高）；橫向：右側面板。鍵盤出現時讓出空間（本金輸入框）。 */
+    /**
+     * 駐守小卡：直向貼在上方、橫向在右上角，高度跟著內容，遊戲其他區域照常可以操作。
+     * 完整助手：直向底部抽屜（約 80% 高）、橫向右側面板，背後加遮罩。鍵盤出現時讓出空間。
+     */
     private fun layoutPanel() {
         val w = root.width
         val h = root.height
@@ -192,6 +199,22 @@ class MainActivity : AppCompatActivity() {
         val m = (12 * dp).toInt()
         val bottom = max(safe.bottom, imeBottom) + m
         val lp = panel.layoutParams as FrameLayout.LayoutParams
+        if (mode == MODE_DOCK) {
+            val content = if (dockHeightPx > 0) dockHeightPx + panel.paddingTop + panel.paddingBottom else (120 * dp).toInt()
+            if (w < h) {
+                lp.width = min(w - safe.left - safe.right - 2 * m, (460 * dp).toInt())
+                lp.height = content.coerceAtMost((h * 0.6f).toInt())
+                lp.gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
+                lp.setMargins(0, safe.top + m, 0, 0)
+            } else {
+                lp.width = min((380 * dp).toInt(), (w * 0.45f).toInt())
+                lp.height = content.coerceAtMost(h - safe.top - bottom - m)
+                lp.gravity = android.view.Gravity.END or android.view.Gravity.TOP
+                lp.setMargins(0, safe.top + m, safe.right + m, 0)
+            }
+            panel.layoutParams = lp
+            return
+        }
         if (w < h) {
             lp.width = FrameLayout.LayoutParams.MATCH_PARENT
             lp.height = min((h * 0.82f).toInt(), h - safe.top - bottom - m)
@@ -206,13 +229,42 @@ class MainActivity : AppCompatActivity() {
         panel.layoutParams = lp
     }
 
-    private fun expand() {
-        if (expanded) return
+    /** 切換面板模式並通知網頁（src/native.ts 的 luckyapp:mode 事件） */
+    private fun setMode(next: String) {
+        if (next != MODE_DOCK && next != MODE_FULL) return
+        val changed = mode != next
+        mode = next
+        if (expanded) {
+            layoutPanel()
+            showScrim(next == MODE_FULL)
+        }
+        if (changed) {
+            panelWeb.evaluateJavascript(
+                "window.dispatchEvent(new CustomEvent('luckyapp:mode',{detail:'$next'}))", null,
+            )
+        }
+    }
+
+    private fun showScrim(show: Boolean) {
+        if (show && scrim.visibility != View.VISIBLE) {
+            scrim.alpha = 0f
+            scrim.visibility = View.VISIBLE
+            scrim.animate().alpha(1f).setDuration(180).start()
+        } else if (!show && scrim.visibility == View.VISIBLE) {
+            scrim.animate().alpha(0f).setDuration(160).withEndAction { scrim.visibility = View.GONE }.start()
+        }
+    }
+
+    /** 點金色按鈕：一律先開駐守小卡 */
+    private fun expand(target: String = MODE_DOCK) {
+        if (expanded) {
+            setMode(target)
+            return
+        }
         expanded = true
+        setMode(target)
         layoutPanel()
-        scrim.alpha = 0f
-        scrim.visibility = View.VISIBLE
-        scrim.animate().alpha(1f).setDuration(180).start()
+        showScrim(target == MODE_FULL)
         panel.alpha = 0f
         panel.translationY = 24 * dp
         panel.visibility = View.VISIBLE
@@ -227,7 +279,7 @@ class MainActivity : AppCompatActivity() {
             val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imm.hideSoftInputFromWindow(focused.windowToken, 0)
         }
-        scrim.animate().alpha(0f).setDuration(160).withEndAction { scrim.visibility = View.GONE }.start()
+        showScrim(false)
         panel.animate().alpha(0f).translationY(24 * dp).setDuration(180).withEndAction { panel.visibility = View.GONE }.start()
         bubbleView.visibility = View.VISIBLE
         bubbleView.animate().alpha(1f).setDuration(180).start()
@@ -235,6 +287,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun onBack() {
         when {
+            expanded && mode == MODE_FULL -> setMode(MODE_DOCK)
             expanded -> collapse()
             gameError.visibility == View.VISIBLE -> confirmExit()
             gameWeb.canGoBack() -> gameWeb.goBack()
@@ -315,7 +368,20 @@ class MainActivity : AppCompatActivity() {
             // 會員 SPA 以這個標記辨識 App（src/native.ts）
             userAgentString = "$userAgentString LuckyDsApp/${BuildConfig.VERSION_NAME}"
         }
-        panelWeb.addJavascriptInterface(AssistantBridge { runOnUiThread { collapse() } }, "LuckyApp")
+        panelWeb.addJavascriptInterface(
+            AssistantBridge(
+                onCollapse = { runOnUiThread { collapse() } },
+                onSetMode = { m -> runOnUiThread { setMode(m) } },
+                currentMode = { mode },
+                onResize = { cssHeight ->
+                    runOnUiThread {
+                        dockHeightPx = (cssHeight * dp).toInt()
+                        if (expanded && mode == MODE_DOCK) layoutPanel()
+                    }
+                },
+            ),
+            "LuckyApp",
+        )
         panelWeb.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url
@@ -339,7 +405,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isAssistantUrl(url: Uri) =
-        url.scheme == "https" && url.host.equals(origin.host, ignoreCase = true)
+        url.scheme == origin.scheme && url.host.equals(origin.host, ignoreCase = true) && url.port == origin.port
 
     // ── LINE 登入（Custom Tab → 交接碼 → 面板換 session） ──
 
@@ -369,7 +435,7 @@ class MainActivity : AppCompatActivity() {
         if (!code.isNullOrBlank()) {
             panelWeb.loadUrl("${BuildConfig.ASSISTANT_ORIGIN}/api/app/redeem?code=${Uri.encode(code)}")
         }
-        expand()
+        expand(MODE_DOCK)
     }
 
     private fun openExternal(uri: Uri) {
@@ -387,5 +453,10 @@ class MainActivity : AppCompatActivity() {
         } catch (_: Exception) {
             // 沒有可處理的 App：忽略
         }
+    }
+
+    companion object {
+        const val MODE_DOCK = "dock"
+        const val MODE_FULL = "full"
     }
 }

@@ -269,7 +269,7 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
             </>
           )}
           <p className="aa-footnote">{result.minBetAdvice}</p>
-          <p className="aa-disclaimer">{result.disclaimer} · 數據僅供參考，不保證獲利</p>
+          <p className="aa-disclaimer">{result.disclaimer} · 數據攻略僅供參考</p>
         </section>
       )}
     </div>

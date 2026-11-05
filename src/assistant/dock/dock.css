@@ -1,0 +1,220 @@
+/* App 駐守小卡：整個 WebView 就是這張卡（App 端負責圓角與外框），高度跟著內容回報給 App */
+
+html.is-dock,
+html.is-dock body {
+  margin: 0;
+  min-height: 0;
+  height: auto;
+  background: var(--aa-bg, #090705);
+  overflow: hidden;
+}
+
+.aa-dock {
+  --aa-bg: #090705;
+  --aa-surface: #120e09;
+  --aa-line: rgba(226, 182, 98, 0.26);
+  --aa-gold: #e8c274;
+  --aa-gold-hi: #ffe3a6;
+  --aa-ink: #f2e9d6;
+  --aa-muted: #b4a68a;
+  --aa-success: #bfe3a8;
+  box-sizing: border-box;
+  padding: 10px 12px 10px;
+  background: var(--aa-bg);
+  color: var(--aa-ink);
+  font: 14px/1.5 system-ui, 'Noto Sans TC', 'PingFang TC', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.aa-dock *,
+.aa-dock *::before,
+.aa-dock *::after {
+  box-sizing: border-box;
+}
+
+.aa-dock-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.aa-dock-brand .aa-mark {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+.aa-dock-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.aa-dock-room {
+  color: var(--aa-gold-hi);
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-dock-game {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--aa-muted);
+  font-size: 13px;
+}
+
+.aa-dock-close {
+  flex: none;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--aa-gold);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--aa-gold);
+  font: inherit;
+  font-size: 13px;
+}
+
+.aa-dock-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.aa-dock-stats > div {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--aa-surface);
+}
+
+.aa-dock-stats dt {
+  color: var(--aa-muted);
+  font-size: 12px;
+}
+
+.aa-dock-stats dd {
+  margin: 2px 0 0;
+  color: var(--aa-gold-hi);
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.aa-dock-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  color: var(--aa-muted);
+  font-size: 12px;
+}
+
+.aa-dock-status {
+  padding: 1px 8px;
+  border: 1px solid var(--aa-line);
+  border-radius: 999px;
+  color: var(--aa-ink);
+}
+
+.aa-dock-status.is-idle {
+  border-color: rgba(191, 227, 168, 0.5);
+  color: var(--aa-success);
+}
+
+.aa-dock-actions,
+.aa-dock-form,
+.aa-dock-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.aa-dock-row {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.aa-dock-actions .aa-dock-btn {
+  flex: 1;
+}
+
+.aa-dock-btn {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--aa-line);
+  border-radius: 10px;
+  background: var(--aa-surface);
+  color: var(--aa-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.aa-dock-btn--solid {
+  border-color: transparent;
+  background: linear-gradient(180deg, #ffe3a6, #e8c274 55%, #b9852f);
+  color: #1a1206;
+}
+
+.aa-dock-btn:disabled {
+  opacity: 0.6;
+}
+
+.aa-dock-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.aa-dock-btn:focus-visible,
+.aa-dock-close:focus-visible,
+.aa-dock-form input:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: 2px;
+}
+
+.aa-dock-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--aa-line);
+  border-radius: 10px;
+  background: var(--aa-surface);
+  color: var(--aa-gold-hi);
+  font: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  caret-color: var(--aa-gold);
+}
+
+.aa-dock-note {
+  margin: 8px 0 0;
+  color: var(--aa-muted);
+}
+
+.aa-dock-row .aa-dock-note {
+  margin: 0;
+}
+
+.aa-dock-foot {
+  margin: 8px 0 0;
+  color: var(--aa-muted);
+  font-size: 11px;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aa-dock-btn:active:not(:disabled) {
+    transform: none;
+  }
+}

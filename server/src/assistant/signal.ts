@@ -18,7 +18,7 @@ export interface SignalSymbolPick {
   multiplier: number;
 }
 
-export const SIGNAL_DISCLAIMER = '數據僅供參考，不承諾獲利';
+export const SIGNAL_DISCLAIMER = '數據攻略僅供參考';
 
 const END_MESSAGES: Record<AssistantSignalEndReason, string> = {
   member_refresh: '已換一組新訊號',

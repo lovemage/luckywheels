@@ -67,7 +67,7 @@ describe('assistant signals', { timeout: 120_000 }, () => {
     const { headers } = await member();
     const first = await req('/api/assistant/signal', headers);
     expect(first.status).toBe(200);
-    expect(first.body).toMatchObject({ replaced: null, message: null, disclaimer: '數據僅供參考，不承諾獲利' });
+    expect(first.body).toMatchObject({ replaced: null, message: null, disclaimer: '數據攻略僅供參考' });
     // 門檻 70：只有 001（75 分）符合；強度 30 + 60 × 0.75 = 75
     expect(first.body.signal.strength).toBe(75);
     expect(first.body.signal.symbols.length).toBeGreaterThanOrEqual(2);

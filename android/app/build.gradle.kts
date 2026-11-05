@@ -19,11 +19,13 @@ android {
         applicationId = "com.luckyds.assistant"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         // 助手（會員 SPA）所在網域；娛樂城網址由 /api/public/app-config 下發，這裡只是預設值
-        buildConfigField("String", "ASSISTANT_ORIGIN", "\"https://luckyds.com\"")
+        // 本機測試可用 ./gradlew assembleDebug -PassistantOrigin=http://localhost:5199 指向開發伺服器
+        val assistantOrigin = (project.findProperty("assistantOrigin") as String?) ?: "https://luckyds.com"
+        buildConfigField("String", "ASSISTANT_ORIGIN", "\"$assistantOrigin\"")
         buildConfigField("String", "DEFAULT_CASINO_URL", "\"https://www.ds8899.net\"")
     }
 

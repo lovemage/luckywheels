@@ -76,53 +76,10 @@
         android:background="@drawable/panel_bg"
         android:elevation="12dp"
         android:orientation="vertical"
+        android:padding="1dp"
         android:visibility="gone">
 
-        <LinearLayout
-            android:id="@+id/panelHeader"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="14dp"
-            android:paddingEnd="10dp">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@null"
-                android:src="@drawable/brand_star" />
-
-            <TextView
-                android:id="@+id/panelTitle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/panel_title"
-                android:textColor="@color/gold_hi"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/panelCollapse"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:background="@drawable/collapse_btn_bg"
-                android:gravity="center"
-                android:paddingHorizontal="16dp"
-                android:text="@string/panel_collapse"
-                android:textColor="@color/gold"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/line" />
-
+        <!-- 標題列與收合按鈕由網頁自己畫（駐守小卡要省空間） -->
         <WebView
             android:id="@+id/panelWeb"
             android:layout_width="match_parent"

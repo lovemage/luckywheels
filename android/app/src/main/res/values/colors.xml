@@ -2,8 +2,6 @@
 <resources>
     <color name="bg">#090705</color>
     <color name="gold">#E8C274</color>
-    <color name="gold_hi">#FFE3A6</color>
     <color name="muted">#B4A68A</color>
-    <color name="line">#42E2B662</color>
     <color name="scrim">#99000000</color>
 </resources>

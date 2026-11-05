@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">曜金數據助手</string>
-    <string name="panel_title">曜金數據助手</string>
-    <string name="panel_collapse">收合</string>
     <string name="bubble_desc">開啟數據助手</string>
     <string name="game_error_title">遊戲載入失敗</string>
     <string name="game_error_body">請確認網路連線後再試一次</string>

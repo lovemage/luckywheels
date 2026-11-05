@@ -25,6 +25,8 @@ import { AdPopup } from './components/AdPopup.js';
 import { Legal, type LegalTab } from './components/Legal.js';
 import { AssistantApp } from './assistant/AssistantApp.js';
 import { fetchPreviewStatus, type PreviewStatus } from './api/preview.js';
+import { AppDock, DockMessage } from './assistant/dock/AppDock.js';
+import { currentDockMode, hasDock, isNativeApp, onDockModeChange, requestDockMode, type DockMode } from './native.js';
 
 function proxiedImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -131,6 +133,19 @@ export function App() {
   // 助手底部「輪盤」切到原本的輪盤頁；輪盤頁右上角「數據助手」切回來。不記住，重新整理一律回助手
   const switchLayout = useCallback((next: 'classic' | 'assistant') => setLayout(next), []);
 
+  // App 內的面板模式（駐守小卡／完整助手），由 App 端掌管
+  const [dockMode, setDockMode] = useState<DockMode>(() => (hasDock ? currentDockMode() : 'full'));
+  const [fullView, setFullView] = useState<'home' | 'exchange'>('home');
+  useEffect(() => (hasDock ? onDockModeChange(setDockMode) : undefined), []);
+  const inDock = hasDock && dockMode === 'dock';
+  useEffect(() => {
+    document.documentElement.classList.toggle('is-dock', inDock);
+  }, [inDock]);
+  const openFull = useCallback((view: 'home' | 'exchange' = 'home') => {
+    setFullView(view);
+    requestDockMode('full');
+  }, []);
+
   // 只有已登入會員的首頁才需要知道新版入口狀態
   useEffect(() => {
     if (!isReady) return;
@@ -175,8 +190,29 @@ export function App() {
     };
   }, []);
 
+  // 需要完整畫面才能處理的狀態（填會員資料、待審核、停用）：App 自動切到完整面板
+  const needsFull = session.phase === 'onboarding' || session.phase === 'pending' || session.phase === 'blacklisted';
+  useEffect(() => {
+    if (inDock && needsFull) requestDockMode('full');
+  }, [inDock, needsFull]);
+
   let body: React.ReactNode;
-  if (session.phase === 'loading') {
+  if (inDock && !needsFull) {
+    if (session.phase === 'loading' || (session.phase === 'ready' && !previewLoaded)) {
+      body = <DockMessage note="載入中…" />;
+    } else if (session.phase === 'anonymous') {
+      body = (
+        <DockMessage
+          note="登入 LINE 後即可使用"
+          action={{ label: '用 LINE 登入', onClick: () => (window.location.href = '/api/auth/line/start') }}
+        />
+      );
+    } else if (!preview?.unlocked) {
+      body = <DockMessage note="數據助手暫停服務" />;
+    } else {
+      body = <AppDock onOpenFull={(v) => openFull(v ?? 'home')} />;
+    }
+  } else if (session.phase === 'loading') {
     body = <main className="splash"><p>載入中…</p></main>;
   } else if (session.phase === 'anonymous') {
     body = <Login settings={publicSettings} onShowLegal={openLegal} />;
@@ -193,8 +229,23 @@ export function App() {
     );
   } else if (layout === 'assistant' && !previewLoaded) {
     body = <main className="splash"><p>載入中…</p></main>;
-  } else if (layout === 'assistant' && preview?.unlocked) {
-    body = <AssistantApp me={session.me!} onExit={() => switchLayout('classic')} onLocked={lockPreview} />;
+  } else if ((layout === 'assistant' || isNativeApp) && preview?.unlocked) {
+    body = (
+      <AssistantApp
+        key={fullView}
+        me={session.me!}
+        initialView={fullView}
+        onExit={() => switchLayout('classic')}
+        onLocked={lockPreview}
+      />
+    );
+  } else if (isNativeApp) {
+    // App 內不提供輪盤
+    body = (
+      <main className="splash">
+        <p>數據助手暫停服務，請稍後再試</p>
+      </main>
+    );
   } else {
     // 助手未開放（後端旗標關閉）時只剩輪盤，不顯示切換按鈕
     body = (
