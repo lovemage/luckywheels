@@ -1,0 +1,8 @@
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+# 簽章金鑰與密碼不進版控（遺失就無法更新已安裝的 App，請另外備份）
+keystore/
+keystore.properties

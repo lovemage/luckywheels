@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Gamepad2 } from 'lucide-react';
 import { ApiError } from '../api/client.js';
 import { fetchAssistantMe, type AssistantMe } from '../api/assistant.js';
 import type { MeProfile } from '../state/session.js';
@@ -10,6 +10,7 @@ import { AssistantHome } from './views/AssistantHome.js';
 import { RecommendView } from './views/RecommendView.js';
 import { ExchangeView } from './views/ExchangeView.js';
 import { RulesView } from './views/RulesView.js';
+import { backToGame, isNativeApp } from '../native.js';
 import './assistant.css';
 
 // 新版（數據助手）。上線前只有通過預覽閘門的人看得到（DATA_ASSISTANT_ENABLED=preview）。
@@ -97,7 +98,12 @@ export function AssistantApp({ me: profile, onExit, onLocked }: { me: MeProfile;
           <TabButton active={view === 'home'} icon={<InkIcon name="home" />} label="首頁" onClick={() => go('home')} />
           <TabButton active={view === 'recommend'} icon={<InkIcon name="recommend" />} label="本金推薦" onClick={() => go('recommend')} />
           <TabButton active={view === 'exchange'} icon={<InkIcon name="exchange" />} label="兌換" onClick={() => go('exchange')} />
-          <TabButton active={false} icon={<InkIcon name="wheel" />} label="輪盤" onClick={onExit} />
+          {isNativeApp ? (
+            // App 內：遊戲就在面板後面，這顆按鈕收合面板
+            <TabButton active={false} icon={<Gamepad2 aria-hidden="true" />} label="回遊戲" onClick={backToGame} />
+          ) : (
+            <TabButton active={false} icon={<InkIcon name="wheel" />} label="輪盤" onClick={onExit} />
+          )}
         </nav>
       </section>
     </main>

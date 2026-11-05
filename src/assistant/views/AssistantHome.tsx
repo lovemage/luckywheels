@@ -7,6 +7,10 @@ import { InkIcon, InkTitle, inkTitleSrc } from '../InkTitle.js';
 import { COLLECT_INTRO_MS, CollectingLoader } from '../CollectingLoader.js';
 import { fmtAgo, fmtClock, fmtInt, fmtRemainingDetail, fmtRtp, fmtStamp, slotIconFor } from '../format.js';
 import type { AssistantView } from '../AssistantApp.js';
+import { isNativeApp } from '../../native.js';
+
+// Android 手機的瀏覽器（不在 App 內）才顯示安裝 App 的入口
+const showAppInstall = !isNativeApp && typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
 
 const RANK = ['1', '2', '3', '4', '5'];
 
@@ -188,6 +192,16 @@ export function AssistantHome({
 
         <p className="aa-disclaimer">數據僅供參考，不保證獲利</p>
       </section>
+
+      {showAppInstall && (
+        <a className="aa-app-install" href="/android/">
+          <span>
+            <strong>安裝 Android App</strong>
+            <span>在 App 裡邊玩遊戲邊看助手</span>
+          </span>
+          <span aria-hidden="true">›</span>
+        </a>
+      )}
     </div>
   );
 }

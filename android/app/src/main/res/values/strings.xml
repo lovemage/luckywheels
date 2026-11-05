@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">曜金數據助手</string>
+    <string name="panel_title">曜金數據助手</string>
+    <string name="panel_collapse">收合</string>
+    <string name="bubble_desc">開啟數據助手</string>
+    <string name="game_error_title">遊戲載入失敗</string>
+    <string name="game_error_body">請確認網路連線後再試一次</string>
+    <string name="retry">重新載入</string>
+    <string name="exit_hint">再按一次返回鍵離開</string>
+    <string name="update_title">有新版本</string>
+    <string name="update_body">曜金數據助手有新版本，建議更新後再使用</string>
+    <string name="update_download">下載更新</string>
+    <string name="update_later">稍後</string>
+    <string name="no_browser">找不到可以開啟登入頁的瀏覽器</string>
+</resources>

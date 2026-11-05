@@ -23,26 +23,8 @@ import { WinModal } from './components/WinModal.js';
 import { BottomDock } from './components/BottomDock.js';
 import { AdPopup } from './components/AdPopup.js';
 import { Legal, type LegalTab } from './components/Legal.js';
-import { PreviewGate } from './components/PreviewGate.js';
 import { AssistantApp } from './assistant/AssistantApp.js';
 import { fetchPreviewStatus, type PreviewStatus } from './api/preview.js';
-
-// 會員上次停留在新版時記住，重新整理後直接回新版（仍需預覽閘門已通過）
-const LAYOUT_KEY = 'lw_layout';
-function readStoredLayout(): 'classic' | 'assistant' {
-  try {
-    return localStorage.getItem(LAYOUT_KEY) === 'assistant' ? 'assistant' : 'classic';
-  } catch {
-    return 'classic';
-  }
-}
-function storeLayout(layout: 'classic' | 'assistant') {
-  try {
-    localStorage.setItem(LAYOUT_KEY, layout);
-  } catch {
-    /* 無痕模式等情況：不記住即可 */
-  }
-}
 
 function proxiedImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -141,16 +123,13 @@ export function App() {
   const [publicSettings, setPublicSettings] = useState<PublicSettings | null>(null);
   const openLegal = (tab: LegalTab) => setLegalTab(tab);
   const [preview, setPreview] = useState<PreviewStatus | null>(null);
-  // 上次停在新版的會員：預覽狀態查回來之前先不掛原版（避免原版進場音效、廣告閃一下）
+  // 首頁一律先進曜金數據助手（單一入口）；助手狀態查回來之前先不掛輪盤（避免進場音效、廣告閃一下）
   const [previewLoaded, setPreviewLoaded] = useState(false);
-  const [layout, setLayout] = useState<'classic' | 'assistant'>(readStoredLayout);
-  const [gateOpen, setGateOpen] = useState(false);
+  const [layout, setLayout] = useState<'classic' | 'assistant'>('assistant');
   const isReady = session.phase === 'ready';
 
-  const switchLayout = useCallback((next: 'classic' | 'assistant') => {
-    setLayout(next);
-    storeLayout(next);
-  }, []);
+  // 助手底部「輪盤」切到原本的輪盤頁；輪盤頁右上角「數據助手」切回來。不記住，重新整理一律回助手
+  const switchLayout = useCallback((next: 'classic' | 'assistant') => setLayout(next), []);
 
   // 只有已登入會員的首頁才需要知道新版入口狀態
   useEffect(() => {
@@ -217,14 +196,12 @@ export function App() {
   } else if (layout === 'assistant' && preview?.unlocked) {
     body = <AssistantApp me={session.me!} onExit={() => switchLayout('classic')} onLocked={lockPreview} />;
   } else {
-    const canEnter = Boolean(preview && (preview.entry || preview.unlocked));
+    // 助手未開放（後端旗標關閉）時只剩輪盤，不顯示切換按鈕
     body = (
       <MainApp
         me={session.me!}
         onShowLegal={openLegal}
-        onOpenPreview={
-          canEnter ? () => (preview!.unlocked ? switchLayout('assistant') : setGateOpen(true)) : undefined
-        }
+        onOpenAssistant={preview?.unlocked ? () => switchLayout('assistant') : undefined}
       />
     );
   }
@@ -233,16 +210,6 @@ export function App() {
     <>
       {body}
       {legalTab && <Legal initialTab={legalTab} onClose={() => setLegalTab(null)} />}
-      {gateOpen && (
-        <PreviewGate
-          onClose={() => setGateOpen(false)}
-          onUnlocked={() => {
-            setGateOpen(false);
-            setPreview((p) => ({ entry: p?.entry ?? true, unlocked: true }));
-            switchLayout('assistant');
-          }}
-        />
-      )}
     </>
   );
 }
@@ -250,12 +217,12 @@ export function App() {
 function MainApp({
   me,
   onShowLegal,
-  onOpenPreview,
+  onOpenAssistant,
 }: {
   me: MeProfile;
   onShowLegal: (tab: LegalTab) => void;
-  /** 有值才顯示「新版」入口（預覽模式或已上線） */
-  onOpenPreview?: () => void;
+  /** 有值才顯示「數據助手」按鈕（回到助手首頁） */
+  onOpenAssistant?: () => void;
 }) {
   const [view, setView] = useState<'wheel' | 'rules' | 'mine'>('wheel');
   const [prizes, setPrizes] = useState<PublicPrize[] | null>(null);
@@ -573,9 +540,9 @@ function MainApp({
         <div className="floating shard-b" />
 
         <header className="hero">
-          {onOpenPreview && (
-            <button type="button" className="preview-entry" onClick={onOpenPreview}>
-              新版預覽
+          {onOpenAssistant && (
+            <button type="button" className="preview-entry" onClick={onOpenAssistant}>
+              數據助手
             </button>
           )}
           <div className="title-lockup">

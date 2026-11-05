@@ -24,3 +24,6 @@ prototype-*.png
 視覺草稿.png
 public/assets/*-key.png
 .atg-capture
+
+# Android App 原始碼與簽章金鑰不進映像檔
+android

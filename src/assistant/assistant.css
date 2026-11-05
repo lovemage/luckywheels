@@ -859,6 +859,28 @@ body:has(.aa-stage) {
   text-align: right;
 }
 
+/* 首頁底部：Android 瀏覽器才出現的安裝 App 入口 */
+.aa-app-install {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  min-height: 56px;
+  padding: 12px 16px;
+  border: 1px solid var(--aa-line);
+  border-radius: 12px;
+  background: var(--aa-surface);
+  color: var(--aa-ink);
+  text-decoration: none;
+}
+.aa-app-install > span:first-child { display: grid; gap: 2px; }
+.aa-app-install strong { color: var(--aa-gold-hi); font-size: 15px; }
+.aa-app-install > span:first-child > span { color: var(--aa-muted); font-size: 13px; }
+.aa-app-install > span:last-child { color: var(--aa-gold); font-size: 22px; line-height: 1; }
+.aa-app-install:active { background: var(--aa-surface-hi); }
+.aa-app-install:focus-visible { outline: 2px solid var(--aa-gold-hi); outline-offset: 3px; }
+
 /* ── 共用：提示、按鈕、鎖定 ───────────────── */
 
 .aa-notice,

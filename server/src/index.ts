@@ -16,6 +16,7 @@ import { mediaProxyRoutes } from './routes/media-proxy.js';
 import { onboardingRoutes } from './routes/onboarding.js';
 import { assistantRoutes } from './routes/assistant.js';
 import { previewRoutes } from './routes/preview.js';
+import { appRoutes } from './routes/app.js';
 import { adminAuthRoutes } from './admin/routes/auth.js';
 import { adminUsersRoutes } from './admin/routes/users.js';
 import { adminRedemptionsRoutes } from './admin/routes/redemptions.js';
@@ -75,6 +76,7 @@ app.route('/', mediaProxyRoutes);
 app.route('/', onboardingRoutes);
 app.route('/', assistantRoutes);
 app.route('/', previewRoutes);
+app.route('/', appRoutes);
 app.route('/', adminAuthRoutes);
 app.route('/', adminUsersRoutes);
 app.route('/', adminRedemptionsRoutes);
@@ -111,6 +113,14 @@ app.get('/admin/*', adminSpa);
 app.use('/assets/*', async (c, next) => {
   await next();
   c.header('cache-control', 'public, max-age=31536000, immutable');
+});
+// Android App 安裝檔（public/downloads/*.apk）：指定 APK 型別，手機才會交給套件安裝程式開啟
+app.use('/downloads/*', async (c, next) => {
+  await next();
+  if (c.req.path.endsWith('.apk') && c.res.status === 200) {
+    c.res.headers.set('content-type', 'application/vnd.android.package-archive');
+    c.res.headers.set('cache-control', 'no-cache');
+  }
 });
 app.use('/*', serveStatic({ root: MEMBER_DIST }));
 app.get('*', (c) => {

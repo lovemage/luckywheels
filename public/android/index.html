@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090705">
+<title>安裝曜金數據助手 App</title>
+<meta name="description" content="Android 手機下載與安裝曜金數據助手 App 的步驟，含操作畫面">
+<style>
+@font-face {
+  font-family: 'YJ Display';
+  src: url('/assets/assistant/fonts/yj-display.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+:root {
+  --bg: #090705;
+  --surface: #120e09;
+  --surface-hi: #1a140c;
+  --line: rgba(226, 182, 98, 0.26);
+  --gold: #e8c274;
+  --gold-hi: #ffe3a6;
+  --gold-deep: #b9852f;
+  --ink: #f2e9d6;
+  --muted: #b4a68a;
+  --display: 'YJ Display', 'Noto Serif TC', 'Noto Serif CJK TC', 'Songti TC', serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(232, 194, 116, 0.14), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  font: 16px/1.7 system-ui, 'Noto Sans TC', 'PingFang TC', sans-serif;
+  min-height: 100vh;
+}
+::selection { background: rgba(232, 194, 116, 0.35); color: var(--gold-hi); }
+a { color: var(--gold); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; }
+
+.page { max-width: 560px; margin: 0 auto; padding: 32px 16px 64px; }
+
+.brand { display: flex; align-items: center; gap: 10px; color: var(--gold-hi); font-weight: 700; letter-spacing: 0.04em; }
+.brand svg { width: 28px; height: 28px; }
+
+h1 {
+  margin: 28px 0 12px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(30px, 8vw, 40px);
+  line-height: 1.25;
+  color: var(--gold-hi);
+  text-wrap: balance;
+}
+.lede { margin: 0 0 24px; color: var(--muted); }
+
+.download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 24px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold) 55%, var(--gold-deep));
+  color: #1a1206;
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 10px 28px -10px rgba(232, 194, 116, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.download:active { transform: translateY(1px) scale(0.99); }
+.download svg { width: 22px; height: 22px; }
+.meta { margin: 10px 0 0; font-size: 14px; color: var(--muted); text-align: center; }
+
+.notice {
+  margin: 28px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 15px;
+  color: var(--muted);
+}
+.notice strong { color: var(--ink); }
+
+.steps { list-style: none; margin: 48px 0 0; padding: 0; counter-reset: step; }
+.step { counter-increment: step; padding: 32px 0; border-top: 1px solid var(--line); }
+.step-head { display: flex; align-items: baseline; gap: 12px; }
+.step-head::before {
+  content: counter(step);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  transform: translateY(6px);
+}
+h2 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 24px; line-height: 1.35; color: var(--gold-hi); }
+.step p { margin: 10px 0 0 44px; }
+.step p + p { margin-top: 6px; }
+.hint { color: var(--muted); font-size: 15px; }
+.step b { color: var(--gold-hi); font-weight: 700; }
+
+.shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0 0; }
+.shots.single { grid-template-columns: minmax(0, 260px); justify-content: center; }
+figure { margin: 0; }
+figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 20;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+figcaption { margin-top: 8px; font-size: 14px; line-height: 1.5; color: var(--muted); }
+
+.faq { margin: 16px 0 0; padding: 32px 0 0; border-top: 1px solid var(--line); }
+.faq h2 { margin-bottom: 12px; }
+.faq dl { margin: 0; }
+.faq dt { margin-top: 18px; font-weight: 700; color: var(--ink); }
+.faq dd { margin: 4px 0 0; color: var(--muted); }
+
+.back { display: inline-block; margin-top: 40px; }
+
+@media (min-width: 520px) {
+  .shots { gap: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .download { transition: none; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff0c2"/><stop offset="0.5" stop-color="#e7b552"/><stop offset="1" stop-color="#9c6a1c"/>
+        </linearGradient>
+      </defs>
+      <path d="M16 1 L19 13 L31 16 L19 19 L16 31 L13 19 L1 16 L13 13 Z" fill="url(#g)"/>
+      <path d="M16 7 L17.4 14.6 L25 16 L17.4 17.4 L16 25 L14.6 17.4 L7 16 L14.6 14.6 Z" fill="#120c05" opacity="0.55"/>
+      <circle cx="16" cy="16" r="1.6" fill="#fff6d8"/>
+    </svg>
+    曜金數據助手
+  </div>
+
+  <h1>安裝 Android App</h1>
+  <p class="lede">在 App 裡直接登入娛樂城玩遊戲，數據助手隨時從畫面旁邊叫出來看，不用在瀏覽器和遊戲之間來回切換</p>
+
+  <a class="download" href="/downloads/luckyds-assistant.apk" download>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
+    </svg>
+    下載 Android App
+  </a>
+  <p class="meta">版本 1.0.0　·　約 0.8 MB　·　Android 8.0 以上</p>
+
+  <div class="notice">
+    <strong>請用手機的 Chrome 開啟這一頁再下載</strong><br>
+    在 LINE 裡打開的話，請先點右上角選單，選「以預設瀏覽器開啟」<br>
+    iPhone 目前沒有 App，請直接使用網頁版
+  </div>
+
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><h2>下載安裝檔</h2></div>
+      <p>按上方「下載 Android App」，Chrome 會跳出「檔案可能有害」，按 <b>仍要下載</b></p>
+      <p class="hint">Play 商店以外的安裝檔，Chrome 都會顯示這個提醒</p>
+      <div class="shots">
+        <figure>
+          <img src="/assets/app-install/01-download.webp" width="540" height="1200" alt="Chrome 提示「檔案可能有害」，框出「仍要下載」按鈕" loading="lazy" decoding="async">
+          <figcaption>按「仍要下載」</figcaption>
+        </figure>
+        <figure>
+          <img src="/assets/app-install/02-open.webp" width="540" height="1200" alt="下載完成的提示列，框出「開啟」按鈕" loading="lazy" decoding="async">
+          <figcaption>下載完成，按「開啟」</figcaption>
+        </figure>
+      </div>
+      <p class="hint">提示列消失的話，從通知列或 Chrome 的「下載」清單點 luckyds-assistant.apk 也可以</p>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><h2>允許 Chrome 安裝應用程式</h2></div>
+      <p>第一次安裝會被手機擋下來，按 <b>設定</b>，打開 <b>允許這個來源的應用程式</b></p>
+      <p class="hint">只需要設定一次，之後更新版本不會再問</p>
+      <div class="shots">
+        <figure>
+          <img src="/assets/app-install/03-blocked.webp" width="540" height="1200" alt="系統提示無法安裝此來源提供的不明應用程式，框出「設定」" loading="lazy" decoding="async">
+          <figcaption>按「設定」</figcaption>
+        </figure>
+        <figure>
+          <img src="/assets/app-install/04-allow.webp" width="540" height="1200" alt="安裝不明應用程式設定頁，框出「允許這個來源的應用程式」開關" loading="lazy" decoding="async">
+          <figcaption>打開這個開關</figcaption>
+        </figure>
+        <figure>
+          <img src="/assets/app-install/05-allowed.webp" width="540" height="1200" alt="開關已開啟的設定頁" loading="lazy" decoding="async">
+          <figcaption>開關變成藍色就完成了</figcaption>
+        </figure>
+      </div>
+      <p class="hint">三星、小米、OPPO 等手機的文字可能是「安裝未知應用程式」或「未知來源」，意思相同。找不到時可以到「設定 → 應用程式 → 特殊應用程式存取權 → 安裝不明應用程式 → Chrome」打開</p>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><h2>安裝</h2></div>
+      <p>回到安裝畫面按 <b>安裝</b>，完成後按 <b>開啟</b></p>
+      <div class="shots">
+        <figure>
+          <img src="/assets/app-install/06-install.webp" width="540" height="1200" alt="「要安裝這個應用程式嗎？」對話框，框出「安裝」" loading="lazy" decoding="async">
+          <figcaption>按「安裝」</figcaption>
+        </figure>
+        <figure>
+          <img src="/assets/app-install/07-done.webp" width="540" height="1200" alt="「已安裝應用程式」對話框，框出「開啟」" loading="lazy" decoding="async">
+          <figcaption>安裝完成，按「開啟」</figcaption>
+        </figure>
+      </div>
+      <p class="hint">如果跳出「Play 安全防護」的提醒，請按「更多詳細資料」，再按「仍要安裝」</p>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><h2>開始使用</h2></div>
+      <p>App 打開就是娛樂城，照平常的方式登入、進遊戲。右下角的 <b>金色按鈕</b> 可以叫出數據助手，按住可以拖到不擋畫面的位置</p>
+      <p>第一次叫出助手時，按 <b>用 LINE 登入</b>，會開啟 LINE 登入頁，登入後自動回到 App</p>
+      <div class="shots">
+        <figure>
+          <img src="/assets/app-install/08-bubble.webp" width="540" height="1200" alt="App 開啟後的娛樂城畫面，框出右下角金色助手按鈕" loading="lazy" decoding="async">
+          <figcaption>按金色按鈕叫出助手</figcaption>
+        </figure>
+        <figure>
+          <img src="/assets/app-install/09-login.webp" width="540" height="1200" alt="疊在遊戲上方的助手面板，框出「用 LINE 登入」" loading="lazy" decoding="async">
+          <figcaption>第一次使用請用 LINE 登入</figcaption>
+        </figure>
+      </div>
+    </li>
+  </ol>
+
+  <section class="faq" aria-labelledby="faq-title">
+    <h2 id="faq-title">常見問題</h2>
+    <dl>
+      <dt>有新版本怎麼更新？</dt>
+      <dd>App 開啟時會提示有新版本，按「下載更新」後照第 1、3 步安裝即可，登入狀態與設定都會保留</dd>
+      <dt>安裝時出現「應用程式未安裝」或「套件與現有套件衝突」</dt>
+      <dd>請先長按桌面上的曜金數據助手圖示，選「解除安裝」，再重新下載安裝</dd>
+      <dt>App 會自動幫我玩遊戲嗎？</dt>
+      <dd>不會。App 只把娛樂城和數據助手放在同一個畫面，所有遊戲操作都由你自己決定</dd>
+    </dl>
+  </section>
+
+  <a class="back" href="/">回到曜金數據助手</a>
+</main>
+</body>
+</html>

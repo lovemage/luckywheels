@@ -23,7 +23,11 @@ import {
   setRetryCookie,
   clearRetryCookie,
   clearOauthCookies,
+  APP_LOGIN_COOKIE,
+  setAppLoginCookie,
+  clearAppLoginCookie,
 } from '../auth/cookies.js';
+import { issueHandoffCode } from '../app/handoff.js';
 
 export const authRoutes = new Hono();
 
@@ -32,6 +36,10 @@ authRoutes.get('/api/auth/line/start', async (c) => {
   const nonce = randomBytes(24).toString('hex');
   const stateToken = await signState(stateValue);
   setStateCookie(c, stateToken);
+  // Android App 從 Custom Tab 發起：登入完成後改發交接碼帶回 App（routes/app.ts）
+  // 一般網頁登入要清掉：Custom Tab 與手機 Chrome 共用 cookie，放棄過的 App 登入不能影響網頁登入
+  if (c.req.query('app') === '1') setAppLoginCookie(c);
+  else clearAppLoginCookie(c);
   setNonceCookie(c, nonce);
   return c.redirect(buildAuthorizeUrl({ state: stateToken, nonce }));
 });
@@ -41,10 +49,14 @@ function handleOauthFailure(c: Context) {
   clearOauthCookies(c);
   if (retried) {
     clearRetryCookie(c);
+    if (getCookie(c, APP_LOGIN_COOKIE) === '1') {
+      clearAppLoginCookie(c);
+      return c.redirect('/api/app/handoff');
+    }
     return c.redirect(env.PUBLIC_FRONTEND_ORIGIN + '/');
   }
   setRetryCookie(c);
-  return c.redirect('/api/auth/line/start');
+  return c.redirect(getCookie(c, APP_LOGIN_COOKIE) === '1' ? '/api/auth/line/start?app=1' : '/api/auth/line/start');
 }
 
 authRoutes.get('/api/auth/line/callback', async (c) => {
@@ -89,9 +101,14 @@ authRoutes.get('/api/auth/line/callback', async (c) => {
       },
     });
 
+    clearRetryCookie(c);
+    if (getCookie(c, APP_LOGIN_COOKIE) === '1') {
+      // Custom Tab 的 cookie 帶不回 App，不在這裡發 session
+      clearAppLoginCookie(c);
+      return c.redirect(`/api/app/handoff?code=${encodeURIComponent(issueHandoffCode(user.id))}`);
+    }
     const jwt = await signSession({ userId: user.id });
     setSessionCookie(c, jwt);
-    clearRetryCookie(c);
     return c.redirect(env.PUBLIC_FRONTEND_ORIGIN + '/');
   } catch (err) {
     console.error('[line/callback] unexpected failure', err);

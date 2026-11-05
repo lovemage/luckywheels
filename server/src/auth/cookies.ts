@@ -5,6 +5,7 @@ export const SESSION_COOKIE = 'lw_session';
 export const STATE_COOKIE = 'lw_oauth_state';
 export const NONCE_COOKIE = 'lw_oauth_nonce';
 export const RETRY_COOKIE = 'lw_oauth_retry';
+export const APP_LOGIN_COOKIE = 'lw_oauth_app';
 
 const isProductionLike = (): boolean =>
   process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'development';
@@ -60,4 +61,19 @@ export function clearRetryCookie(c: Context): void {
 export function clearOauthCookies(c: Context): void {
   deleteCookie(c, STATE_COOKIE, { path: '/' });
   deleteCookie(c, NONCE_COOKIE, { path: '/' });
+}
+
+/** 這次 LINE 登入由 Android App 發起（Custom Tab） */
+export function setAppLoginCookie(c: Context): void {
+  setCookie(c, APP_LOGIN_COOKIE, '1', {
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: isProductionLike(),
+    path: '/',
+    maxAge: 1800,
+  });
+}
+
+export function clearAppLoginCookie(c: Context): void {
+  deleteCookie(c, APP_LOGIN_COOKIE, { path: '/' });
 }
