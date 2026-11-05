@@ -13,7 +13,7 @@ import {
   RECOMMEND_DISCLAIMER,
   tierFor,
 } from '../assistant/recommend.js';
-import {
+import { readDisplaySettings,
   MAX_TARGET_MULTIPLIER,
   readFreshnessSettings,
   readRecommendSettings,
@@ -55,12 +55,13 @@ assistantRoutes.get('/api/public/assistant/plans', async (c) => {
 assistantRoutes.get('/api/assistant/me', async (c) => {
   const user = c.get('user');
   const now = new Date();
-  const [fresh, pass, plans] = await Promise.all([
+  const [fresh, pass, plans, display] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { points: true } }),
     getPass(prisma, user.id, now),
     readTimePlans(prisma),
+    readDisplaySettings(prisma),
   ]);
-  return c.json({ points: fresh.points, pass, plans: presentPlans(plans), serverTime: now.toISOString() });
+  return c.json({ points: fresh.points, pass, plans: presentPlans(plans), display, serverTime: now.toISOString() });
 });
 
 const ExchangeBody = z.object({

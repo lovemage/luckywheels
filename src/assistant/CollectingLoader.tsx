@@ -39,7 +39,7 @@ function streamLine(): string {
 }
 
 /** 「數據助手採集中」載入面板：逐行跑出採集步驟、進度百分比、背景資料流與金色掃描光 */
-export function CollectingLoader({ steps = TOP_ROOM_STEPS }: { steps?: string[] }) {
+export function CollectingLoader({ steps = TOP_ROOM_STEPS, durationMs = COLLECT_INTRO_MS }: { steps?: string[]; durationMs?: number }) {
   const stream = useMemo(() => Array.from({ length: STREAM_ROWS }, streamLine), []);
   const [pct, setPct] = useState(0);
   const raf = useRef(0);
@@ -47,16 +47,16 @@ export function CollectingLoader({ steps = TOP_ROOM_STEPS }: { steps?: string[] 
   useEffect(() => {
     const start = performance.now();
     const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / COLLECT_INTRO_MS);
+      const p = Math.min(1, (t - start) / durationMs);
       // ease-out，前段跑快、後段收慢，貼近「採集→整理」的節奏
       setPct(Math.round((1 - Math.pow(1 - p, 2.2)) * 100));
       if (p < 1) raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf.current);
-  }, []);
+  }, [durationMs]);
 
-  const stepGap = COLLECT_INTRO_MS / steps.length;
+  const stepGap = durationMs / steps.length;
 
   return (
     <div className="aa-collect" role="status" aria-live="polite" aria-label="數據助手正在採集空台資料">

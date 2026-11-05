@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Coins, Hourglass } from 'lucide-react';
 import { ApiError } from '../../api/client.js';
 import { fetchTopRooms, type AssistantMe, type RoomsResponse } from '../../api/assistant.js';
 import { LightPillars } from '../LightPillars.js';
 import { HeroCat } from '../HeroCat.js';
+import { InkIcon, InkTitle, inkTitleSrc } from '../InkTitle.js';
 import { COLLECT_INTRO_MS, CollectingLoader } from '../CollectingLoader.js';
 import { fmtAgo, fmtClock, fmtInt, fmtRemainingDetail, fmtRtp, fmtStamp, slotIconFor } from '../format.js';
 import type { AssistantView } from '../AssistantApp.js';
@@ -20,10 +20,13 @@ export function AssistantHome({
   me,
   nickname,
   onNavigate,
+  onExpired,
 }: {
   me: AssistantMe | null;
   nickname: string;
   onNavigate: (view: AssistantView, anchor?: string) => void;
+  /** 使用期限倒數歸零時呼叫（重新載入會員資料，畫面切回未開通） */
+  onExpired?: () => void;
 }) {
   const active = me?.pass.active ?? false;
   const [top, setTop] = useState<TopState>({ kind: 'loading' });
@@ -80,13 +83,11 @@ export function AssistantHome({
       <section className="aa-hero" aria-labelledby="aa-hero-title">
         <LightPillars />
         <div className="aa-hero-copy">
-          <h1 id="aa-hero-title" className="aa-display">
-            機台數據<span className="aa-hero-gap" /> 一眼看清
-          </h1>
+          <InkTitle as="h1" id="aa-hero-title" className="aa-display" text="機台數據 一眼看清" height={50} />
           <p className="aa-hero-sub">ATG 房間整理 · 本金條件篩選</p>
           <HeroCat />
           {me && active ? (
-            <PassBar me={me} />
+            <PassBar me={me} onExpired={onExpired} />
           ) : (
             <p className="aa-hero-pass">{me ? `目前積分 ${fmtInt(me.points)}` : ' '}</p>
           )}
@@ -94,16 +95,21 @@ export function AssistantHome({
       </section>
 
       <nav className="aa-entries" aria-label="功能入口">
-        <EntryTile icon={<BookOpen />} title="曜金規則" sub="數據怎麼看" onClick={() => onNavigate('rules')} />
-        <EntryTile icon={<Coins />} title="本金推薦" sub="依本金篩選" onClick={() => onNavigate('recommend')} />
-        <EntryTile icon={<Hourglass />} title="積分兌換" sub="開通・延長時間" onClick={() => onNavigate('exchange')} />
-        <EntryTile icon={<SlotIcon />} title="兌換紀錄" sub="開通與到期" onClick={() => onNavigate('exchange', 'aa-history')} />
+        <EntryTile icon={<InkIcon name="rules" />} title="曜金規則" sub="數據怎麼看" onClick={() => onNavigate('rules')} />
+        <EntryTile icon={<InkIcon name="recommend" />} title="本金推薦" sub="依本金篩選" onClick={() => onNavigate('recommend')} />
+        <EntryTile icon={<InkIcon name="exchange" />} title="積分兌換" sub="開通・延長時間" onClick={() => onNavigate('exchange')} />
+        <EntryTile icon={<InkIcon name="history" />} title="兌換紀錄" sub="開通與到期" onClick={() => onNavigate('exchange', 'aa-history')} />
       </nav>
 
       <section className="aa-top" id="aa-top" aria-labelledby="aa-top-title">
         <div className="aa-section-head">
-          <h2 id="aa-top-title" className="aa-display">精選空台 TOP 5</h2>
-          {game && <span className="aa-section-note">{game.name}</span>}
+          <InkTitle id="aa-top-title" className="aa-display" text={me?.display?.topTitle ?? '精選空台 TOP 5'} height={34} />
+          {game &&
+            (inkTitleSrc(game.name) ? (
+              <img className="aa-section-note aa-ink-note" src={inkTitleSrc(game.name)!} alt={game.name} />
+            ) : (
+              <span className="aa-section-note">{game.name}</span>
+            ))}
         </div>
 
         {collecting && <CollectingLoader />}
@@ -174,18 +180,39 @@ export function AssistantHome({
   );
 }
 
-/** 使用期限進度條：剩餘時間 ÷ 本次開通總長（startsAt → expiresAt），每 30 秒更新 */
-function PassBar({ me }: { me: AssistantMe }) {
-  const [loadedAt] = useState(() => Date.now());
+/**
+ * 使用期限進度條：剩餘時間 ÷ 本次開通總長（startsAt → expiresAt）。
+ * 剩餘時間直接用到期時間（expiresAt）計算，並以 serverTime 校正本機與伺服器的時間差；
+ * 不依賴元件掛載時間（離開首頁再回來不會重算錯）。每 5 秒、切回畫面時更新，歸零時通知重新載入。
+ */
+function PassBar({ me, onExpired }: { me: AssistantMe; onExpired?: () => void }) {
   const [tick, setTick] = useState(() => Date.now());
 
   useEffect(() => {
-    const t = window.setInterval(() => setTick(Date.now()), 30_000);
-    return () => window.clearInterval(t);
+    const update = () => setTick(Date.now());
+    const t = window.setInterval(update, 5_000);
+    document.addEventListener('visibilitychange', update);
+    window.addEventListener('focus', update);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener('visibilitychange', update);
+      window.removeEventListener('focus', update);
+    };
   }, []);
 
   const { startsAt, expiresAt, remainingSeconds } = me.pass;
-  const remaining = Math.max(0, remainingSeconds - Math.floor((tick - loadedAt) / 1000));
+  // 伺服器時間 ≈ 本機時間 + （收到回應時的 serverTime − 收到回應時的本機時間）
+  const skew = me.receivedAt ? Date.parse(me.serverTime) - me.receivedAt : 0;
+  const serverNow = tick + skew;
+  const remaining = expiresAt
+    ? Math.max(0, Math.floor((Date.parse(expiresAt) - serverNow) / 1000))
+    : Math.max(0, remainingSeconds);
+
+  // 歸零 → 重新載入會員資料（畫面切回未開通、需兌換）
+  const expired = remaining <= 0;
+  useEffect(() => {
+    if (expired) onExpired?.();
+  }, [expired, onExpired]);
   const total = startsAt && expiresAt ? (Date.parse(expiresAt) - Date.parse(startsAt)) / 1000 : remaining;
   const ratio = total > 0 ? Math.min(1, remaining / total) : 0;
   const pct = Math.round(ratio * 100);
@@ -220,13 +247,3 @@ function EntryTile({ icon, title, sub, onClick }: { icon: React.ReactNode; title
   );
 }
 
-function SlotIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
-      <rect x="3" y="5" width="15" height="15" rx="2" />
-      <path d="M6.5 9h8M6.5 9v7M10.5 9v7M14.5 9v7M6.5 16h8" />
-      <path d="M18 9h1.5a1 1 0 0 1 1 1v2M20.5 12V8" />
-      <circle cx="20.5" cy="6.6" r="1.3" />
-    </svg>
-  );
-}

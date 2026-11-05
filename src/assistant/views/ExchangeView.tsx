@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ApiError } from '../../api/client.js';
 import { fetchExchanges, postExchange, type AssistantMe, type ExchangeRecord, type TimePlan } from '../../api/assistant.js';
 import { fmtInt, fmtRemaining, fmtStamp } from '../format.js';
+import { InkTitle } from '../InkTitle.js';
 
 // 積分兌換：會員用輪盤系統的積分直接換使用時間。方案與文案都由後台設定（/api/assistant/me 的 plans）。
 
@@ -37,7 +38,7 @@ export function ExchangeView({ me, onChanged }: { me: AssistantMe | null; onChan
   if (!me) {
     return (
       <div className="aa-page">
-        <h1 className="aa-page-title aa-display">積分兌換</h1>
+        <InkTitle as="h1" className="aa-page-title aa-display" text="積分兌換" height={40} />
         <p className="aa-page-lede">載入中…</p>
       </div>
     );
@@ -72,7 +73,7 @@ export function ExchangeView({ me, onChanged }: { me: AssistantMe | null; onChan
 
   return (
     <div className="aa-page">
-      <h1 className="aa-page-title aa-display">積分兌換</h1>
+      <InkTitle as="h1" className="aa-page-title aa-display" text="積分兌換" height={40} />
       <p className="aa-page-lede">用輪盤的積分直接換數據助手的使用時間；使用中再兌換，會從原本的到期時間往後延長。</p>
 
       <dl className="aa-status">
@@ -93,7 +94,7 @@ export function ExchangeView({ me, onChanged }: { me: AssistantMe | null; onChan
       </dl>
 
       <section aria-labelledby="aa-plans-title">
-        <h2 id="aa-plans-title" className="aa-subhead aa-display">選擇方案</h2>
+        <InkTitle id="aa-plans-title" className="aa-subhead aa-display" text="選擇方案" height={30} />
         {me.plans.length === 0 ? (
           <div className="aa-notice">
             <p>目前沒有開放兌換的方案。</p>
@@ -122,6 +123,9 @@ export function ExchangeView({ me, onChanged }: { me: AssistantMe | null; onChan
                     <strong>{p.hours >= 24 && p.hours % 24 === 0 ? p.hours / 24 : p.hours}</strong>
                     {p.hours >= 24 && p.hours % 24 === 0 ? ' 天' : ' 小時'}
                   </span>
+                  {p.hours === 3 && (
+                    <img className="aa-rec-label aa-plan-rec" src="/assets/assistant/rec-label.webp" alt="推薦" width="52" height="28" />
+                  )}
                   <span className="aa-plan-cost">{p.points} 積分</span>
                   <span className="aa-plan-label">{short ? `積分不足（差 ${p.points - me.points}）` : p.label}</span>
                 </button>
@@ -140,7 +144,7 @@ export function ExchangeView({ me, onChanged }: { me: AssistantMe | null; onChan
       </section>
 
       <section className="aa-history" id="aa-history" aria-labelledby="aa-history-title">
-        <h2 id="aa-history-title" className="aa-subhead aa-display">兌換紀錄</h2>
+        <InkTitle id="aa-history-title" className="aa-subhead aa-display" text="兌換紀錄" height={30} />
         {history === null ? (
           <p className="aa-footnote">載入中…</p>
         ) : history.length === 0 ? (

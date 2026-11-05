@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import type { AssistantMe } from '../../api/assistant.js';
 import type { AssistantView } from '../AssistantApp.js';
+import { InkTitle } from '../InkTitle.js';
 
 // 曜金規則：說明畫面上的數字怎麼看、助手怎麼排序。未開通也能看（讓會員先了解助手能提供什麼）。
 // 措辭維持中立：數字是已發生的紀錄，不暗示中獎機率、預測或保證獲利。
@@ -64,10 +65,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
 
   return (
     <div className="aa-page aa-rules">
-      <h1 className="aa-page-title aa-display">曜金規則</h1>
-      <p className="aa-page-lede">
-        數據助手每 10 分鐘整理一次 ATG 房間資料，把同一款遊戲數千台機台的數字放在一起比較。以下說明畫面上三種數字怎麼看，以及助手怎麼用它們排序
-      </p>
+      <InkTitle as="h1" className="aa-page-title aa-display" text="曜金規則" height={40} />
 
       <nav className="aa-rules-toc" aria-label="本頁內容">
         {METRICS.map((m) => (
@@ -79,7 +77,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
       {METRICS.map((m) => (
         <section key={m.id} id={`aa-rule-${m.id}`} className="aa-rule" aria-labelledby={`aa-rule-${m.id}-title`}>
           <div className="aa-section-head">
-            <h2 id={`aa-rule-${m.id}-title`} className="aa-display">{m.name}</h2>
+            <InkTitle id={`aa-rule-${m.id}-title`} className="aa-display" text={m.name} height={32} />
           </div>
           <p className="aa-rule-weight">{m.weight}</p>
           <p className="aa-rule-meaning">{m.meaning}</p>
@@ -101,7 +99,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
 
       <section id="aa-rule-score" className="aa-rule" aria-labelledby="aa-rule-score-title">
         <div className="aa-section-head">
-          <h2 id="aa-rule-score-title" className="aa-display">助手怎麼排序</h2>
+          <InkTitle id="aa-rule-score-title" className="aa-display" text="助手怎麼排序" height={32} />
         </div>
         <ul className="aa-reasons aa-rule-points">
           <li>四項數字各自換算成在同遊戲中的排名，再依比重合成 0–100 的綜合分數</li>
@@ -113,7 +111,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
       </section>
 
       <section className="aa-rule aa-rule-note" aria-labelledby="aa-rule-note-title">
-        <h2 id="aa-rule-note-title" className="aa-rule-note-title">使用提醒</h2>
+        <InkTitle id="aa-rule-note-title" className="aa-rule-note-title" text="使用提醒" height={26} />
         <p>畫面上的數字都是已經發生的紀錄，每一轉的結果仍由遊戲獨立決定</p>
         <p>綜合分數是排序參考，不代表中獎機率，也不保證獲利</p>
         <p>請依自己的預算設定本金，理性遊玩</p>

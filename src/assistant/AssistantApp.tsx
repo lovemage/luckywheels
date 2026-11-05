@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Coins, Hourglass, Home } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { ApiError } from '../api/client.js';
 import { fetchAssistantMe, type AssistantMe } from '../api/assistant.js';
 import type { MeProfile } from '../state/session.js';
 import { ASSISTANT_BRAND } from './brand.js';
 import { BrandMark } from './BrandMark.js';
+import { InkIcon } from './InkTitle.js';
 import { AssistantHome } from './views/AssistantHome.js';
 import { RecommendView } from './views/RecommendView.js';
 import { ExchangeView } from './views/ExchangeView.js';
@@ -29,7 +30,8 @@ export function AssistantApp({ me: profile, onExit, onLocked }: { me: MeProfile;
 
   const reload = useCallback(async () => {
     try {
-      setMe(await fetchAssistantMe());
+      const m = await fetchAssistantMe();
+      setMe({ ...m, receivedAt: Date.now() });
       setMeError(false);
     } catch (e) {
       // 預覽 cookie 過期或預覽已關閉 → 回原版
@@ -52,14 +54,16 @@ export function AssistantApp({ me: profile, onExit, onLocked }: { me: MeProfile;
     });
   }, []);
 
+  const brandName = me?.display?.brandName ?? ASSISTANT_BRAND;
+
   return (
     <main className="aa-stage">
-      <section className="aa-shell" aria-label={ASSISTANT_BRAND}>
+      <section className="aa-shell" aria-label={brandName}>
         <header className="aa-topbar">
           {view === 'home' ? (
             <div className="aa-brand">
               <BrandMark />
-              <span>{ASSISTANT_BRAND}</span>
+              <span>{brandName}</span>
             </div>
           ) : (
             <button type="button" className="aa-back" onClick={() => go('home')} aria-label={`返回首頁（目前：${TITLES[view]}）`}>
@@ -79,7 +83,7 @@ export function AssistantApp({ me: profile, onExit, onLocked }: { me: MeProfile;
               </button>
             </div>
           ) : view === 'home' ? (
-            <AssistantHome me={me} nickname={profile.nickname ?? profile.displayName} onNavigate={go} />
+            <AssistantHome me={me} nickname={profile.nickname ?? profile.displayName} onNavigate={go} onExpired={reload} />
           ) : view === 'recommend' ? (
             <RecommendView me={me} onNavigate={go} />
           ) : view === 'rules' ? (
@@ -90,10 +94,10 @@ export function AssistantApp({ me: profile, onExit, onLocked }: { me: MeProfile;
         </div>
 
         <nav className="aa-tabs" aria-label="數據助手選單">
-          <TabButton active={view === 'home'} icon={<Home />} label="首頁" onClick={() => go('home')} />
-          <TabButton active={view === 'recommend'} icon={<Coins />} label="本金推薦" onClick={() => go('recommend')} />
-          <TabButton active={view === 'exchange'} icon={<Hourglass />} label="兌換" onClick={() => go('exchange')} />
-          <TabButton active={false} icon={<WheelIcon />} label="輪盤" onClick={onExit} />
+          <TabButton active={view === 'home'} icon={<InkIcon name="home" />} label="首頁" onClick={() => go('home')} />
+          <TabButton active={view === 'recommend'} icon={<InkIcon name="recommend" />} label="本金推薦" onClick={() => go('recommend')} />
+          <TabButton active={view === 'exchange'} icon={<InkIcon name="exchange" />} label="兌換" onClick={() => go('exchange')} />
+          <TabButton active={false} icon={<InkIcon name="wheel" />} label="輪盤" onClick={onExit} />
         </nav>
       </section>
     </main>
@@ -109,12 +113,3 @@ function TabButton({ active, icon, label, onClick }: { active: boolean; icon: Re
   );
 }
 
-function WheelIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-      <circle cx="12" cy="12" r="9" />
-      <circle cx="12" cy="12" r="2" />
-      <path d="M12 3v7M12 14v7M3 12h7M14 12h7M5.6 5.6l5 5M13.4 13.4l5 5M18.4 5.6l-5 5M10.6 13.4l-5 5" />
-    </svg>
-  );
-}

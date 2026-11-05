@@ -371,10 +371,14 @@ body:has(.aa-stage) {
   padding: 12px;
   border: 1px solid var(--aa-line);
   border-radius: 10px;
-  background: linear-gradient(180deg, var(--aa-surface-hi), var(--aa-surface));
+  /* 墨韻背景：左側壓暗讓文字清楚，右下露出金色筆刷 */
+  background:
+    linear-gradient(90deg, rgba(18, 14, 9, 0.94) 35%, rgba(18, 14, 9, 0.5)),
+    url('/assets/assistant/ink/button-bg.webp') right bottom / cover no-repeat,
+    var(--aa-surface);
   color: inherit;
   text-align: left;
-  transition: border-color 160ms var(--aa-ease), background 160ms var(--aa-ease);
+  transition: border-color 160ms var(--aa-ease), filter 160ms var(--aa-ease);
 }
 
 .aa-entry:hover {
@@ -382,14 +386,14 @@ body:has(.aa-stage) {
 }
 
 .aa-entry:active {
-  background: var(--aa-surface-hi);
+  filter: brightness(1.12);
 }
 
 .aa-entry-icon {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   color: var(--aa-gold);
 }
 
@@ -428,7 +432,7 @@ body:has(.aa-stage) {
 
 .aa-section-head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 10px;
@@ -976,6 +980,50 @@ body:has(.aa-stage) {
   line-height: 1.55;
 }
 
+/* 金色墨水字標題與圖示 */
+.aa-ink-title {
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.aa-hero .aa-ink-title {
+  justify-content: center;
+}
+
+.aa-ink-title img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(232, 194, 116, 0.25));
+  user-select: none;
+}
+
+.aa-ink-note {
+  display: block;
+  height: 22px;
+  width: auto;
+}
+
+.aa-ink-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 兌換方案「推薦」字圖：卡片右上角 */
+.aa-plan-rec {
+  position: absolute;
+  top: -12px;
+  right: 10px;
+  height: 28px;
+  margin: 0;
+}
+
 /* 曜金規則 */
 
 .aa-rules-toc {
@@ -1290,6 +1338,7 @@ fieldset.aa-field {
 }
 
 .aa-plan {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-areas:
@@ -1417,6 +1466,24 @@ fieldset.aa-field {
   color: var(--aa-muted);
   font-size: 12.5px;
   font-weight: 600;
+}
+
+.aa-tab-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+
+.aa-tab-icon .aa-ink-icon {
+  opacity: 0.5;
+  filter: saturate(0.6);
+  transition: opacity 160ms var(--aa-ease), filter 160ms var(--aa-ease);
+}
+
+.aa-tab.is-active .aa-tab-icon .aa-ink-icon {
+  opacity: 1;
+  filter: saturate(1) drop-shadow(0 0 6px rgba(232, 194, 116, 0.65));
 }
 
 .aa-tab-icon svg {

@@ -10,12 +10,36 @@ import {
   type RecommendTier,
 } from '../../api/assistant.js';
 import { fmtClock, fmtInt, fmtRtp, slotIconFor } from '../format.js';
+import { InkTitle } from '../InkTitle.js';
 import { COLLECT_INTRO_MS, CollectingLoader, RECOMMEND_STEPS } from '../CollectingLoader.js';
 import type { AssistantView } from '../AssistantApp.js';
 
 // 本金推薦：輸入本金與目標倍數 → 伺服器依級距門檻篩出符合條件的空台（前端只顯示）
 
 const PRESETS = [3000, 5000, 10000, 30000];
+
+// 「再次推薦」的等待動畫：第 1 次 4.5 秒、第 2 次 8 秒，之後每次 +3 秒，避免連續狂點
+// （候選池 50 台、每次 5 台，約 10 次就會輪完一圈）。10 分鐘沒有再推薦就重新計算。
+const SEARCH_KEY = 'aa-recommend-searches';
+const SEARCH_RESET_MS = 10 * 60_000;
+let memSearches = { n: 0, at: 0 };
+
+function readSearches(): number {
+  let v = memSearches;
+  try {
+    const raw = sessionStorage.getItem(SEARCH_KEY);
+    if (raw) v = JSON.parse(raw) as typeof memSearches;
+  } catch { /* 無痕或封鎖儲存空間時退回記憶體 */ }
+  return Date.now() - v.at > SEARCH_RESET_MS ? 0 : v.n;
+}
+
+function recordSearch(): void {
+  memSearches = { n: readSearches() + 1, at: Date.now() };
+  try { sessionStorage.setItem(SEARCH_KEY, JSON.stringify(memSearches)); } catch { /* 同上 */ }
+}
+
+/** 第 n 次推薦（0 起算）的等待時間 */
+const waitMsFor = (n: number) => (n === 0 ? COLLECT_INTRO_MS : 8000 + (n - 1) * 3000);
 const MAX_PRINCIPAL = 100_000_000;
 
 function tierFor(principal: number, tiers: RecommendTier[]): RecommendTier | null {
@@ -40,6 +64,8 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RecommendResponse | null>(null);
+  const [searches, setSearches] = useState(readSearches);
+  const [waitMs, setWaitMs] = useState(COLLECT_INTRO_MS);
   const resultRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -64,19 +90,25 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    // 按鈕隱藏時，在本金欄位按 Enter 仍會送出表單，讀取中一律忽略
+    if (busy) return;
     if (principal < 1) {
       setError('請先輸入本金');
       return;
     }
+    const wait = waitMsFor(readSearches());
+    setWaitMs(wait);
     setBusy(true);
     setError(null);
     setResult(null);
-    // 與精選空台相同：先播約 4.5 秒「數據助手採集中」動畫，再顯示結果（請求同時在背景送出；失敗則立即提示）
+    // 先播「數據助手採集中」動畫（時長依推薦次數遞增），再顯示結果；請求同時在背景送出，失敗則立即提示
     requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    const intro = new Promise((resolve) => window.setTimeout(resolve, COLLECT_INTRO_MS));
+    const intro = new Promise((resolve) => window.setTimeout(resolve, wait));
     try {
       const r = await postRecommend(principal, multiplier);
       await intro;
+      recordSearch();
+      setSearches(readSearches());
       setResult(r);
     } catch (err) {
       if (err instanceof ApiError && err.code === 'ASSISTANT_EXPIRED') setError('使用期限已到期，請先兌換開通');
@@ -89,7 +121,7 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
   if (me && !active) {
     return (
       <div className="aa-page">
-        <h1 className="aa-page-title aa-display">本金推薦</h1>
+        <InkTitle as="h1" className="aa-page-title aa-display" text="本金推薦" height={40} />
         <div className="aa-locked">
           <p>輸入本金與目標倍數，從即時空台中篩出符合門檻的機台。開通後即可使用。</p>
           <button type="button" className="aa-button" onClick={() => onNavigate('exchange')}>
@@ -102,7 +134,7 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
 
   return (
     <div className="aa-page">
-      <h1 className="aa-page-title aa-display">本金推薦</h1>
+      <InkTitle as="h1" className="aa-page-title aa-display" text="本金推薦" height={40} />
       <p className="aa-page-lede">輸入這次準備的本金與目標倍數，從即時空台裡篩出分數達到門檻的機台。</p>
 
       <form className="aa-form" onSubmit={submit} noValidate>
@@ -162,25 +194,28 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
 
         {error && <p className="aa-error" role="alert">{error}</p>}
 
-        <button type="submit" className="aa-button aa-button--block" disabled={busy || !config}>
-          {busy ? '篩選中…' : '查看推薦機台'}
-        </button>
+        {/* 讀取中不顯示按鈕，完成後才重新出現；推薦過一次後改為「再次推薦」 */}
+        {!busy && (
+          <button type="submit" className="aa-button aa-button--block" disabled={!config}>
+            {searches > 0 ? '再次推薦' : '查看推薦機台'}
+          </button>
+        )}
         {config && <p className="aa-footnote">{config.minBetAdvice}</p>}
       </form>
 
       {busy && (
         <section className="aa-results" ref={resultRef} aria-labelledby="aa-results-title">
           <div className="aa-section-head">
-            <h2 id="aa-results-title" className="aa-display">符合條件的機台</h2>
+            <InkTitle id="aa-results-title" className="aa-display" text="符合條件的機台" height={32} />
           </div>
-          <CollectingLoader steps={RECOMMEND_STEPS} />
+          <CollectingLoader steps={RECOMMEND_STEPS} durationMs={waitMs} />
         </section>
       )}
 
       {!busy && result && (
         <section className="aa-results" ref={resultRef} aria-labelledby="aa-results-title" aria-live="polite">
           <div className="aa-section-head">
-            <h2 id="aa-results-title" className="aa-display">符合條件的機台</h2>
+            <InkTitle id="aa-results-title" className="aa-display" text="符合條件的機台" height={32} />
             <span className="aa-section-note">{fmtClock(result.serverTime)} 篩選</span>
           </div>
           <p className="aa-results-context">{result.context}</p>

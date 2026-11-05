@@ -22,6 +22,7 @@ export interface AssistantSettings {
     avoidMinutes: number;
   };
   freshness: { listMaxAgeSeconds: number; detailMaxAgeSeconds: number };
+  display: { brandName: string; topTitle: string };
   signal: {
     minScore: number;
     rtpChangePoints: number;

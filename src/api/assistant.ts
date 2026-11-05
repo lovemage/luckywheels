@@ -20,7 +20,11 @@ export interface AssistantMe {
   points: number;
   pass: AssistantPass;
   plans: TimePlan[];
+  /** 後台可改的顯示文字 */
+  display?: { brandName: string; topTitle: string };
   serverTime: string;
+  /** 前端加上：收到回應時的本機時間（ms），用來換算伺服器與本機的時間差 */
+  receivedAt?: number;
 }
 
 export interface GameView {

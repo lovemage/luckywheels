@@ -60,6 +60,7 @@ interface Form {
   listMaxAgeMinutes: string;
   detailMaxAgeMinutes: string;
   signal: Str<AssistantSettings['signal']>;
+  display: AssistantSettings['display'];
 }
 
 function toForm(s: AssistantSettings): Form {
@@ -75,6 +76,7 @@ function toForm(s: AssistantSettings): Form {
     avoidMinutes: str(s.recommend.avoidMinutes),
     listMaxAgeMinutes: str(Math.round(s.freshness.listMaxAgeSeconds / 60)),
     detailMaxAgeMinutes: str(Math.round(s.freshness.detailMaxAgeSeconds / 60)),
+    display: { ...s.display },
     signal: {
       minScore: str(s.signal.minScore),
       rtpChangePoints: str(s.signal.rtpChangePoints),
@@ -102,6 +104,7 @@ function fromForm(f: Form): AssistantSettings {
       avoidMinutes: n(f.avoidMinutes),
     },
     freshness: { listMaxAgeSeconds: n(f.listMaxAgeMinutes) * 60, detailMaxAgeSeconds: n(f.detailMaxAgeMinutes) * 60 },
+    display: { brandName: f.display.brandName.trim(), topTitle: f.display.topTitle.trim() },
     signal: {
       minScore: n(f.signal.minScore),
       rtpChangePoints: n(f.signal.rtpChangePoints),
@@ -137,6 +140,8 @@ function validate(s: AssistantSettings): string | null {
   if (!isInt(s.recommend.avoidMinutes, 0, 240)) return '避開時間需為 0–240 分鐘';
   if (!isInt(s.freshness.listMaxAgeSeconds / 60, 1, 1440)) return '列表逾時需為 1–1440 分鐘';
   if (!isInt(s.freshness.detailMaxAgeSeconds / 60, 1, 4320)) return '細項逾時需為 1–4320 分鐘';
+  if (!s.display.brandName || s.display.brandName.length > 20) return 'Logo 名稱需為 1–20 字';
+  if (!s.display.topTitle || s.display.topTitle.length > 30) return '精選空台標題需為 1–30 字';
   const g = s.signal;
   if (!isInt(g.minScore, 0, 100)) return '訊號最低分數需為 0–100';
   if (!Number.isFinite(g.rtpChangePoints) || g.rtpChangePoints < 0.5 || g.rtpChangePoints > 100) return 'RTP 變動門檻需為 0.5–100';
@@ -303,6 +308,23 @@ function SettingsForm({ initial }: { initial: AssistantSettings }) {
 
   return (
     <form className="assistant-settings-form" onSubmit={submit}>
+      <section className="member-detail-card">
+        <h2>顯示文字</h2>
+        <p className="admin-muted-text">會員端數據助手的 Logo 名稱與首頁標題。維持預設文字時會顯示金色墨水字圖；改成其他文字則以一般文字呈現。</p>
+        <div className="admin-form-grid assistant-settings-grid">
+          <label>
+            <span>Logo 名稱</span>
+            <input type="text" maxLength={20} value={form.display.brandName} onChange={(e) => setForm({ ...form, display: { ...form.display, brandName: e.target.value } })} />
+            <small>頂列左上角的名稱（預設：曜金數據助手）</small>
+          </label>
+          <label>
+            <span>精選空台標題</span>
+            <input type="text" maxLength={30} value={form.display.topTitle} onChange={(e) => setForm({ ...form, display: { ...form.display, topTitle: e.target.value } })} />
+            <small>首頁排行區塊的標題（預設：精選空台 TOP 5）</small>
+          </label>
+        </div>
+      </section>
+
       <section className="member-detail-card">
         <h2>綜合分數權重</h2>
         <p className="admin-muted-text">每個指標先換成「同遊戲房間中的排名」再加權，分數 0–100。權重會自動換算成佔比。</p>

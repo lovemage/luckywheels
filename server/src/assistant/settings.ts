@@ -72,6 +72,16 @@ export const SignalSettingsSchema = z
   .refine((s) => s.strengthMin <= s.strengthMax, '強度下限不可大於上限');
 export type SignalSettings = z.infer<typeof SignalSettingsSchema>;
 
+// ── 會員端顯示文字（後台可改）─────────────────────
+
+export const DisplaySettingsSchema = z.object({
+  /** 頂列 Logo 名稱 */
+  brandName: z.string().trim().min(1).max(20),
+  /** 首頁精選空台區塊標題 */
+  topTitle: z.string().trim().min(1).max(30),
+});
+export type DisplaySettings = z.infer<typeof DisplaySettingsSchema>;
+
 // ── 使用期限兌換方案（積分 → 時長）──────────────────
 
 export const TimePlanSchema = z.object({
@@ -106,6 +116,8 @@ const ALL_KEYS = [
   K.assistantSignalStrengthMin,
   K.assistantSignalStrengthMax,
   K.assistantTimePlans,
+  K.assistantBrandName,
+  K.assistantTopTitle,
 ];
 
 async function readRaw(prisma: Client, keys: string[]): Promise<(key: string) => string> {
@@ -141,6 +153,11 @@ const buildSignal = (get: (k: string) => string) => ({
   strengthMax: num(get(K.assistantSignalStrengthMax)),
 });
 
+const buildDisplay = (get: (k: string) => string) => ({
+  brandName: get(K.assistantBrandName),
+  topTitle: get(K.assistantTopTitle),
+});
+
 /** 個別欄位驗證：設定值損壞只影響該欄（其餘欄位保留後台設定） */
 function perField<T extends Record<string, unknown>>(schema: z.ZodType<T>, build: (get: (k: string) => string) => unknown, get: (k: string) => string): T {
   const candidate = build(get) as Record<string, unknown>;
@@ -167,6 +184,10 @@ export async function readFreshnessSettings(prisma: Client): Promise<FreshnessSe
 
 export async function readSignalSettings(prisma: Client): Promise<SignalSettings> {
   return perField(SignalSettingsSchema, buildSignal, await readRaw(prisma, ALL_KEYS));
+}
+
+export async function readDisplaySettings(prisma: Client): Promise<DisplaySettings> {
+  return perField(DisplaySettingsSchema, buildDisplay, await readRaw(prisma, ALL_KEYS));
 }
 
 export async function readTimePlans(prisma: Client): Promise<TimePlan[]> {
@@ -215,6 +236,13 @@ export async function writeSignalSettings(prisma: Client, s: SignalSettings): Pr
     [K.assistantSignalRefreshCooldownSeconds, String(s.refreshCooldownSeconds)],
     [K.assistantSignalStrengthMin, String(s.strengthMin)],
     [K.assistantSignalStrengthMax, String(s.strengthMax)],
+  ]);
+}
+
+export async function writeDisplaySettings(prisma: Client, s: DisplaySettings): Promise<void> {
+  await writeAll(prisma, [
+    [K.assistantBrandName, s.brandName],
+    [K.assistantTopTitle, s.topTitle],
   ]);
 }
 
