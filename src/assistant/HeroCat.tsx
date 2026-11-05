@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 
 // Hero 吉祥物：金色胖貓，5 種動作輪流播放（每個動作為 16 幀橫向精靈條，public/assets/assistant/cat/）。
-// 精靈條每幀尺寸為 2x 像素；顯示時除以 2，所以各動作的貓大小一致、底部貼齊同一條地面。
+// 精靈條每幀尺寸為 2x 像素；顯示時除以 2。切幀時已依身體主幹面積把每一幀縮放到同一個大小、
+// 以身體重心置中、腳底貼齊地面，所以換動作或同一動作中貓的大小都一致。
 
 type ActionName = 'sit' | 'lounge' | 'stretch' | 'scratch' | 'coin';
 
@@ -16,11 +17,11 @@ interface Action {
 }
 
 const ACTIONS: Record<ActionName, Action> = {
-  sit: { w: 252, h: 234, dur: 2.6, loops: 2 },
-  lounge: { w: 250, h: 168, dur: 3, loops: 2 },
-  stretch: { w: 263, h: 246, dur: 2.6, loops: 1 },
-  scratch: { w: 258, h: 244, dur: 2, loops: 1 },
-  coin: { w: 251, h: 239, dur: 2.4, loops: 2 },
+  sit: { w: 256, h: 239, dur: 2.6, loops: 2 },
+  lounge: { w: 326, h: 215, dur: 3, loops: 2 },
+  stretch: { w: 314, h: 283, dur: 2.6, loops: 1 },
+  scratch: { w: 264, h: 247, dur: 2, loops: 1 },
+  coin: { w: 246, h: 234, dur: 2.4, loops: 2 },
 };
 
 const NAMES = Object.keys(ACTIONS) as ActionName[];

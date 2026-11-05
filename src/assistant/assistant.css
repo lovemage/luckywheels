@@ -211,7 +211,7 @@ body:has(.aa-stage) {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 126px;
+  height: 142px;
   margin-top: 2px;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(232, 194, 116, 0.18));
 }
@@ -289,6 +289,70 @@ body:has(.aa-stage) {
   color: var(--aa-muted);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+}
+
+/* 使用期限進度條 */
+.aa-passbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 300px);
+}
+
+.aa-passbar-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(232, 194, 116, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(232, 194, 116, 0.18);
+}
+
+.aa-passbar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  overflow: hidden;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--aa-gold-deep), var(--aa-gold-hi));
+  box-shadow: 0 0 10px rgba(232, 194, 116, 0.6);
+  transition: width 600ms var(--aa-ease);
+}
+
+/* 進度條上緩慢流過的高光 */
+.aa-passbar-fill::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: linear-gradient(90deg, transparent, rgba(255, 248, 225, 0.7), transparent);
+  transform: translateX(-100%);
+  animation: aa-passbar-shine 2.8s ease-in-out infinite;
+}
+
+@keyframes aa-passbar-shine {
+  60%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.aa-passbar-text {
+  flex-shrink: 0;
+  color: var(--aa-gold-hi);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 剩餘 10% 以下改用警示色 */
+.aa-passbar.is-low .aa-passbar-fill {
+  background: linear-gradient(90deg, #c4583f, var(--aa-danger));
+  box-shadow: 0 0 10px rgba(255, 161, 144, 0.5);
+}
+
+.aa-passbar.is-low .aa-passbar-text {
+  color: var(--aa-danger);
 }
 
 .aa-entries {
@@ -1400,7 +1464,8 @@ fieldset.aa-field {
   .aa-streaks {
     display: none;
   }
-  .aa-cat-strip {
+  .aa-cat-strip,
+  .aa-passbar-fill::after {
     animation: none;
   }
   .aa-pillars-rise,

@@ -5,7 +5,7 @@ import { fetchTopRooms, type AssistantMe, type RoomsResponse } from '../../api/a
 import { LightPillars } from '../LightPillars.js';
 import { HeroCat } from '../HeroCat.js';
 import { COLLECT_INTRO_MS, CollectingLoader } from '../CollectingLoader.js';
-import { fmtAgo, fmtClock, fmtInt, fmtRemaining, fmtRtp, fmtStamp, slotIconFor } from '../format.js';
+import { fmtAgo, fmtClock, fmtInt, fmtRemainingDetail, fmtRtp, fmtStamp, slotIconFor } from '../format.js';
 import type { AssistantView } from '../AssistantApp.js';
 
 const RANK = ['1', '2', '3', '4', '5'];
@@ -85,9 +85,11 @@ export function AssistantHome({
           </h1>
           <p className="aa-hero-sub">ATG 房間整理 · 本金條件篩選</p>
           <HeroCat />
-          <p className="aa-hero-pass">
-            {!me ? ' ' : active ? `使用中 · 剩 ${fmtRemaining(me.pass.remainingSeconds)}` : `目前積分 ${fmtInt(me.points)}`}
-          </p>
+          {me && active ? (
+            <PassBar me={me} />
+          ) : (
+            <p className="aa-hero-pass">{me ? `目前積分 ${fmtInt(me.points)}` : ' '}</p>
+          )}
         </div>
       </section>
 
@@ -168,6 +170,40 @@ export function AssistantHome({
 
         <p className="aa-disclaimer">數據僅供參考，不保證獲利</p>
       </section>
+    </div>
+  );
+}
+
+/** 使用期限進度條：剩餘時間 ÷ 本次開通總長（startsAt → expiresAt），每 30 秒更新 */
+function PassBar({ me }: { me: AssistantMe }) {
+  const [loadedAt] = useState(() => Date.now());
+  const [tick, setTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    const t = window.setInterval(() => setTick(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const { startsAt, expiresAt, remainingSeconds } = me.pass;
+  const remaining = Math.max(0, remainingSeconds - Math.floor((tick - loadedAt) / 1000));
+  const total = startsAt && expiresAt ? (Date.parse(expiresAt) - Date.parse(startsAt)) / 1000 : remaining;
+  const ratio = total > 0 ? Math.min(1, remaining / total) : 0;
+  const pct = Math.round(ratio * 100);
+
+  return (
+    <div className={`aa-passbar${ratio <= 0.1 ? ' is-low' : ''}`}>
+      <span
+        className="aa-passbar-track"
+        role="progressbar"
+        aria-label="使用期限剩餘"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        aria-valuetext={`剩 ${fmtRemainingDetail(remaining)}`}
+      >
+        <span className="aa-passbar-fill" style={{ width: `${Math.max(pct, remaining > 0 ? 2 : 0)}%` }} />
+      </span>
+      <span className="aa-passbar-text">剩 {fmtRemainingDetail(remaining)}</span>
     </div>
   );
 }

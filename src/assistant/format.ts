@@ -42,6 +42,15 @@ export function fmtRemaining(seconds: number) {
   return [d && `${d} 天`, h && `${h} 小時`, d === 0 && m > 0 && `${m} 分`].filter(Boolean).join(' ') || '不到 1 分';
 }
 
+/** 剩餘時間（含分鐘）：「2 天 3 小時 15 分」「45 分」 */
+export function fmtRemainingDetail(seconds: number) {
+  if (seconds <= 0) return '已到期';
+  const d = Math.floor(seconds / 86_400);
+  const h = Math.floor((seconds % 86_400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return [d && `${d} 天`, h && `${h} 小時`, m && `${m} 分`].filter(Boolean).join(' ') || '不到 1 分';
+}
+
 /** 房號 → 25 款機台圖示之一（同一房號永遠同一張圖） */
 export function slotIconFor(roomNo: string) {
   let h = 0;
