@@ -185,6 +185,7 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
                     <div className="aa-room-main">
                       <p className="aa-room-title">
                         <span className="aa-room-no">#{item.room.roomNo}</span>
+                        {i < 2 && <img className="aa-rec-label" src="/assets/assistant/rec-label.webp" alt="推薦" width="52" height="28" />}
                         <span className="aa-chip">空台</span>
                         {item.premium && <span className="aa-chip aa-chip--solid">精品</span>}
                       </p>

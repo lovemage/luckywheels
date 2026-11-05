@@ -8,7 +8,9 @@ export { MAX_TARGET_MULTIPLIER, readRecommendSettings, type RecommendSettings, t
 
 // 本金推薦（計劃 M3 草案，2026-11-03／11-04 定案）。
 // 輸入本金＋今日目標倍數 → 本金級距決定分數門檻與最高倍數 → 門檻 = 級距分數 +（倍數 − 1）× 每倍加分
-// → 未逾時的空台、分數 ≥ 門檻 → 依分數取前 N 間，每間附 2–3 條由實際數據產生的理由。
+// → 未逾時的空台、分數 ≥ 門檻 → 取分數前 poolSize 間為候選池 → 從中分散挑 N 間（2026-11-05 業主：
+//   同條件的會員不要都拿到同一批、擠進同一間；近 avoidMinutes 分鐘已推薦過的房間優先避開）
+// → 依分數排序顯示，每間附 2–3 條由實際數據產生的理由。
 // 措辭只能是「排序參考」，不得暗示中獎機率、預測或保證獲利（計劃 1.2）。
 
 export const RECOMMEND_DISCLAIMER = '排序參考，不代表遊戲結果';
@@ -61,6 +63,47 @@ export function buildReasons(room: RoomView, s: RoomScore): string[] {
   return reasons.slice(0, 3);
 }
 
+/**
+ * 從候選池（已依分數排序）分散挑出 count 間：先在「近期沒被推薦過」的房間中隨機挑，
+ * 不夠時再依「最久以前被推薦」的順序補；結果依原本的分數順序回傳。
+ */
+export function pickSpread<T extends { room: { id: string } }>(
+  pool: T[],
+  count: number,
+  recent: Map<string, number>,
+  rand: () => number = Math.random,
+): T[] {
+  const fresh = pool.filter((x) => !recent.has(x.room.id));
+  const used = pool
+    .filter((x) => recent.has(x.room.id))
+    .sort((a, b) => recent.get(a.room.id)! - recent.get(b.room.id)!);
+  // Fisher–Yates 洗牌後取前段
+  const shuffled = [...fresh];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+  }
+  const picked = new Set([...shuffled.slice(0, count), ...used.slice(0, Math.max(0, count - shuffled.length))]);
+  return pool.filter((x) => picked.has(x));
+}
+
+/** 房間 id → 近 minutes 分鐘內最後一次被推薦的時間（ms） */
+async function recentlyRecommended(prisma: PrismaClient, gameId: string, now: Date, minutes: number): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (minutes <= 0) return out;
+  const logs = await prisma.recommendationLog.findMany({
+    where: { gameId, createdAt: { gte: new Date(now.getTime() - minutes * 60_000) } },
+    select: { createdAt: true, results: true },
+  });
+  for (const log of logs) {
+    const at = log.createdAt.getTime();
+    for (const r of (log.results as { roomId?: string }[] | null) ?? []) {
+      if (r?.roomId && (out.get(r.roomId) ?? 0) < at) out.set(r.roomId, at);
+    }
+  }
+  return out;
+}
+
 export interface RecommendItem {
   room: RoomView;
   score: number;
@@ -101,9 +144,10 @@ export async function recommend(
   // board 已依分數排序
   const idle = board.rooms.filter((x) => x.room.status === 'idle');
 
-  const items = idle
-    .filter((x) => x.score.score >= threshold)
-    .slice(0, settings.count)
+  const pool = idle.filter((x) => x.score.score >= threshold).slice(0, Math.max(settings.poolSize, settings.count));
+  const recent = await recentlyRecommended(prisma, gameId, now, settings.avoidMinutes);
+
+  const items = pickSpread(pool, settings.count, recent)
     .map((x) => ({
       room: x.room,
       score: x.score.score,

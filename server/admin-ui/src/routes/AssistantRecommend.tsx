@@ -55,6 +55,8 @@ interface Form {
   count: string;
   minBetAdvice: string;
   premiumPercent: string;
+  poolSize: string;
+  avoidMinutes: string;
   listMaxAgeMinutes: string;
   detailMaxAgeMinutes: string;
   signal: Str<AssistantSettings['signal']>;
@@ -69,6 +71,8 @@ function toForm(s: AssistantSettings): Form {
     count: str(s.recommend.count),
     minBetAdvice: str(s.recommend.minBetAdvice),
     premiumPercent: str(s.recommend.premiumPercent),
+    poolSize: str(s.recommend.poolSize),
+    avoidMinutes: str(s.recommend.avoidMinutes),
     listMaxAgeMinutes: str(Math.round(s.freshness.listMaxAgeSeconds / 60)),
     detailMaxAgeMinutes: str(Math.round(s.freshness.detailMaxAgeSeconds / 60)),
     signal: {
@@ -94,6 +98,8 @@ function fromForm(f: Form): AssistantSettings {
       count: n(f.count),
       minBetAdvice: n(f.minBetAdvice),
       premiumPercent: n(f.premiumPercent),
+      poolSize: n(f.poolSize),
+      avoidMinutes: n(f.avoidMinutes),
     },
     freshness: { listMaxAgeSeconds: n(f.listMaxAgeMinutes) * 60, detailMaxAgeSeconds: n(f.detailMaxAgeMinutes) * 60 },
     signal: {
@@ -126,6 +132,9 @@ function validate(s: AssistantSettings): string | null {
   if (!isInt(s.recommend.count, 1, 20)) return '推薦間數需為 1–20';
   if (!isInt(s.recommend.minBetAdvice, 1, 100_000)) return '建議單注需為 1 以上的整數';
   if (!isInt(s.recommend.premiumPercent, 0, 100)) return '精品比例需為 0–100';
+  if (!isInt(s.recommend.poolSize, 1, 500)) return '候選池需為 1–500 間';
+  if (s.recommend.poolSize < s.recommend.count) return '候選池不可少於推薦間數';
+  if (!isInt(s.recommend.avoidMinutes, 0, 240)) return '避開時間需為 0–240 分鐘';
   if (!isInt(s.freshness.listMaxAgeSeconds / 60, 1, 1440)) return '列表逾時需為 1–1440 分鐘';
   if (!isInt(s.freshness.detailMaxAgeSeconds / 60, 1, 4320)) return '細項逾時需為 1–4320 分鐘';
   const g = s.signal;
@@ -373,7 +382,9 @@ function SettingsForm({ initial }: { initial: AssistantSettings }) {
 
         <div className="admin-form-grid assistant-settings-grid">
           <NumberField label="每倍加分" suffix="分" value={form.multiplierStepScore} onChange={(v) => setForm({ ...form, multiplierStepScore: v })} hint="以 1 倍為基準，每多 1 倍加的分數" />
-          <NumberField label="推薦間數" suffix="間" value={form.count} onChange={(v) => setForm({ ...form, count: v })} hint="符合條件的空台依分數取前幾間" />
+          <NumberField label="推薦間數" suffix="間" value={form.count} onChange={(v) => setForm({ ...form, count: v })} hint="每次從候選池中分散挑出的間數" />
+          <NumberField label="候選池" suffix="間" value={form.poolSize} onChange={(v) => setForm({ ...form, poolSize: v })} hint="符合門檻的空台依分數取前幾間，再從中挑選；等於推薦間數時即固定取最高分" />
+          <NumberField label="避開近期推薦" suffix="分鐘" value={form.avoidMinutes} onChange={(v) => setForm({ ...form, avoidMinutes: v })} hint="這段時間內已推薦給會員的房間優先避開，減少多人擠同一間；0 為不避開" />
           <NumberField label="建議單注" suffix="元以上" value={form.minBetAdvice} onChange={(v) => setForm({ ...form, minBetAdvice: v })} />
           <NumberField label="精品比例" suffix="%" value={form.premiumPercent} onChange={(v) => setForm({ ...form, premiumPercent: v })} hint="未逾時空台中分數前幾 % 標為精品；0 為不標示" />
         </div>

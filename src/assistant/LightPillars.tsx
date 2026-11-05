@@ -43,8 +43,39 @@ function buildPillars(): Pillar[] {
   return out;
 }
 
+interface Streak {
+  x: number;
+  rise: number;
+  len: number;
+  width: number;
+  dur: number;
+  delay: number;
+}
+
+// 由下往上流動的細光線：沿著部分光柱從地平線升到柱頂後淡出
+function buildStreaks(pillars: Pillar[]): Streak[] {
+  const r = rng(0x5eed);
+  const out: Streak[] = [];
+  for (let i = 0; i < 30; i++) {
+    const p = pillars[Math.floor(r() * pillars.length)];
+    const rise = HORIZON - p.top;
+    if (rise < 40) continue;
+    const dur = 1.8 + r() * 2.4;
+    out.push({
+      x: p.x,
+      rise,
+      len: 18 + r() * 30,
+      width: 0.9 + r() * 0.7,
+      dur,
+      delay: -r() * dur, // 負延遲：一進場就分散在各個高度
+    });
+  }
+  return out;
+}
+
 export function LightPillars() {
   const pillars = useMemo(buildPillars, []);
+  const streaks = useMemo(() => buildStreaks(pillars), [pillars]);
   return (
     <svg className="aa-pillars" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <defs>
@@ -61,6 +92,18 @@ export function LightPillars() {
           <stop offset="0" stopColor="#ffd98a" stopOpacity="0.55" />
           <stop offset="1" stopColor="#ffd98a" stopOpacity="0" />
         </radialGradient>
+        <linearGradient id="aa-streak" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stopColor="#ffd98a" stopOpacity="0" />
+          <stop offset="0.75" stopColor="#ffe9b8" stopOpacity="0.9" />
+          <stop offset="1" stopColor="#fffaf0" />
+        </linearGradient>
+        <filter id="aa-streak-glow" x="-300%" y="-20%" width="700%" height="140%">
+          <feGaussianBlur stdDeviation="1.4" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
         <filter id="aa-glow" x="-50%" y="-10%" width="200%" height="120%">
           <feGaussianBlur stdDeviation="2.4" />
         </filter>
@@ -82,6 +125,21 @@ export function LightPillars() {
           .map((p, i) => (
             <circle key={i} cx={p.x} cy={p.top} r="1.1" fill="#fff1c9" opacity={p.opacity} />
           ))}
+      </g>
+
+      <g className="aa-streaks" filter="url(#aa-streak-glow)">
+        {streaks.map((st, i) => (
+          <rect
+            key={i}
+            className="aa-streak"
+            x={st.x - st.width / 2}
+            y={HORIZON - st.len}
+            width={st.width}
+            height={st.len}
+            fill="url(#aa-streak)"
+            style={{ '--rise': `${-st.rise}px`, animationDuration: `${st.dur}s`, animationDelay: `${st.delay}s` } as React.CSSProperties}
+          />
+        ))}
       </g>
 
       {/* 地面倒影 */}

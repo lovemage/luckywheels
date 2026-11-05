@@ -27,7 +27,7 @@ export function AssistantHome({
   const active = me?.pass.active ?? false;
   const [top, setTop] = useState<TopState>({ kind: 'loading' });
   const [now, setNow] = useState(() => Date.now());
-  // 進入首頁先跑約 2.5 秒「數據助手採集中」動畫，結束後才顯示排行（資料同時在背景抓取）
+  // 進入首頁先跑約 4.5 秒「數據助手採集中」動畫，結束後才顯示排行（資料同時在背景抓取）
   const [introDone, setIntroDone] = useState(false);
 
   useEffect(() => {
@@ -156,6 +156,7 @@ export function AssistantHome({
                   <div className="aa-room-main">
                     <p className="aa-room-title">
                       <span className="aa-room-no">#{room.roomNo}</span>
+                      {i < 2 && <img className="aa-rec-label" src="/assets/assistant/rec-label.webp" alt="推薦" width="52" height="28" />}
                       <span className="aa-chip">空台</span>
                       {room.premium && <span className="aa-chip aa-chip--solid">精品</span>}
                     </p>

@@ -38,6 +38,10 @@ export const RecommendSettingsSchema = z.object({
   count: z.number().int().min(1).max(20),
   minBetAdvice: z.number().int().min(1).max(100_000),
   premiumPercent: z.number().int().min(0).max(100),
+  /** 從符合門檻的前幾間空台中挑選（小於 count 時以 count 計） */
+  poolSize: z.number().int().min(1).max(500),
+  /** 近幾分鐘內已推薦過的房間優先避開；0＝不避開 */
+  avoidMinutes: z.number().int().min(0).max(240),
 });
 export type RecommendSettings = z.infer<typeof RecommendSettingsSchema>;
 
@@ -91,6 +95,8 @@ const ALL_KEYS = [
   K.assistantRecommendCount,
   K.assistantMinBetAdvice,
   K.assistantPremiumPercent,
+  K.assistantRecommendPoolSize,
+  K.assistantRecommendAvoidMinutes,
   K.assistantDataMaxAgeSeconds,
   K.assistantDetailMaxAgeSeconds,
   K.assistantSignalMinScore,
@@ -119,6 +125,8 @@ const buildRecommend = (get: (k: string) => string) => ({
   count: num(get(K.assistantRecommendCount)),
   minBetAdvice: num(get(K.assistantMinBetAdvice)),
   premiumPercent: num(get(K.assistantPremiumPercent)),
+  poolSize: num(get(K.assistantRecommendPoolSize)),
+  avoidMinutes: num(get(K.assistantRecommendAvoidMinutes)),
 });
 const buildFreshness = (get: (k: string) => string) => ({
   listMaxAgeSeconds: num(get(K.assistantDataMaxAgeSeconds)),
@@ -187,6 +195,8 @@ export async function writeRecommendSettings(prisma: Client, s: RecommendSetting
     [K.assistantRecommendCount, String(s.count)],
     [K.assistantMinBetAdvice, String(s.minBetAdvice)],
     [K.assistantPremiumPercent, String(s.premiumPercent)],
+    [K.assistantRecommendPoolSize, String(s.poolSize)],
+    [K.assistantRecommendAvoidMinutes, String(s.avoidMinutes)],
   ]);
 }
 

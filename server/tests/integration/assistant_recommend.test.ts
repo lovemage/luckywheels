@@ -126,6 +126,26 @@ describe('member assistant recommend API', { timeout: 60_000 }, () => {
     expect(r.body.items).toEqual([]);
   });
 
+  it('spreads members over the pool and avoids rooms recommended in the last minutes', async () => {
+    await seedRooms();
+    const { headers } = await member();
+    const other = await member();
+    // 門檻 20：001、005、003 符合；每次推薦 1 間
+    await prisma.appSetting.createMany({
+      data: [
+        { key: 'assistantRecommendTiers', value: JSON.stringify([{ minPrincipal: 0, minScore: 20, maxMultiplier: 5 }]) },
+        { key: 'assistantRecommendCount', value: '1' },
+      ],
+    });
+    const first = nos((await post({ principal: 100, multiplier: 1 }, headers)).body);
+    const second = nos((await post({ principal: 100, multiplier: 1 }, other.headers)).body);
+    const third = nos((await post({ principal: 100, multiplier: 1 }, headers)).body);
+    expect([...first, ...second, ...third].sort()).toEqual(['001', '003', '005']);
+
+    // 三間都推薦過 → 補上最久以前推薦的那間
+    expect(nos((await post({ principal: 100, multiplier: 1 }, other.headers)).body)).toEqual(first);
+  });
+
   it('follows the tier, count and weight settings in AppSetting', async () => {
     await seedRooms();
     const { headers } = await member();
@@ -133,6 +153,9 @@ describe('member assistant recommend API', { timeout: 60_000 }, () => {
       data: [
         { key: 'assistantRecommendTiers', value: JSON.stringify([{ minPrincipal: 0, minScore: 20, maxMultiplier: 5 }]) },
         { key: 'assistantRecommendCount', value: '2' },
+        // 候選池＝推薦間數 → 固定取最高分，結果可預期
+        { key: 'assistantRecommendPoolSize', value: '2' },
+        { key: 'assistantRecommendAvoidMinutes', value: '0' },
       ],
     });
     expect(nos((await post({ principal: 100, multiplier: 1 }, headers)).body)).toEqual(['001', '005']);

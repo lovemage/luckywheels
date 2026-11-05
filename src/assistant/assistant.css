@@ -168,6 +168,28 @@ body:has(.aa-stage) {
   animation: aa-rise 1.4s var(--aa-ease) both;
 }
 
+.aa-streak {
+  opacity: 0;
+  animation: aa-streak-up 3s cubic-bezier(0.3, 0.1, 0.6, 1) infinite;
+}
+
+@keyframes aa-streak-up {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  12% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(var(--rise));
+  }
+}
+
 @keyframes aa-rise {
   from {
     transform: scaleY(0.72);
@@ -408,6 +430,15 @@ body:has(.aa-stage) {
   color: #241503;
 }
 
+/* 前 2 台「推薦」：金色墨水書法字圖（透明 WebP） */
+.aa-rec-label {
+  display: block;
+  width: auto;
+  height: 28px;
+  margin: -4px -2px -4px -4px;
+  filter: drop-shadow(0 0 6px rgba(232, 194, 116, 0.35));
+}
+
 .aa-room-meta {
   display: flex;
   flex-wrap: wrap;
@@ -476,7 +507,7 @@ body:has(.aa-stage) {
   }
 }
 
-/* ── 精選空台：數據助手採集中載入動畫（約 2.5s） ── */
+/* ── 精選空台：數據助手採集中載入動畫（約 4.5s） ── */
 
 .aa-collect {
   position: relative;
@@ -1224,6 +1255,9 @@ fieldset.aa-field {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .aa-streaks {
+    display: none;
+  }
   .aa-pillars-rise,
   .aa-skel,
   .aa-collect,

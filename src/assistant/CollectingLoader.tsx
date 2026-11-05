@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 /** 精選空台載入動畫的最短顯示時間 */
-export const COLLECT_INTRO_MS = 2500;
+export const COLLECT_INTRO_MS = 4500;
 
 const STEPS = [
   '連線 ATG 採集節點',

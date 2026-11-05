@@ -47,6 +47,9 @@ export const SETTINGS_KEYS = {
   assistantRecommendCount: 'assistantRecommendCount',
   assistantMinBetAdvice: 'assistantMinBetAdvice',
   assistantPremiumPercent: 'assistantPremiumPercent',
+  // 本金推薦分散：從符合門檻的前 N 間空台中挑選；近 M 分鐘已推薦過的房間優先避開（0＝不避開）。
+  assistantRecommendPoolSize: 'assistantRecommendPoolSize',
+  assistantRecommendAvoidMinutes: 'assistantRecommendAvoidMinutes',
   // 數據助手訊號：綁定房間最低分數、今日 RTP 變動換組門檻（百分點）、每間房同時有效訊號上限、
   // 會員手動換組冷卻（秒）、訊號強度 % 的上下限（由綁定房間分數換算）。
   assistantSignalMinScore: 'assistantSignalMinScore',
@@ -148,6 +151,8 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   [SETTINGS_KEYS.assistantRecommendCount]: '5',
   [SETTINGS_KEYS.assistantMinBetAdvice]: '10',
   [SETTINGS_KEYS.assistantPremiumPercent]: '5',
+  [SETTINGS_KEYS.assistantRecommendPoolSize]: '50',
+  [SETTINGS_KEYS.assistantRecommendAvoidMinutes]: '15',
   [SETTINGS_KEYS.assistantSignalMinScore]: '70',
   [SETTINGS_KEYS.assistantSignalRtpChangePoints]: '5',
   [SETTINGS_KEYS.assistantSignalMaxPerRoom]: '2',

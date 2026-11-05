@@ -18,6 +18,8 @@ export interface AssistantSettings {
     count: number;
     minBetAdvice: number;
     premiumPercent: number;
+    poolSize: number;
+    avoidMinutes: number;
   };
   freshness: { listMaxAgeSeconds: number; detailMaxAgeSeconds: number };
   signal: {
