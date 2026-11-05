@@ -476,6 +476,254 @@ body:has(.aa-stage) {
   }
 }
 
+/* ── 精選空台：數據助手採集中載入動畫（約 2.5s） ── */
+
+.aa-collect {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-top: 14px;
+  padding: 16px 16px 14px;
+  border: 1px solid var(--aa-line-strong);
+  border-radius: 10px;
+  background: radial-gradient(ellipse 120% 80% at 50% 0%, #1d160c, var(--aa-surface) 70%);
+  box-shadow: 0 0 0 1px rgba(232, 194, 116, 0.06), 0 0 28px rgba(232, 194, 116, 0.1);
+  animation: aa-collect-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes aa-collect-glow {
+  50% {
+    box-shadow: 0 0 0 1px rgba(232, 194, 116, 0.14), 0 0 38px rgba(232, 194, 116, 0.22);
+  }
+}
+
+/* 背景資料流：細字逐行往上捲 */
+.aa-collect-stream {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  padding: 0 12px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 45%, #000 70%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 40%, #000 62%, transparent);
+  opacity: 0.24;
+}
+
+.aa-collect-stream-track {
+  display: grid;
+  justify-items: end;
+  animation: aa-collect-scroll 3.2s linear infinite;
+}
+
+.aa-collect-stream-track span {
+  color: var(--aa-gold-deep);
+  font: 500 10.5px/1.7 ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.aa-collect-stream-track span:nth-child(3n) {
+  color: var(--aa-gold);
+}
+
+@keyframes aa-collect-scroll {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+/* 斜向掃描光 */
+.aa-collect-sweep {
+  position: absolute;
+  inset: -40% auto -40% 0;
+  z-index: -1;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 227, 166, 0.13) 45%, rgba(255, 240, 205, 0.22) 50%, rgba(255, 227, 166, 0.13) 55%, transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  animation: aa-collect-sweep 1.25s var(--aa-ease) infinite;
+}
+
+@keyframes aa-collect-sweep {
+  to {
+    transform: translateX(330%) skewX(-12deg);
+  }
+}
+
+.aa-collect-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aa-collect-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--aa-gold-hi);
+  box-shadow: 0 0 10px var(--aa-gold);
+  animation: aa-collect-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes aa-collect-pulse {
+  50% {
+    opacity: 0.35;
+    box-shadow: 0 0 2px var(--aa-gold);
+  }
+}
+
+.aa-collect-title {
+  color: var(--aa-gold-hi);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 12px rgba(232, 194, 116, 0.55);
+}
+
+.aa-collect-pct {
+  margin-left: auto;
+  color: var(--aa-gold-hi);
+  font-family: var(--aa-display);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 14px rgba(232, 194, 116, 0.6);
+}
+
+.aa-collect-bar {
+  height: 3px;
+  margin: 12px 0 12px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(232, 194, 116, 0.14);
+}
+
+.aa-collect-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--aa-gold-deep), var(--aa-gold-hi));
+  box-shadow: 0 0 10px var(--aa-gold), 0 0 2px #fff6dc;
+}
+
+.aa-collect-steps {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aa-collect-steps li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--aa-ink);
+  font-size: 13px;
+  line-height: 1.55;
+  opacity: 0;
+  animation: aa-collect-in 0.32s var(--aa-ease) var(--d) both;
+}
+
+@keyframes aa-collect-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.aa-collect-mark {
+  width: 6px;
+  height: 6px;
+  margin-left: 3px;
+  background: var(--aa-gold);
+  transform: rotate(45deg);
+  box-shadow: 0 0 6px var(--aa-gold);
+}
+
+.aa-collect-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 狀態欄：先「處理中…」再切成「完成」 */
+.aa-collect-state {
+  position: relative;
+  min-width: 3.4em;
+  color: var(--aa-dim);
+  font: 600 11px/1 ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  letter-spacing: 0.06em;
+  text-align: right;
+}
+
+.aa-collect-state::before,
+.aa-collect-state::after {
+  position: absolute;
+  inset: 50% 0 auto auto;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.aa-collect-state::before {
+  content: '處理中';
+  animation:
+    aa-collect-blink 0.5s steps(2, jump-none) infinite,
+    aa-collect-hide 0.01s linear var(--done) forwards;
+}
+
+.aa-collect-state::after {
+  content: '完成';
+  color: var(--aa-success);
+  opacity: 0;
+  animation: aa-collect-show 0.01s linear var(--done) forwards;
+}
+
+.aa-collect-steps li.is-last .aa-collect-state::before {
+  animation: aa-collect-blink 0.5s steps(2, jump-none) infinite;
+}
+
+.aa-collect-steps li.is-last .aa-collect-state::after {
+  animation: none;
+}
+
+@keyframes aa-collect-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes aa-collect-hide {
+  to {
+    visibility: hidden;
+  }
+}
+
+@keyframes aa-collect-show {
+  to {
+    opacity: 1;
+  }
+}
+
+/* 動畫結束後，TOP 5 逐列浮現 */
+.aa-rooms.is-reveal .aa-room {
+  animation: aa-room-in 0.5s var(--aa-ease) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes aa-room-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 .aa-disclaimer {
   margin: 14px 0 0;
   color: var(--aa-dim);
@@ -977,8 +1225,23 @@ fieldset.aa-field {
 
 @media (prefers-reduced-motion: reduce) {
   .aa-pillars-rise,
-  .aa-skel {
+  .aa-skel,
+  .aa-collect,
+  .aa-collect-stream-track,
+  .aa-collect-sweep,
+  .aa-collect-dot,
+  .aa-rooms.is-reveal .aa-room {
     animation: none;
+  }
+  .aa-collect-sweep {
+    display: none;
+  }
+  .aa-collect-steps li {
+    opacity: 1;
+    animation: none;
+  }
+  .aa-collect-state::before {
+    animation: aa-collect-hide 0.01s linear var(--done) forwards;
   }
   .aa-stage * {
     transition: none !important;

@@ -3,6 +3,7 @@ import { ChevronRight, Coins, Hourglass, Search } from 'lucide-react';
 import { ApiError } from '../../api/client.js';
 import { fetchTopRooms, type AssistantMe, type RoomsResponse } from '../../api/assistant.js';
 import { LightPillars } from '../LightPillars.js';
+import { COLLECT_INTRO_MS, CollectingLoader } from '../CollectingLoader.js';
 import { fmtAgo, fmtClock, fmtInt, fmtRemaining, fmtRtp, fmtStamp, slotIconFor } from '../format.js';
 import type { AssistantView } from '../AssistantApp.js';
 
@@ -26,6 +27,14 @@ export function AssistantHome({
   const active = me?.pass.active ?? false;
   const [top, setTop] = useState<TopState>({ kind: 'loading' });
   const [now, setNow] = useState(() => Date.now());
+  // 進入首頁先跑約 2.5 秒「數據助手採集中」動畫，結束後才顯示排行（資料同時在背景抓取）
+  const [introDone, setIntroDone] = useState(false);
+
+  useEffect(() => {
+    if (!active) return;
+    const t = window.setTimeout(() => setIntroDone(true), COLLECT_INTRO_MS);
+    return () => window.clearTimeout(t);
+  }, [active]);
 
   useEffect(() => {
     if (!me) return;
@@ -52,7 +61,8 @@ export function AssistantHome({
     };
   }, [me, active]);
 
-  const game = top.kind === 'ready' ? top.data.game : null;
+  const collecting = active && (!introDone || top.kind === 'loading');
+  const game = !collecting && top.kind === 'ready' ? top.data.game : null;
 
   return (
     <div className="aa-home">
@@ -103,7 +113,9 @@ export function AssistantHome({
           {game && <span className="aa-section-note">{game.name}</span>}
         </div>
 
-        {top.kind === 'loading' && (
+        {collecting && <CollectingLoader />}
+
+        {!collecting && top.kind === 'loading' && (
           <ol className="aa-rooms" aria-busy="true">
             {RANK.map((r) => (
               <li key={r} className="aa-room is-skeleton">
@@ -124,21 +136,21 @@ export function AssistantHome({
           </div>
         )}
 
-        {top.kind === 'error' && (
+        {!collecting && top.kind === 'error' && (
           <div className="aa-notice" role="alert">
             <p>空台排行暫時無法載入，請稍後再試。</p>
           </div>
         )}
 
-        {top.kind === 'ready' &&
+        {!collecting && top.kind === 'ready' &&
           (top.data.items.length === 0 ? (
             <div className="aa-notice">
               <p>{top.data.game.stale ? '採集暫停中，恢復更新後會顯示空台排行。' : '目前沒有空台，稍後再來看看。'}</p>
             </div>
           ) : (
-            <ol className="aa-rooms">
+            <ol className="aa-rooms is-reveal">
               {top.data.items.map((room, i) => (
-                <li key={room.id} className="aa-room">
+                <li key={room.id} className="aa-room" style={{ '--i': i } as React.CSSProperties}>
                   <span className="aa-room-rank" aria-label={`第 ${i + 1} 名`}>{RANK[i]}</span>
                   <img className="aa-room-icon" src={slotIconFor(room.roomNo)} alt="" width="56" height="56" loading="lazy" />
                   <div className="aa-room-main">
