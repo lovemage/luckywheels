@@ -60,6 +60,13 @@ const METRICS: Metric[] = [
   },
 ];
 
+const SIGNAL_METALS = [
+  { key: 'silver', name: '銀' },
+  { key: 'gold', name: '黃金' },
+  { key: 'platinum', name: '白金' },
+  { key: 'obsidian', name: '曜金' },
+];
+
 export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNavigate: (view: AssistantView) => void }) {
   const active = me?.pass.active ?? false;
 
@@ -72,6 +79,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
           <a key={m.id} href={`#aa-rule-${m.id}`}>{m.name}</a>
         ))}
         <a href="#aa-rule-score">怎麼排序</a>
+        <a href="#aa-rule-signal">曜金訊號</a>
       </nav>
 
       {METRICS.map((m) => (
@@ -110,10 +118,33 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
         </ul>
       </section>
 
+      <section id="aa-rule-signal" className="aa-rule" aria-labelledby="aa-rule-signal-title">
+        <div className="aa-section-head">
+          <h2 id="aa-rule-signal-title" className="aa-display">曜金訊號</h2>
+        </div>
+        <p className="aa-rule-weight">開通期間在首頁顯示 · 一次一組</p>
+        <p className="aa-rule-meaning">每一組訊號都對應一台發出當下符合條件、目前沒人使用的機台</p>
+        <ul className="aa-rule-metals" aria-label="元寶種類">
+          {SIGNAL_METALS.map((m) => (
+            <li key={m.key}>
+              <img src={`/assets/assistant/metal/${m.key}.webp`} alt="" width="48" height="48" loading="lazy" />
+              <span>{m.name}</span>
+            </li>
+          ))}
+        </ul>
+        <ul className="aa-reasons aa-rule-points">
+          <li>每組訊號由 2–3 種元寶加上倍數組成，用來區分不同的訊號</li>
+          <li>訊號強度由對應機台的綜合分數換算，分數越高，強度越高</li>
+          <li>對應的機台有人入座、開過免費遊戲、今日 RTP 明顯變動，或資料停止更新時，系統會自動換一組新的訊號，並在畫面上說明原因</li>
+          <li>玩完一輪免費遊戲後，可以按「免遊結束，換一組」取得新訊號；剛換過需要稍候一段時間才能再換</li>
+          <li>同一台機台同時對應的訊號數有上限，避免太多會員擠進同一台</li>
+        </ul>
+      </section>
+
       <section className="aa-rule aa-rule-note" aria-labelledby="aa-rule-note-title">
         <InkTitle id="aa-rule-note-title" className="aa-rule-note-title" text="使用提醒" height={26} />
         <p>畫面上的數字都是已經發生的紀錄，每一轉的結果仍由遊戲獨立決定</p>
-        <p>綜合分數是排序參考，不代表中獎機率，也不保證獲利</p>
+        <p>綜合分數與訊號強度都是排序參考，不代表中獎機率，也不保證獲利</p>
         <p>請依自己的預算設定本金，理性遊玩</p>
       </section>
 

@@ -1789,3 +1789,31 @@ fieldset.aa-field {
   font-size: 0.62em;
   vertical-align: 0.18em;
 }
+
+/* 曜金規則：訊號的四種元寶圖例 */
+.aa-rule-metals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 14px 0 0;
+  padding: 10px 0 8px;
+  border-block: 1px solid var(--aa-line);
+  list-style: none;
+}
+
+.aa-rule-metals li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.aa-rule-metals img {
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(closest-side, rgba(255, 214, 140, 0.2), rgba(255, 214, 140, 0) 100%);
+}
+
+.aa-rule-metals span {
+  color: var(--aa-muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
