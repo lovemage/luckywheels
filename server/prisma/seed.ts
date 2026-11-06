@@ -65,6 +65,9 @@ export const SETTINGS_KEYS = {
   // 數據助手使用期限兌換方案 JSON：[{points, hours}]（積分與輪盤共用 User.points）。
   // 前台介紹頁與兌換頁的文案由這份方案動態產生。
   assistantTimePlans: 'assistantTimePlans',
+  // 積分兌換／用積分開通的總開關（預設關閉）與關閉時顯示給會員的提示文字
+  assistantExchangeEnabled: 'assistantExchangeEnabled',
+  assistantExchangeClosedMessage: 'assistantExchangeClosedMessage',
   // System totals — maintained atomically inside the draw transaction
   // (replaces SUM(User) aggregation; addresses Codex finding B1/D1).
   totalDrawCount: 'totalDrawCount',
@@ -170,6 +173,8 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
     { points: 2, hours: 8 },
     { points: 3, hours: 24 },
   ]),
+  [SETTINGS_KEYS.assistantExchangeEnabled]: 'false',
+  [SETTINGS_KEYS.assistantExchangeClosedMessage]: '系統正在測試中',
   [SETTINGS_KEYS.totalDrawCount]: '0',
   [SETTINGS_KEYS.totalPayoutAmount]: '0',
   [SETTINGS_KEYS.totalPointsBurned]: '0',

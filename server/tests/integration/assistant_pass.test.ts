@@ -30,6 +30,12 @@ describe('assistant pass and points exchange', { timeout: 120_000 }, () => {
   beforeEach(async () => {
     await resetDb();
     process.env.DATA_ASSISTANT_ENABLED = 'true';
+    // 兌換預設關閉；這組測試驗證開啟後的行為（關閉行為見下方專屬測試）
+    await prisma.appSetting.upsert({
+      where: { key: 'assistantExchangeEnabled' },
+      create: { key: 'assistantExchangeEnabled', value: 'true' },
+      update: { value: 'true' },
+    });
   });
 
   afterEach(() => {
@@ -47,6 +53,43 @@ describe('assistant pass and points exchange', { timeout: 120_000 }, () => {
     ]);
     process.env.DATA_ASSISTANT_ENABLED = 'false';
     expect((await req('/api/public/assistant/plans', {})).status).toBe(404);
+  });
+
+  it('blocks new exchanges while closed (default), replays still work, admins toggle and edit the copy', async () => {
+    const admin = await createAdmin();
+    const ah = await adminHeaders(admin.id, admin.email);
+    const { user, headers } = await member(5);
+
+    const done = await exchange(headers, 'before-close', { points: 1 });
+    expect(done.status).toBe(200);
+
+    // 沒有設定值時預設關閉，提示文字為預設值
+    await prisma.appSetting.deleteMany({ where: { key: 'assistantExchangeEnabled' } });
+    const me = await req('/api/assistant/me', headers);
+    expect(me.body.exchange).toEqual({ enabled: false, closedMessage: '系統正在測試中' });
+
+    const blocked = await exchange(headers, 'k-closed', { points: 1 });
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.error).toMatchObject({ code: 'EXCHANGE_DISABLED', message: '系統正在測試中' });
+    expect(await pointsOf(user.id)).toBe(4);
+
+    // 已完成的兌換重送仍回原結果
+    const replay = await exchange(headers, 'before-close', { points: 1 });
+    expect(replay.body).toMatchObject({ replayed: true, points: 4 });
+
+    // 後台：驗證、改文案、開啟
+    const invalid = await req('/api/admin/assistant/exchange/access', ah, 'PUT', { enabled: false, closedMessage: '   ' });
+    expect(invalid.body.error.code).toBe('ASSISTANT_SETTINGS_INVALID');
+
+    const closed = await req('/api/admin/assistant/exchange/access', ah, 'PUT', { enabled: false, closedMessage: '維護中，請稍後' });
+    expect(closed.body).toEqual({ enabled: false, closedMessage: '維護中，請稍後' });
+    expect((await exchange(headers, 'k-closed-2', { points: 1 })).body.error.message).toBe('維護中，請稍後');
+    expect((await req('/api/admin/assistant/exchange/access', ah)).body).toEqual(closed.body);
+    expect(await prisma.adminActionLog.count({ where: { event: 'assistant.exchange_access_updated' } })).toBe(1);
+
+    await req('/api/admin/assistant/exchange/access', ah, 'PUT', { enabled: true, closedMessage: '維護中，請稍後' });
+    expect((await req('/api/assistant/me', headers)).body.exchange.enabled).toBe(true);
+    expect((await exchange(headers, 'k-open', { points: 1 })).status).toBe(200);
   });
 
   it('exchanges points for time, extends an active pass and replays the same key', async () => {

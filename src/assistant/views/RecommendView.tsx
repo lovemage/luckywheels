@@ -13,6 +13,7 @@ import { fmtClock, fmtInt, fmtRtp, slotIconFor } from '../format.js';
 import { InkTitle } from '../InkTitle.js';
 import { COLLECT_INTRO_MS, CollectingLoader, RECOMMEND_STEPS } from '../CollectingLoader.js';
 import type { AssistantView } from '../AssistantApp.js';
+import { OpenPassButton } from '../OpenPassButton.js';
 
 // 本金推薦：輸入本金與目標倍數 → 伺服器依級距門檻篩出符合條件的空台（前端只顯示）
 
@@ -124,9 +125,7 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
         <InkTitle as="h1" className="aa-page-title aa-display" text="本金推薦" height={40} />
         <div className="aa-locked">
           <p>輸入本金與目標倍數，從即時空台中篩出符合門檻的機台。開通後即可使用。</p>
-          <button type="button" className="aa-button" onClick={() => onNavigate('exchange')}>
-            用積分開通
-          </button>
+          <OpenPassButton me={me} className="aa-button" onClick={() => onNavigate('exchange')} />
         </div>
       </div>
     );

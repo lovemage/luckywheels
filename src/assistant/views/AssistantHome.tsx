@@ -9,6 +9,7 @@ import { fmtAgo, fmtClock, fmtInt, fmtRemainingDetail, fmtRtp, fmtStamp, slotIco
 import type { AssistantView } from '../AssistantApp.js';
 import { isNativeApp } from '../../native.js';
 import { SignalCard } from '../SignalCard.js';
+import { exchangeClosedMessage, exchangeOpen, OpenPassButton } from '../OpenPassButton.js';
 
 // Android 手機的瀏覽器（不在 App 內）才顯示安裝 App 的入口
 const showAppInstall = !isNativeApp && typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
@@ -100,7 +101,7 @@ export function AssistantHome({
       <nav className="aa-entries" aria-label="功能入口">
         <EntryTile icon={<InkIcon name="rules" />} title="曜金規則" sub="數據怎麼看" onClick={() => onNavigate('rules')} />
         <EntryTile icon={<InkIcon name="recommend" />} title="本金推薦" sub="依本金篩選" onClick={() => onNavigate('recommend')} />
-        <EntryTile icon={<InkIcon name="exchange" />} title="積分兌換" sub="開通・延長時間" onClick={() => onNavigate('exchange')} />
+        <EntryTile icon={<InkIcon name="exchange" />} title="積分兌換" sub={me && !exchangeOpen(me) ? exchangeClosedMessage(me) : '開通・延長時間'} disabled={!exchangeOpen(me)} onClick={() => onNavigate('exchange')} />
         <EntryTile icon={<InkIcon name="history" />} title="兌換紀錄" sub="開通與到期" onClick={() => onNavigate('exchange', 'aa-history')} />
       </nav>
 
@@ -134,9 +135,7 @@ export function AssistantHome({
         {top.kind === 'locked' && (
           <div className="aa-locked">
             <p>開通後可查看即時空台排行、綜合分數與本金推薦。</p>
-            <button type="button" className="aa-button" onClick={() => onNavigate('exchange')}>
-              用積分開通
-            </button>
+            <OpenPassButton me={me} className="aa-button" onClick={() => onNavigate('exchange')} />
           </div>
         )}
 
@@ -185,9 +184,7 @@ export function AssistantHome({
             {top.data.masked && (
               <div className="aa-unlock">
                 <p>機台編號開通後顯示</p>
-                <button type="button" className="aa-button" onClick={() => onNavigate('exchange')}>
-                  用積分開通
-                </button>
+                <OpenPassButton me={me} className="aa-button" onClick={() => onNavigate('exchange')} />
               </div>
             )}
             </>
@@ -264,9 +261,9 @@ function PassBar({ me, onExpired }: { me: AssistantMe; onExpired?: () => void })
   );
 }
 
-function EntryTile({ icon, title, sub, onClick }: { icon: React.ReactNode; title: string; sub: string; onClick: () => void }) {
+function EntryTile({ icon, title, sub, disabled = false, onClick }: { icon: React.ReactNode; title: string; sub: string; disabled?: boolean; onClick: () => void }) {
   return (
-    <button type="button" className="aa-entry" onClick={onClick}>
+    <button type="button" className="aa-entry" disabled={disabled} onClick={onClick}>
       <span className="aa-entry-icon" aria-hidden="true">{icon}</span>
       <span className="aa-entry-copy">
         <span className="aa-entry-title aa-display">{title}</span>

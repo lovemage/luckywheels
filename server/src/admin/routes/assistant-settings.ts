@@ -7,8 +7,10 @@ import { audit } from '../audit/helper.js';
 import { dataAssistantEnabled } from '../../assistant/feature.js';
 import {
   DisplaySettingsSchema,
+  ExchangeAccessSchema,
   FreshnessSettingsSchema,
   readDisplaySettings,
+  readExchangeAccess,
   readFreshnessSettings,
   readRecommendSettings,
   readSignalSettings,
@@ -17,6 +19,7 @@ import {
   SignalSettingsSchema,
   TimePlansSchema,
   writeDisplaySettings,
+  writeExchangeAccess,
   writeFreshnessSettings,
   writeRecommendSettings,
   writeSignalSettings,
@@ -123,6 +126,24 @@ adminAssistantSettingsRoutes.get(SIGNALS, async (c) => {
 });
 
 // ── 兌換管理 ───────────────────────────────────────
+
+adminAssistantSettingsRoutes.get(`${EXCHANGE}/access`, async (c) => c.json(await readExchangeAccess(prisma)));
+
+adminAssistantSettingsRoutes.put(`${EXCHANGE}/access`, async (c) => {
+  const body = parse(ExchangeAccessSchema, await c.req.json().catch(() => null));
+  const before = await readExchangeAccess(prisma);
+  await prisma.$transaction(async (tx) => {
+    await writeExchangeAccess(tx, body);
+    await audit(c, tx, {
+      event: 'assistant.exchange_access_updated',
+      targetType: 'app_setting',
+      targetId: 'assistantExchangeEnabled',
+      payloadBefore: before,
+      payloadAfter: body,
+    });
+  }, ADJUST_TX_OPTIONS);
+  return c.json(await readExchangeAccess(prisma));
+});
 
 adminAssistantSettingsRoutes.get(`${EXCHANGE}/plans`, async (c) => c.json({ plans: presentPlans(await readTimePlans(prisma)) }));
 

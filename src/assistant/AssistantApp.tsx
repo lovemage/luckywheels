@@ -9,6 +9,7 @@ import { InkIcon } from './InkTitle.js';
 import { AssistantHome } from './views/AssistantHome.js';
 import { RecommendView } from './views/RecommendView.js';
 import { ExchangeView } from './views/ExchangeView.js';
+import { exchangeOpen } from './OpenPassButton.js';
 import { RulesView } from './views/RulesView.js';
 import { backToGame, hasDock, isNativeApp } from '../native.js';
 import './assistant.css';
@@ -107,7 +108,7 @@ export function AssistantApp({
         <nav className="aa-tabs" aria-label="數據助手選單">
           <TabButton active={view === 'home'} icon={<InkIcon name="home" />} label="首頁" onClick={() => go('home')} />
           <TabButton active={view === 'recommend'} icon={<InkIcon name="recommend" />} label="本金推薦" onClick={() => go('recommend')} />
-          <TabButton active={view === 'exchange'} icon={<InkIcon name="exchange" />} label="兌換" onClick={() => go('exchange')} />
+          <TabButton active={view === 'exchange'} icon={<InkIcon name="exchange" />} label="兌換" disabled={!exchangeOpen(me)} onClick={() => go('exchange')} />
           {isNativeApp ? (
             // App 內：網站是全螢幕，遊戲在後面；按這顆才切到遊戲畫面（1.1.0+ 的文字為「進入遊戲」）
             <TabButton active={false} icon={<Gamepad2 aria-hidden="true" />} label={hasDock ? '進入遊戲' : '回遊戲'} onClick={backToGame} />
@@ -120,9 +121,9 @@ export function AssistantApp({
   );
 }
 
-function TabButton({ active, icon, label, onClick }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void }) {
+function TabButton({ active, icon, label, disabled = false, onClick }: { active: boolean; icon: React.ReactNode; label: string; disabled?: boolean; onClick: () => void }) {
   return (
-    <button type="button" className={`aa-tab${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined} onClick={onClick}>
+    <button type="button" className={`aa-tab${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined} disabled={disabled} onClick={onClick}>
       <span className="aa-tab-icon" aria-hidden="true">{icon}</span>
       <span>{label}</span>
     </button>

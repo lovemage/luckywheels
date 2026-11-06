@@ -96,6 +96,13 @@ export const TimePlansSchema = z
   .max(10)
   .refine((p) => new Set(p.map((x) => x.points)).size === p.length, '每個方案的積分數不可重複');
 
+/** 積分兌換／用積分開通的開關與關閉時提示 */
+export const ExchangeAccessSchema = z.object({
+  enabled: z.boolean(),
+  closedMessage: z.string().trim().min(1, '請輸入關閉時的提示文字').max(60, '提示文字最多 60 字'),
+});
+export type ExchangeAccess = z.infer<typeof ExchangeAccessSchema>;
+
 // ── 讀取 ───────────────────────────────────────────
 
 const ALL_KEYS = [
@@ -190,6 +197,16 @@ export async function readDisplaySettings(prisma: Client): Promise<DisplaySettin
   return perField(DisplaySettingsSchema, buildDisplay, await readRaw(prisma, ALL_KEYS));
 }
 
+const buildExchangeAccess = (get: (k: string) => string) => ({
+  enabled: get(K.assistantExchangeEnabled) === 'true',
+  closedMessage: get(K.assistantExchangeClosedMessage),
+});
+
+export async function readExchangeAccess(prisma: Client): Promise<ExchangeAccess> {
+  const keys = [K.assistantExchangeEnabled, K.assistantExchangeClosedMessage];
+  return perField(ExchangeAccessSchema, buildExchangeAccess, await readRaw(prisma, keys));
+}
+
 export async function readTimePlans(prisma: Client): Promise<TimePlan[]> {
   const get = await readRaw(prisma, [K.assistantTimePlans]);
   const parsed = TimePlansSchema.safeParse(json(get(K.assistantTimePlans)));
@@ -243,6 +260,13 @@ export async function writeDisplaySettings(prisma: Client, s: DisplaySettings): 
   await writeAll(prisma, [
     [K.assistantBrandName, s.brandName],
     [K.assistantTopTitle, s.topTitle],
+  ]);
+}
+
+export async function writeExchangeAccess(prisma: Client, s: ExchangeAccess): Promise<void> {
+  await writeAll(prisma, [
+    [K.assistantExchangeEnabled, String(s.enabled)],
+    [K.assistantExchangeClosedMessage, s.closedMessage],
   ]);
 }
 

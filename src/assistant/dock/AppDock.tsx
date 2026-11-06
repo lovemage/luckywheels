@@ -14,6 +14,7 @@ import {
 } from '../../native.js';
 import '../assistant.css';
 import './dock.css';
+import { exchangeClosedMessage, exchangeOpen } from '../OpenPassButton.js';
 
 // App 駐守小卡：疊在遊戲上方。助手只是輔助，只放兩件事：
 //   1. 會員目前所在機台的數據（App 從遊戲畫面讀出機台號）
@@ -175,8 +176,8 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
 
       {me && !active && (
         <div className="aa-dock-row">
-          <p className="aa-dock-note">{me.pass.expiresAt ? '使用期限已到期' : '尚未開通數據助手'}</p>
-          <button type="button" className="aa-dock-btn aa-dock-btn--solid" onClick={() => onOpenFull('exchange')}>
+          <p className="aa-dock-note">{!exchangeOpen(me) ? exchangeClosedMessage(me) : me.pass.expiresAt ? '使用期限已到期' : '尚未開通數據助手'}</p>
+          <button type="button" className="aa-dock-btn aa-dock-btn--solid" disabled={!exchangeOpen(me)} onClick={() => onOpenFull('exchange')}>
             用積分開通
           </button>
         </div>

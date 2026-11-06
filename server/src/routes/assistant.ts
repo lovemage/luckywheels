@@ -14,6 +14,7 @@ import {
   tierFor,
 } from '../assistant/recommend.js';
 import { readDisplaySettings,
+  readExchangeAccess,
   MAX_TARGET_MULTIPLIER,
   readFreshnessSettings,
   readRecommendSettings,
@@ -55,13 +56,14 @@ assistantRoutes.get('/api/public/assistant/plans', async (c) => {
 assistantRoutes.get('/api/assistant/me', async (c) => {
   const user = c.get('user');
   const now = new Date();
-  const [fresh, pass, plans, display] = await Promise.all([
+  const [fresh, pass, plans, display, exchange] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { points: true } }),
     getPass(prisma, user.id, now),
     readTimePlans(prisma),
     readDisplaySettings(prisma),
+    readExchangeAccess(prisma),
   ]);
-  return c.json({ points: fresh.points, pass, plans: presentPlans(plans), display, serverTime: now.toISOString() });
+  return c.json({ points: fresh.points, pass, plans: presentPlans(plans), display, exchange, serverTime: now.toISOString() });
 });
 
 const ExchangeBody = z.object({
@@ -85,6 +87,9 @@ assistantRoutes.post('/api/assistant/exchange', async (c) => {
   if (prior) {
     result = { exchange: prior, replayed: true };
   } else {
+    // 開關只擋新兌換；上面的重送仍回原結果，會員不會因關閉而看不到已完成的兌換
+    const access = await readExchangeAccess(prisma);
+    if (!access.enabled) throw new AppError('EXCHANGE_DISABLED', access.closedMessage, 403);
     const plan = (await readTimePlans(prisma)).find((p) => p.points === body.points);
     if (!plan) throw new AppError('EXCHANGE_PLAN_NOT_FOUND', 'plan not found', 404);
     if (body.expectedHours !== undefined && body.expectedHours !== plan.hours) {

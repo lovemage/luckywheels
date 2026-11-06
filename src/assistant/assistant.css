@@ -279,7 +279,13 @@ body:has(.aa-stage) {
   height: 18px;
 }
 
-.aa-cta:active {
+.aa-cta:disabled {
+  background: #2a2216;
+  box-shadow: none;
+  color: var(--aa-dim);
+}
+
+.aa-cta:active:not(:disabled) {
   transform: translateY(1px);
   box-shadow: 0 3px 10px rgba(196, 139, 51, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
@@ -385,8 +391,14 @@ body:has(.aa-stage) {
   border-color: var(--aa-line-strong);
 }
 
-.aa-entry:active {
+.aa-entry:active:not(:disabled) {
   filter: brightness(1.12);
+}
+
+.aa-entry:disabled {
+  border-color: var(--aa-line);
+  filter: grayscale(1);
+  opacity: 0.55;
 }
 
 .aa-entry-icon {
@@ -1027,6 +1039,21 @@ body:has(.aa-stage) {
   font-size: 14px;
 }
 
+/* 兌換關閉：反灰按鈕與提示文字一組 */
+.aa-open-closed {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.aa-open-closed .aa-open-hint {
+  margin: 0;
+  color: var(--aa-muted);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
 /* 金色墨水字標題與圖示 */
 .aa-ink-title {
   display: flex;
@@ -1528,6 +1555,11 @@ fieldset.aa-field {
   color: var(--aa-muted);
   font-size: 12.5px;
   font-weight: 600;
+}
+
+.aa-tab:disabled {
+  filter: grayscale(1);
+  opacity: 0.45;
 }
 
 .aa-tab-icon {

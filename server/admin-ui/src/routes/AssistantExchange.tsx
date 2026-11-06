@@ -2,13 +2,22 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchExchangeRecords, fetchTimePlans, updateTimePlans, type TimePlan } from '../api/assistant-settings.js';
+import {
+  fetchExchangeAccess,
+  fetchExchangeRecords,
+  fetchTimePlans,
+  updateExchangeAccess,
+  updateTimePlans,
+  type ExchangeAccess,
+  type TimePlan,
+} from '../api/assistant-settings.js';
 import { ApiError } from '../api/client.js';
 
 // 數據助手：積分 → 使用時長方案、兌換紀錄。積分與輪盤共用（User.points）。
 // 方案文案（例「3 點積分兌換 24 小時（1 天）」）由伺服器依方案產生，前台介紹頁與兌換頁直接顯示。
 
 const PLANS_KEY = ['admin', 'assistant', 'exchange', 'plans'] as const;
+const ACCESS_KEY = ['admin', 'assistant', 'exchange', 'access'] as const;
 const RECORDS_KEY = ['admin', 'assistant', 'exchange', 'records'] as const;
 
 const TIME_FORMAT = new Intl.DateTimeFormat('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
@@ -25,6 +34,7 @@ type PlanRow = { points: string; hours: string };
 const toRows = (plans: TimePlan[]): PlanRow[] => plans.map((p) => ({ points: String(p.points), hours: String(p.hours) }));
 
 export function AssistantExchange() {
+  const access = useQuery({ queryKey: ACCESS_KEY, queryFn: fetchExchangeAccess });
   const plans = useQuery({ queryKey: PLANS_KEY, queryFn: fetchTimePlans });
   const records = useQuery({ queryKey: RECORDS_KEY, queryFn: () => fetchExchangeRecords({ take: 100 }), refetchInterval: 60_000 });
 
@@ -36,6 +46,8 @@ export function AssistantExchange() {
           <p>會員以積分兌換數據助手使用時長，積分與輪盤共用。續兌從原到期時間往後加；人工加時／扣時請到會員詳細頁。</p>
         </div>
       </header>
+
+      {access.isLoading ? <p>載入中…</p> : access.data ? <AccessForm initial={access.data} /> : <p className="member-detail-error" role="alert">無法載入兌換開關</p>}
 
       {plans.isLoading ? <p>載入中…</p> : plans.data ? <PlansForm initial={plans.data.plans} /> : <p className="member-detail-error" role="alert">無法載入方案</p>}
 
@@ -79,6 +91,63 @@ export function AssistantExchange() {
           </div>
         )}
       </section>
+    </section>
+  );
+}
+
+function AccessForm({ initial }: { initial: ExchangeAccess }) {
+  const qc = useQueryClient();
+  const [enabled, setEnabled] = useState(initial.enabled);
+  const [closedMessage, setClosedMessage] = useState(initial.closedMessage);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEnabled(initial.enabled);
+    setClosedMessage(initial.closedMessage);
+  }, [initial]);
+
+  const mut = useMutation({
+    mutationFn: updateExchangeAccess,
+    onSuccess: (saved) => {
+      setMessage(saved.enabled ? '已開啟，會員可以兌換與開通' : '已關閉，會員端入口已反灰並顯示提示文字');
+      setError(null);
+      qc.setQueryData(ACCESS_KEY, saved);
+    },
+    onError: (e) => {
+      setMessage(null);
+      setError(e instanceof ApiError ? (e.code === 'ASSISTANT_SETTINGS_INVALID' ? e.message : `儲存失敗（${e.code}）`) : '儲存失敗');
+    },
+  });
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    setMessage(null);
+    if (!closedMessage.trim()) return setError('請輸入關閉時的提示文字');
+    setError(null);
+    mut.mutate({ enabled, closedMessage: closedMessage.trim() });
+  }
+
+  return (
+    <section className="member-detail-card">
+      <h2>積分兌換與開通</h2>
+      <p className="admin-muted-text">關閉時，會員端的「積分兌換」與「用積分開通」會反灰、無法點擊，並顯示下方提示文字。人工加時／扣時不受影響。</p>
+      <form onSubmit={submit} className="assistant-access-form">
+        <label className="admin-toggle">
+          <input type="checkbox" role="switch" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+          <span className="admin-toggle-track" aria-hidden="true" />
+          <span className="admin-toggle-label">開放會員兌換與開通（{enabled ? '開啟' : '關閉'}）</span>
+        </label>
+        <label className="assistant-access-message">
+          <span>關閉時的提示文字</span>
+          <input type="text" maxLength={60} value={closedMessage} onChange={(e) => setClosedMessage(e.target.value)} />
+        </label>
+        <div className="member-detail-actions">
+          <button type="submit" disabled={mut.isPending}>{mut.isPending ? '儲存中…' : '儲存'}</button>
+        </div>
+        {message && <p className="admin-muted-text" role="status">{message}</p>}
+        {error && <p className="member-detail-error" role="alert">{error}</p>}
+      </form>
     </section>
   );
 }

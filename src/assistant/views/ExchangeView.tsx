@@ -3,6 +3,7 @@ import { ApiError } from '../../api/client.js';
 import { fetchExchanges, postExchange, type AssistantMe, type ExchangeRecord, type TimePlan } from '../../api/assistant.js';
 import { fmtInt, fmtRemaining, fmtStamp } from '../format.js';
 import { InkTitle } from '../InkTitle.js';
+import { exchangeClosedMessage, exchangeOpen } from '../OpenPassButton.js';
 
 // 積分兌換：會員用輪盤系統的積分直接換使用時間。方案與文案都由後台設定（/api/assistant/me 的 plans）。
 
@@ -44,7 +45,8 @@ export function ExchangeView({ me, onChanged }: { me: AssistantMe | null; onChan
     );
   }
 
-  const plan: TimePlan | undefined = me.plans.find((p) => p.points === selected);
+  const open = exchangeOpen(me);
+  const plan: TimePlan | undefined = open ? me.plans.find((p) => p.points === selected) : undefined;
   const pass = me.pass;
 
   async function exchange() {
@@ -60,8 +62,9 @@ export function ExchangeView({ me, onChanged }: { me: AssistantMe | null; onChan
       await Promise.all([onChanged(), loadHistory()]);
     } catch (err) {
       const code = err instanceof ApiError ? err.code : '';
-      setError(ERRORS[code] ?? '兌換失敗，請稍後再試；若已扣點，重新整理後會看到結果');
-      if (code === 'EXCHANGE_PLAN_CHANGED' || code === 'EXCHANGE_PLAN_NOT_FOUND') {
+      // 畫面停留期間後台關閉兌換：顯示後台設定的提示文字
+      setError(code === 'EXCHANGE_DISABLED' ? (err as ApiError).message : (ERRORS[code] ?? '兌換失敗，請稍後再試；若已扣點，重新整理後會看到結果'));
+      if (code === 'EXCHANGE_PLAN_CHANGED' || code === 'EXCHANGE_PLAN_NOT_FOUND' || code === 'EXCHANGE_DISABLED') {
         keyRef.current = newKey();
         setSelected(null);
         await onChanged();
@@ -111,7 +114,7 @@ export function ExchangeView({ me, onChanged }: { me: AssistantMe | null; onChan
                   role="radio"
                   aria-checked={on}
                   className={`aa-plan${on ? ' is-active' : ''}`}
-                  disabled={short || busy}
+                  disabled={!open || short || busy}
                   onClick={() => {
                     if (selected !== p.points) keyRef.current = newKey();
                     setSelected(p.points);
@@ -138,7 +141,7 @@ export function ExchangeView({ me, onChanged }: { me: AssistantMe | null; onChan
         {success && <p className="aa-success" role="status">{success}</p>}
 
         <button type="button" className="aa-button aa-button--block" disabled={!plan || busy} onClick={() => void exchange()}>
-          {busy ? '兌換中…' : plan ? `確認兌換：扣 ${plan.points} 積分，增加 ${plan.hours} 小時` : '請先選擇方案'}
+          {!open ? exchangeClosedMessage(me) : busy ? '兌換中…' : plan ? `確認兌換：扣 ${plan.points} 積分，增加 ${plan.hours} 小時` : '請先選擇方案'}
         </button>
         <p className="aa-footnote">兌換後立即生效，積分不退回。方案由營運調整，以兌換當下顯示為準。</p>
       </section>

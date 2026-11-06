@@ -2,6 +2,7 @@ import { ChevronRight } from 'lucide-react';
 import type { AssistantMe } from '../../api/assistant.js';
 import type { AssistantView } from '../AssistantApp.js';
 import { InkTitle } from '../InkTitle.js';
+import { OpenPassButton } from '../OpenPassButton.js';
 
 // 曜金規則：說明畫面上的數字怎麼看、助手怎麼排序。未開通也能看（讓會員先了解助手能提供什麼）。
 // 措辭維持中立：數字是已發生的紀錄，不暗示中獎機率、預測或保證獲利。
@@ -155,9 +156,9 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
               輸入本金找機台 <ChevronRight aria-hidden="true" />
             </button>
           ) : (
-            <button type="button" className="aa-cta" onClick={() => onNavigate('exchange')}>
+            <OpenPassButton me={me} className="aa-cta" onClick={() => onNavigate('exchange')}>
               用積分開通 <ChevronRight aria-hidden="true" />
-            </button>
+            </OpenPassButton>
           )}
         </div>
       )}

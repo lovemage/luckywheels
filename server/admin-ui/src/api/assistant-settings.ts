@@ -86,6 +86,15 @@ export const updateAssistantSettings = (body: AssistantSettings): Promise<Assist
 
 export const fetchSignals = (take = 50): Promise<{ items: AdminSignal[] }> => api(`/api/admin/assistant/signals?take=${take}`);
 
+export interface ExchangeAccess {
+  enabled: boolean;
+  closedMessage: string;
+}
+
+export const fetchExchangeAccess = (): Promise<ExchangeAccess> => api('/api/admin/assistant/exchange/access');
+export const updateExchangeAccess = (body: ExchangeAccess): Promise<ExchangeAccess> =>
+  api('/api/admin/assistant/exchange/access', json('PUT', body));
+
 export const fetchTimePlans = (): Promise<{ plans: TimePlan[] }> => api('/api/admin/assistant/exchange/plans');
 export const updateTimePlans = (plans: { points: number; hours: number }[]): Promise<{ plans: TimePlan[] }> =>
   api('/api/admin/assistant/exchange/plans', json('PUT', { plans }));

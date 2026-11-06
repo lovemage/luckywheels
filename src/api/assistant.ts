@@ -22,6 +22,8 @@ export interface AssistantMe {
   plans: TimePlan[];
   /** 後台可改的顯示文字 */
   display?: { brandName: string; topTitle: string };
+  /** 積分兌換／用積分開通的開關與關閉時提示（後台可改） */
+  exchange?: { enabled: boolean; closedMessage: string };
   serverTime: string;
   /** 前端加上：收到回應時的本機時間（ms），用來換算伺服器與本機的時間差 */
   receivedAt?: number;
