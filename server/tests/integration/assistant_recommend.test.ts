@@ -76,6 +76,7 @@ describe('member assistant recommend API', { timeout: 60_000 }, () => {
       ['5,000–9,999', 3],
       ['10,000 以上', 5],
     ]);
+    expect(body.tiers[1].thresholds).toEqual([89, 90, 91]); // 原始 70、73、76
     expect(body).toMatchObject({ multiplierStepScore: 3, maxMultiplier: 5, minBetAdvice: '建議單注 10 元以上' });
   });
 
@@ -98,14 +99,14 @@ describe('member assistant recommend API', { timeout: 60_000 }, () => {
     expect(body).toMatchObject({
       input: { principal: 8000, multiplier: 1 },
       tier: { label: '5,000–9,999', minScore: 70 },
-      threshold: 70,
-      context: '本金 8,000、目標 1 倍，符合 5,000–9,999 級距門檻 70 分',
+      threshold: 89,
+      context: '本金 8,000、目標 1 倍，符合 5,000–9,999 級距門檻 89 分',
       minBetAdvice: '建議單注 10 元以上',
       disclaimer: '排序參考，不代表遊戲結果',
     });
-    // 只有 001 達 70 分；其餘名額以未達門檻的空台補上（不含使用中的 002 與逾時的 006）
+    // 只有 001 達門檻（原始 75 → 顯示 91；門檻原始 70 → 顯示 89）；其餘名額以未達門檻的空台補上（不含使用中的 002 與逾時的 006）
     expect(nos(body)).toEqual(['001', '005', '003', '004']);
-    expect(body.items[0]).toMatchObject({ score: 75, premium: true, belowThreshold: false });
+    expect(body.items[0]).toMatchObject({ score: 91, premium: true, belowThreshold: false });
     expect(body.items.slice(1).every((i: { belowThreshold: boolean }) => i.belowThreshold)).toBe(true);
     expect(body.items[0].reasons).toEqual([
       '未開 900 轉，多於同遊戲 60% 的機台',
@@ -115,7 +116,7 @@ describe('member assistant recommend API', { timeout: 60_000 }, () => {
 
     const logs = await prisma.recommendationLog.findMany();
     expect(logs).toHaveLength(1);
-    expect(logs[0]).toMatchObject({ userId: user.id, principal: 8000, multiplier: 1, threshold: 70, resultCount: 4 });
+    expect(logs[0]).toMatchObject({ userId: user.id, principal: 8000, multiplier: 1, threshold: 89, resultCount: 4 });
     expect((logs[0]!.results as { roomNo: string }[])[0]!.roomNo).toBe('001');
   });
 
@@ -124,7 +125,7 @@ describe('member assistant recommend API', { timeout: 60_000 }, () => {
     const { headers } = await member();
     const r = await post({ principal: 10000, multiplier: 5 }, headers);
     expect(r.status).toBe(200);
-    expect(r.body.threshold).toBe(92);
+    expect(r.body.threshold).toBe(98); // 原始 92
     expect(nos(r.body)).toEqual(['001', '005', '003', '004']);
     expect(r.body.items.every((i: { belowThreshold: boolean }) => i.belowThreshold)).toBe(true);
 
@@ -174,10 +175,10 @@ describe('member assistant recommend API', { timeout: 60_000 }, () => {
       data: { key: 'assistantScoreWeights', value: JSON.stringify({ unopened: 0, todayRtp: 0, thirtyDayRtp: 0, todayBet: 1 }) },
     });
     const r = await post({ principal: 100, multiplier: 1 }, headers);
-    expect(r.body.items.map((i: { score: number }) => i.score)).toEqual([75, 50]);
+    expect(r.body.items.map((i: { score: number }) => i.score)).toEqual([91, 83]); // 原始 75、50
 
     // 設定值損壞時退回預設，不讓 API 失敗
     await prisma.appSetting.update({ where: { key: 'assistantRecommendTiers' }, data: { value: 'not json' } });
-    expect((await post({ principal: 100, multiplier: 1 }, headers)).body.threshold).toBe(60);
+    expect((await post({ principal: 100, multiplier: 1 }, headers)).body.threshold).toBe(85); // 原始 60
   });
 });

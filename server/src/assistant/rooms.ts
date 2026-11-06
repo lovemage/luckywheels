@@ -53,11 +53,11 @@ export interface RoomView {
   detailStale: boolean;
 }
 
-/** 房間 id → 綜合分數與精品標記（只含列表層未逾時的房間；見 board.ts） */
+/** 房間 id → 顯示分數與精品標記（只含列表層未逾時的房間；見 board.ts） */
 export type ScoreMap = Map<string, { score: number; premium: boolean }>;
 
 export interface ScoredRoomView extends RoomView {
-  /** 綜合分數（0–100）；列表層逾時的房間為 null */
+  /** 綜合分數（顯示分數 83–98，見 toDisplayScore）；列表層逾時的房間為 null */
   score: number | null;
   /** 未逾時空台中分數前 N%（精品） */
   premium: boolean;

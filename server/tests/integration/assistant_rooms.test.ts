@@ -108,15 +108,16 @@ describe('member assistant rooms API', { timeout: 60_000 }, () => {
     expect(body.items.map((r: { roomNo: string }) => r.roomNo)).toEqual(['001', '200', '1001', '1500']);
     const [r001, r200, r1001, r1500] = body.items;
     // 母體只有未逾時的 001／200／1001；200 細項逾時 → 細項以 0.5 計，今日 RTP 居中 → 50 分
-    expect(r200.score).toBe(50);
-    expect(r001.score).toBeGreaterThan(50);
-    expect(r1001.score).toBeLessThan(50);
+    // 顯示分數：原始 55 分以下都是 83
+    expect(r200.score).toBe(83);
+    expect(r001.score).toBeGreaterThan(83);
+    expect(r1001.score).toBe(83);
     expect(r1500).toMatchObject({ score: null, premium: false });
     // 精品：未逾時空台（001、1001）前 5% → 至少 1 間
     expect(r001.premium).toBe(true);
     // 一般排序也帶分數
     const plain = (await get('/api/assistant/rooms', h)).body.items;
-    expect(plain.find((r: { roomNo: string }) => r.roomNo === '200').score).toBe(50);
+    expect(plain.find((r: { roomNo: string }) => r.roomNo === '200').score).toBe(83);
   });
 
   it('requires an active assistant pass for paid data', async () => {

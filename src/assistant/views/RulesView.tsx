@@ -111,7 +111,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
           <InkTitle id="aa-rule-score-title" className="aa-display" text="助手怎麼排序" height={32} />
         </div>
         <ul className="aa-reasons aa-rule-points">
-          <li>四項數字各自換算成在同遊戲中的排名，再依比重合成 0–100 的綜合分數</li>
+          <li>四項數字各自換算成在同遊戲中的排名，再依比重合成綜合分數</li>
           <li>未開轉數越多、今日 RTP 越低、近 30 天 RTP 越高、今日下注量越高，分數越高</li>
           <li>精選空台只列目前沒人使用的機台，依綜合分數取前 5 名</li>
           <li>本金推薦依你的本金與目標倍數設定分數門檻，並把推薦分散到不同機台，減少多人同時擠進同一台；達到門檻的機台不足時，會以目前分數最高的空台補上</li>

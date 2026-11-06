@@ -1,6 +1,6 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
 import type { RoomView } from './rooms.js';
-import type { RoomScore, ScoreMetric } from './scoring.js';
+import { meetsThreshold, toDisplayScore, type RoomScore, type ScoreMetric } from './scoring.js';
 import { loadScoreBoard } from './board.js';
 import { MAX_TARGET_MULTIPLIER, type FreshnessSettings, type RecommendSettings, type RecommendTier } from './settings.js';
 
@@ -14,6 +14,7 @@ export { MAX_TARGET_MULTIPLIER, readRecommendSettings, type RecommendSettings, t
 //   補上的機台標 belowThreshold
 // → 依分數排序顯示，每間附 2–3 條由實際數據產生的理由。
 // 措辭只能是「排序參考」，不得暗示中獎機率、預測或保證獲利（計劃 1.2）。
+// 後台門檻是原始分數；回傳給會員的分數與門檻一律是顯示分數（toDisplayScore），達標判斷見 meetsThreshold（2026-11-06）。
 
 export const RECOMMEND_DISCLAIMER = '排序參考，不代表遊戲結果';
 
@@ -108,6 +109,7 @@ async function recentlyRecommended(prisma: PrismaClient, gameId: string, now: Da
 
 export interface RecommendItem {
   room: RoomView;
+  /** 顯示分數（83–98） */
   score: number;
   /** 未逾時空台中分數前 premiumPercent%（精品） */
   premium: boolean;
@@ -118,6 +120,7 @@ export interface RecommendItem {
 
 export interface RecommendResult {
   tier: { label: string; minScore: number; maxMultiplier: number };
+  /** 顯示分數的門檻（與 items[].score 同尺度） */
   threshold: number;
   items: RecommendItem[];
   /** 情境句：本金、目標、級距與門檻 */
@@ -142,14 +145,16 @@ export async function recommend(
 ): Promise<RecommendResult> {
   const { tier, label } = tierFor(input.principal, settings.tiers);
   if (input.multiplier > tier.maxMultiplier) throw new MultiplierNotAllowedError(tier.maxMultiplier);
-  const threshold = thresholdFor(tier, input.multiplier, settings.multiplierStepScore);
+  const rawThreshold = thresholdFor(tier, input.multiplier, settings.multiplierStepScore);
+  const threshold = toDisplayScore(rawThreshold);
 
   const board = await loadScoreBoard(prisma, gameId, now, f, settings.weights, settings.premiumPercent);
   // board 已依分數排序
   const idle = board.rooms.filter((x) => x.room.status === 'idle');
 
   const poolSize = Math.max(settings.poolSize, settings.count);
-  const qualified = idle.filter((x) => x.score.score >= threshold);
+  const isQualified = (x: (typeof idle)[number]) => meetsThreshold(x.score.score, rawThreshold);
+  const qualified = idle.filter(isQualified);
   const recent = await recentlyRecommended(prisma, gameId, now, settings.avoidMinutes);
 
   let picked: typeof idle;
@@ -157,7 +162,7 @@ export async function recommend(
     picked = pickSpread(qualified.slice(0, poolSize), settings.count, recent);
   } else {
     // 符合門檻的全部列出，其餘名額從未達門檻的空台（依分數取前段）分散補滿
-    const rest = idle.filter((x) => x.score.score < threshold);
+    const rest = idle.filter((x) => !isQualified(x));
     const fill = pickSpread(rest.slice(0, Math.max(poolSize - qualified.length, settings.count - qualified.length)), settings.count - qualified.length, recent);
     const chosen = new Set([...qualified, ...fill]);
     picked = idle.filter((x) => chosen.has(x));
@@ -165,9 +170,9 @@ export async function recommend(
 
   const items = picked.map((x) => ({
     room: x.room,
-    score: x.score.score,
+    score: toDisplayScore(x.score.score),
     premium: x.premium,
-    belowThreshold: x.score.score < threshold,
+    belowThreshold: !isQualified(x),
     reasons: buildReasons(x.room, x.score),
   }));
 

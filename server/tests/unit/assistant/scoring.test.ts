@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SCORE_WEIGHTS, normalizeWeights, scoreRooms, type ScoreInput } from '../../../src/assistant/scoring.js';
+import { DEFAULT_SCORE_WEIGHTS, meetsThreshold, normalizeWeights, scoreRooms, toDisplayScore, type ScoreInput } from '../../../src/assistant/scoring.js';
 import { buildReasons, thresholdFor, tierFor, type RecommendTier } from '../../../src/assistant/recommend.js';
 import type { RoomView } from '../../../src/assistant/rooms.js';
 
@@ -47,6 +47,37 @@ describe('scoreRooms', () => {
   it('normalizes weights and falls back to defaults when all are zero', () => {
     expect(normalizeWeights({ unopened: 1, todayRtp: 1, thirtyDayRtp: 1, todayBet: 1 }).unopened).toBe(0.25);
     expect(normalizeWeights({ unopened: 0, todayRtp: 0, thirtyDayRtp: 0, todayBet: 0 }).unopened).toBeCloseTo(0.35);
+  });
+});
+
+describe('toDisplayScore', () => {
+  it('maps raw scores into 83–98, clamping outside the calibrated range', () => {
+    expect(toDisplayScore(0)).toBe(83);
+    expect(toDisplayScore(55)).toBe(83);
+    expect(toDisplayScore(74)).toBe(91); // 中點 90.5
+    expect(toDisplayScore(93)).toBe(98);
+    expect(toDisplayScore(100)).toBe(98);
+  });
+
+  it('never reverses the order of raw scores and stays in range', () => {
+    for (let raw = 0; raw < 100; raw++) {
+      expect(toDisplayScore(raw + 1)).toBeGreaterThanOrEqual(toDisplayScore(raw));
+      expect(toDisplayScore(raw)).toBeGreaterThanOrEqual(83);
+      expect(toDisplayScore(raw)).toBeLessThanOrEqual(98);
+    }
+  });
+});
+
+describe('meetsThreshold', () => {
+  it('compares raw scores, so low thresholds still filter inside the clamped range', () => {
+    expect(meetsThreshold(30, 20)).toBe(true);
+    expect(meetsThreshold(10, 20)).toBe(false);
+  });
+
+  it('treats a room shown with the same score as the threshold as qualified', () => {
+    expect(toDisplayScore(69)).toBe(toDisplayScore(70));
+    expect(meetsThreshold(69, 70)).toBe(true);
+    expect(meetsThreshold(60, 70)).toBe(false);
   });
 });
 

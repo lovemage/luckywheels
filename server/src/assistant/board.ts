@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { ROOM_COLUMNS, roomNoCompare, toRoomView, type RoomRow, type RoomView, type ScoreMap } from './rooms.js';
-import { scoreRooms, type RoomScore, type ScoreWeights } from './scoring.js';
+import { scoreRooms, toDisplayScore, type RoomScore, type ScoreWeights } from './scoring.js';
 import type { FreshnessSettings } from './settings.js';
 
 // 一個遊戲的分數排名：推薦、房間列表的分數欄與 sort=score、訊號綁房共用。
@@ -54,6 +54,7 @@ export async function loadScoreBoard(
   const premiumCount = premiumPercent > 0 ? Math.ceil((idle.length * premiumPercent) / 100) : 0;
   for (const x of idle.slice(0, premiumCount)) x.premium = true;
 
-  const map: ScoreMap = new Map(rooms.map((x) => [x.room.id, { score: x.score.score, premium: x.premium }]));
+  // rooms 內是原始分數（推薦、訊號用）；map 給房間列表與詳細資料，是會員看到的顯示分數
+  const map: ScoreMap = new Map(rooms.map((x) => [x.room.id, { score: toDisplayScore(x.score.score), premium: x.premium }]));
   return { rooms, map };
 }

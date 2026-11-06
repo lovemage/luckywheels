@@ -82,7 +82,7 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
   const principal = Number(principalText.replace(/\D/g, '')) || 0;
   const tier = useMemo(() => (config ? tierFor(principal, config.tiers) : null), [config, principal]);
   const maxMultiplier = tier?.maxMultiplier ?? 1;
-  const threshold = tier && config ? tier.minScore + (multiplier - 1) * config.multiplierStepScore : null;
+  const threshold = tier ? tier.thresholds[Math.min(multiplier, maxMultiplier) - 1] : null;
 
   // 換到較低級距時，倍數自動降到可選範圍內
   useEffect(() => {

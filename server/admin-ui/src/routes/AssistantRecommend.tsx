@@ -348,7 +348,7 @@ function SettingsForm({ initial }: { initial: AssistantSettings }) {
 
       <section className="member-detail-card">
         <h2>本金推薦</h2>
-        <p className="admin-muted-text">會員輸入本金與今日目標倍數；本金決定級距，門檻 = 級距分數 +（倍數 − 1）× 每倍加分。</p>
+        <p className="admin-muted-text">會員輸入本金與今日目標倍數；本金決定級距，門檻 = 級距分數 +（倍數 − 1）× 每倍加分。此頁的門檻與訊號分數都是原始分數（0–100）；會員端顯示時換算成 83–98（原始 55 以下顯示 83、93 以上顯示 98），順序不變。</p>
         <div className="admin-table-scroll">
           <table className="admin-prize-table assistant-tier-table">
             <thead>

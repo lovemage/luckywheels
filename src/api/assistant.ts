@@ -75,6 +75,8 @@ export interface RecommendTier {
   minScore: number;
   maxMultiplier: number;
   label: string;
+  /** 各倍數的門檻（顯示分數）；索引 0 為 1 倍 */
+  thresholds: number[];
 }
 
 export interface RecommendConfig {

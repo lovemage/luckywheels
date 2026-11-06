@@ -6,11 +6,13 @@ import { requireAssistantMember, requireAssistantPass } from '../assistant/acces
 import { memberAssistantAllowed } from '../assistant/preview.js';
 import { getRoomDetail, listGames, listRooms, ROOM_SORTS, TREND_RANGES, type GameView, type TrendRange } from '../assistant/rooms.js';
 import { loadScoreBoard } from '../assistant/board.js';
+import { toDisplayScore } from '../assistant/scoring.js';
 import {
   logRecommendation,
   MultiplierNotAllowedError,
   recommend,
   RECOMMEND_DISCLAIMER,
+  thresholdFor,
   tierFor,
 } from '../assistant/recommend.js';
 import { readDisplaySettings,
@@ -188,7 +190,12 @@ assistantRoutes.get('/api/assistant/rooms/:id', paid, async (c) => {
 assistantRoutes.get('/api/assistant/recommend/config', async (c) => {
   const s = await readRecommendSettings(prisma);
   return c.json({
-    tiers: s.tiers.map((t) => ({ ...t, label: tierFor(t.minPrincipal, s.tiers).label })),
+    tiers: s.tiers.map((t) => ({
+      ...t,
+      label: tierFor(t.minPrincipal, s.tiers).label,
+      // 各倍數的門檻（顯示分數）；索引 0 為 1 倍
+      thresholds: Array.from({ length: t.maxMultiplier }, (_, i) => toDisplayScore(thresholdFor(t, i + 1, s.multiplierStepScore))),
+    })),
     multiplierStepScore: s.multiplierStepScore,
     maxMultiplier: MAX_TARGET_MULTIPLIER,
     count: s.count,

@@ -4,6 +4,7 @@
 // - 每個指標換成「在這群房間中的百分位」（0–1，mid-rank），避免極端值（例：今日 RTP 1379%）拉高分數
 // - 缺值（細項還沒抓到或已逾時）以 0.5 計，且不產生推薦理由
 // - 分數 = round(100 × Σ 權重 × 百分位)，權重自動正規化（後台可調 assistantScoreWeights）
+// - 這是「原始分數」，內部排序、門檻設定、訊號都用它；會員端顯示的分數一律經 toDisplayScore 換算
 
 export const SCORE_METRICS = ['unopened', 'todayRtp', 'thirtyDayRtp', 'todayBet'] as const;
 export type ScoreMetric = (typeof SCORE_METRICS)[number];
@@ -77,6 +78,29 @@ class Ranker {
     const percentile = n <= 1 ? 0.5 : (less + (equal - 1) / 2) / (n - 1);
     return { percentile, belowShare: less / n, aboveShare: greater / n };
   }
+}
+
+// 會員端顯示分數（2026-11-06）：原始分數線性換算到 83–98，高低順序不變。
+// 校準依據：可推薦的空台原始分數實際多落在 55–93（使用中的房間分數較高，空台中位數僅 30 多分）。
+// 原始分數 ≤ 55 顯示 83、≥ 93 顯示 98。
+export const DISPLAY_SCORE_MIN = 83;
+export const DISPLAY_SCORE_MAX = 98;
+const DISPLAY_RAW_LOW = 55;
+const DISPLAY_RAW_HIGH = 93;
+
+export function toDisplayScore(raw: number): number {
+  const t = Math.min(1, Math.max(0, (raw - DISPLAY_RAW_LOW) / (DISPLAY_RAW_HIGH - DISPLAY_RAW_LOW)));
+  return Math.round(DISPLAY_SCORE_MIN + (DISPLAY_SCORE_MAX - DISPLAY_SCORE_MIN) * t);
+}
+
+/**
+ * 原始分數是否達原始門檻。換算後與門檻同分也算達標，避免畫面出現「顯示 89 分卻未達 89 分」；
+ * 但門檻落在下限（83）時不適用，否則原始 55 以下全部同分，門檻會失去作用。
+ */
+export function meetsThreshold(raw: number, rawThreshold: number): boolean {
+  if (raw >= rawThreshold) return true;
+  const shown = toDisplayScore(rawThreshold);
+  return shown > DISPLAY_SCORE_MIN && toDisplayScore(raw) >= shown;
 }
 
 export function normalizeWeights(w: ScoreWeights): ScoreWeights {
