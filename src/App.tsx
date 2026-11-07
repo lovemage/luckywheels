@@ -130,7 +130,7 @@ export function App() {
   const [layout, setLayout] = useState<'classic' | 'assistant'>('assistant');
   const isReady = session.phase === 'ready';
 
-  // 助手底部「輪盤」切到原本的輪盤頁；輪盤頁右上角「數據助手」切回來。不記住，重新整理一律回助手
+  // 助手底部「輪盤」切到原本的輪盤頁；輪盤頁底部「數據助手」切回來。不記住，重新整理一律回助手
   const switchLayout = useCallback((next: 'classic' | 'assistant') => setLayout(next), []);
 
   // App 內的面板模式（駐守小卡／完整助手），由 App 端掌管
@@ -273,7 +273,7 @@ function MainApp({
 }: {
   me: MeProfile;
   onShowLegal: (tab: LegalTab) => void;
-  /** 有值才顯示「數據助手」按鈕（回到助手首頁） */
+  /** 有值才在底部導覽顯示「數據助手」（回到助手首頁） */
   onOpenAssistant?: () => void;
 }) {
   const [view, setView] = useState<'wheel' | 'rules' | 'mine'>('wheel');
@@ -593,11 +593,6 @@ function MainApp({
         <div className="floating shard-b" />
 
         <header className="hero">
-          {onOpenAssistant && (
-            <button type="button" className="preview-entry" onClick={onOpenAssistant}>
-              數據助手
-            </button>
-          )}
           <div className="title-lockup">
             <img
               className="logo-image"
@@ -752,6 +747,9 @@ function MainApp({
             <TabButton active={view === 'wheel'} icon={<WheelTabIcon />} label="輪盤" onClick={() => selectView('wheel')} />
             <TabButton active={view === 'rules'} icon={<RulesTabIcon />} label="活動規則" onClick={() => selectView('rules')} />
             <TabButton active={view === 'mine'} icon={<HistoryTabIcon />} label="中獎紀錄" onClick={() => selectView('mine')} />
+            {onOpenAssistant && (
+              <TabButton active={false} icon={<AssistantTabIcon />} label="數據助手" onClick={onOpenAssistant} />
+            )}
           </nav>
         </BottomDock>
 
@@ -886,6 +884,14 @@ function HistoryTabIcon() {
   return (
     <svg viewBox="0 0 15 15" width="24" height="24" fill="currentColor" aria-hidden="true" focusable="false">
       <path d="M4.646 12.647a.5.5 0 0 1 .707.707l-1 1a.5.5 0 1 1-.707-.707zM10.41.811a6.3 6.3 0 0 1 1.794-.02c.528.08 1.051.256 1.4.605c.348.348.525.87.604 1.399c.081.543.07 1.166-.02 1.794c-.177 1.239-.68 2.608-1.535 3.464l-.623.623l.465 3.253a.5.5 0 0 1-.142.424l-2 2a.5.5 0 0 1-.782-.096l-1.17-1.951l-.548.547a.5.5 0 0 1-.707 0l-1.5-1.5a.5.5 0 1 1 .707-.707L7.5 11.793l4.446-4.446c.645-.645 1.093-1.775 1.253-2.899a5.4 5.4 0 0 0 .02-1.505c-.067-.442-.196-.713-.323-.84c-.126-.126-.397-.256-.84-.322a5.4 5.4 0 0 0-1.504.02c-1.053.151-2.112.554-2.772 1.135l-.127.118L3.207 7.5l1.146 1.146a.5.5 0 0 1-.707.708l-1.5-1.5a.5.5 0 0 1 0-.708l.547-.546l-1.95-1.171a.5.5 0 0 1-.097-.783l2-2a.5.5 0 0 1 .424-.141l3.253.465l.623-.623C7.802 1.49 9.171.989 10.41.812M3.146 11.147a.5.5 0 0 1 .707.707l-2 2a.5.5 0 1 1-.707-.707zm5.984.431l.97 1.615l1.37-1.37l-.324-2.262zM1.646 9.647a.5.5 0 0 1 .707.707l-1 1a.5.5 0 1 1-.707-.707zM9.5 4.25a1.25 1.25 0 1 1 0 2.499a1.25 1.25 0 0 1 0-2.499m-7.693.65l1.616.97l2.016-2.017l-2.262-.324z" />
+    </svg>
+  );
+}
+
+function AssistantTabIcon() {
+  return (
+    <svg viewBox="0 0 15 15" width="24" height="24" fill="currentColor" aria-hidden="true" focusable="false">
+      <path d="M1.5 1a.5.5 0 0 1 .5.5V13h11.5a.5.5 0 0 1 0 1h-12a.5.5 0 0 1-.5-.5v-12a.5.5 0 0 1 .5-.5M4.5 8a.5.5 0 0 1 .5.5v2.5a.5.5 0 0 1-1 0V8.5a.5.5 0 0 1 .5-.5m3-3a.5.5 0 0 1 .5.5v5.5a.5.5 0 0 1-1 0V5.5a.5.5 0 0 1 .5-.5m3-2a.5.5 0 0 1 .5.5v7.5a.5.5 0 0 1-1 0V3.5a.5.5 0 0 1 .5-.5" />
     </svg>
   );
 }
