@@ -66,6 +66,10 @@ export async function runRound(creds: Credentials, game: AtgGame, opts: RoundOpt
   const browser: Browser = await chromium.launch({
     headless: !opts.headed,
     channel: process.env.COLLECTOR_BROWSER_CHANNEL || undefined,
+    // Playwright 預設收到 SIGTERM/SIGINT 就關閉瀏覽器，會讓部署時的「本輪結束後停止」失效（當下這一輪直接失敗）。
+    // 關掉預設行為，由 index.ts 的訊號處理等本輪跑完；SIGKILL 時瀏覽器仍會隨容器一起結束。
+    handleSIGTERM: false,
+    handleSIGINT: false,
   });
   const round = runRoundIn(browser, creds, game, opts);
   if (!opts.roundTimeoutMs) return round;
