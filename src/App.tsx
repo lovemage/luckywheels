@@ -143,6 +143,7 @@ export function App() {
   }, [inDock]);
   const openFull = useCallback((view: 'home' | 'exchange' = 'home') => {
     setFullView(view);
+    setLayout('assistant');
     requestDockMode('full');
   }, []);
 
@@ -229,7 +230,7 @@ export function App() {
     );
   } else if (layout === 'assistant' && !previewLoaded) {
     body = <main className="splash"><p>載入中…</p></main>;
-  } else if ((layout === 'assistant' || isNativeApp) && preview?.unlocked) {
+  } else if (layout === 'assistant' && preview?.unlocked) {
     body = (
       <AssistantApp
         key={fullView}
@@ -239,8 +240,8 @@ export function App() {
         onLocked={lockPreview}
       />
     );
-  } else if (isNativeApp) {
-    // App 內不提供輪盤
+  } else if (isNativeApp && !preview?.unlocked) {
+    // 助手暫停時 App 不退回輪盤
     body = (
       <main className="splash">
         <p>數據助手暫停服務，請稍後再試</p>
@@ -366,7 +367,8 @@ function MainApp({
   useEffect(() => {
     if (!prizes || !settings || introPlayedRef.current) return;
     introPlayedRef.current = true;
-    playSound('enter');
+    // App 按返回鍵回遊戲時網頁收不到通知，音樂會疊在遊戲上，所以 App 內不播
+    if (!isNativeApp) playSound('enter');
   }, [prizes, settings]);
 
   useEffect(() => {

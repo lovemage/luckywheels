@@ -109,11 +109,10 @@ export function AssistantApp({
           <TabButton active={view === 'home'} icon={<InkIcon name="home" />} label="首頁" onClick={() => go('home')} />
           <TabButton active={view === 'recommend'} icon={<InkIcon name="recommend" />} label="本金推薦" onClick={() => go('recommend')} />
           <TabButton active={view === 'exchange'} icon={<InkIcon name="exchange" />} label="兌換" disabled={!exchangeOpen(me)} onClick={() => go('exchange')} />
-          {isNativeApp ? (
+          <TabButton active={false} icon={<InkIcon name="wheel" />} label="輪盤" onClick={onExit} />
+          {isNativeApp && (
             // App 內：網站是全螢幕，遊戲在後面；按這顆才切到遊戲畫面（1.1.0+ 的文字為「進入遊戲」）
             <TabButton active={false} icon={<Gamepad2 aria-hidden="true" />} label={hasDock ? '進入遊戲' : '回遊戲'} onClick={backToGame} />
-          ) : (
-            <TabButton active={false} icon={<InkIcon name="wheel" />} label="輪盤" onClick={onExit} />
           )}
         </nav>
       </section>

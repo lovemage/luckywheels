@@ -4,7 +4,7 @@
 
 - 遊戲層：`WebView` 載入娛樂城（網址由 `GET /api/public/app-config` 的 `casinoUrl` 下發，預設 `https://www.ds8899.net`）。
 - 助手層：`WebView` 載入 `https://luckyds.com/`（同一套會員 SPA）。User-Agent 帶 `LuckyDsApp/<版本>`，SPA 以此進入 App 模式
-  （直接開助手、底部「輪盤」改成「回遊戲」），並可呼叫 `window.LuckyApp.collapse()`（`src/native.ts`）。
+  （直接開助手、底部多一顆「進入遊戲」），並可呼叫 `window.LuckyApp.collapse()`（`src/native.ts`）。
 - App 不讀取、不操作遊戲畫面：不自動投注、不自動遊玩。
 
 ## LINE 登入
