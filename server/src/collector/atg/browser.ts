@@ -32,6 +32,8 @@ export interface RoundOptions {
   detailTargets?: (rooms: ListRoom[]) => string[] | Promise<string[]>;
   /** 細項階段的時間上限（毫秒） */
   detailBudgetMs?: number;
+  /** 整輪的時間上限（毫秒）。逾時直接關閉瀏覽器並拋出 ROUND_TIMEOUT，避免卡在沒有回應的頁面上 */
+  roundTimeoutMs?: number;
   log?: (msg: string) => void;
 }
 
@@ -60,12 +62,34 @@ async function waitFor<T>(fn: () => Promise<T | null | undefined | false>, timeo
 }
 
 export async function runRound(creds: Credentials, game: AtgGame, opts: RoundOptions = {}): Promise<RoundResult> {
-  const log = opts.log ?? (() => {});
   // COLLECTOR_BROWSER_CHANNEL=chrome：改用系統安裝的 Google Chrome（本機 OS 不支援 playwright install 時）
   const browser: Browser = await chromium.launch({
     headless: !opts.headed,
     channel: process.env.COLLECTOR_BROWSER_CHANNEL || undefined,
   });
+  const round = runRoundIn(browser, creds, game, opts);
+  if (!opts.roundTimeoutMs) return round;
+
+  // 看門狗：page.evaluate 等呼叫本身沒有逾時，遊戲頁沒有回應時會一直等下去（2026-11-07 整個常駐程式因此停住 9 小時）。
+  // 時間到就關掉瀏覽器（讓卡住的呼叫失敗），並且不再等這一輪，直接回報 ROUND_TIMEOUT。
+  const limitMs = opts.roundTimeoutMs;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      void browser.close().catch(() => {});
+      reject(new CollectorError('ROUND_TIMEOUT', `本輪超過 ${Math.round(limitMs / 60_000)} 分鐘未完成，已中止`));
+    }, limitMs);
+  });
+  round.catch(() => {}); // 逾時後這一輪的後續錯誤不再處理
+  try {
+    return await Promise.race([round, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function runRoundIn(browser: Browser, creds: Credentials, game: AtgGame, opts: RoundOptions): Promise<RoundResult> {
+  const log = opts.log ?? (() => {});
   try {
     const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'zh-TW' });
     const t0 = Date.now();

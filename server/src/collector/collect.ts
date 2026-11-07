@@ -6,10 +6,11 @@ import { loadCredentials, readCollectorSettings } from './settings.js';
 // 一輪採集：建立 CollectorRun → 瀏覽器採集 → 單一 transaction 寫入 → 清理舊快照。
 // 失敗時 CollectorRun 標為 failed 並記錄錯誤代碼（不含帳號密碼）。
 
-// 一輪的細項階段最多 DETAIL_BUDGET_CAP_MS（再加上登入、列表與寫入約 1 分鐘），所以超過
-// RUNNING_STALE_MS 仍是 running 的，必定是程序被中止（例如部署時 SIGKILL）。
+// 一輪的細項階段最多 DETAIL_BUDGET_CAP_MS，整輪（瀏覽器部分）超過細項上限 + ROUND_OVERHEAD_MS 會被看門狗中止，
+// 所以超過 RUNNING_STALE_MS 仍是 running 的，必定是程序被中止（例如部署時 SIGKILL）。
 // railway.collector.json 的 drainingSeconds 要大於一輪的最長時間。
 const DETAIL_BUDGET_CAP_MS = 8 * 60_000;
+const ROUND_OVERHEAD_MS = 5 * 60_000;
 const RUNNING_STALE_MS = 20 * 60_000;
 
 export type CollectOutcome =
@@ -53,14 +54,17 @@ export async function collectOnce(
 
     // 細項批次要在讀完列表後才決定（新機台也要排進去），所以在 detailTargets 回呼內查 DB
     let targets: string[] = [];
+    // 細項階段最多用掉採集間隔的 80%，避免拖到下一輪
+    const detailBudgetMs = Math.min(settings.intervalMinutes * 60_000 * 0.8, DETAIL_BUDGET_CAP_MS);
     const result = await runRound(creds, GOLDEN_SETH, {
       headed: opts.headed,
       detailTargets: async (rooms) => {
         targets = await pickDetailTargets(prisma, game.id, rooms, settings.detailBatchSize);
         return targets;
       },
-      // 細項階段最多用掉採集間隔的 80%，避免拖到下一輪
-      detailBudgetMs: Math.min(settings.intervalMinutes * 60_000 * 0.8, DETAIL_BUDGET_CAP_MS),
+      detailBudgetMs,
+      // 細項時間上限再加 5 分鐘（登入、進遊戲、列表含重試）；最多 13 分鐘，仍短於 RUNNING_STALE_MS
+      roundTimeoutMs: detailBudgetMs + ROUND_OVERHEAD_MS,
       log,
     });
     log(`列表 ${result.rooms.length} 台、細項 ${result.details.length}/${targets.length} 台，寫入 DB`);
