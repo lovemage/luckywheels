@@ -4,6 +4,7 @@ import { ApiError } from '../api/client.js';
 import { fetchAssistantMe, type AssistantMe } from '../api/assistant.js';
 import type { MeProfile } from '../state/session.js';
 import { ASSISTANT_BRAND } from './brand.js';
+import { fmtInt } from './format.js';
 import { BrandMark } from './BrandMark.js';
 import { InkIcon } from './InkTitle.js';
 import { AssistantHome } from './views/AssistantHome.js';
@@ -83,7 +84,7 @@ export function AssistantApp({
               <span>首頁</span>
             </button>
           )}
-          {!isNativeApp && <span className="aa-badge">測試版</span>}
+          {me && <span className="aa-badge">積分：{fmtInt(me.points)}</span>}
         </header>
 
         <div className="aa-content">

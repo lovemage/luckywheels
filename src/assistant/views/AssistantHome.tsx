@@ -37,15 +37,18 @@ export function AssistantHome({
   const active = me?.pass.active ?? false;
   const [top, setTop] = useState<TopState>({ kind: 'loading' });
   const [now, setNow] = useState(() => Date.now());
-  // 進入首頁先跑約 4.5 秒「數據助手採集中」動畫，結束後才顯示排行（資料同時在背景抓取）
-  const [introDone, setIntroDone] = useState(false);
-
-  const loaded = me !== null;
+  // 第一次拿到排行後，資料正常更新才跑約 4.5 秒「數據分析中」動畫，結束後才顯示排行；
+  // 資料暫停更新（stale）、錯誤或未開通時直接顯示結果，不播動畫。只在進入首頁時判斷一次
+  const [intro, setIntro] = useState<'pending' | 'playing' | 'done'>('pending');
   useEffect(() => {
-    if (!loaded) return;
-    const t = window.setTimeout(() => setIntroDone(true), COLLECT_INTRO_MS);
+    if (intro !== 'pending' || top.kind === 'loading') return;
+    setIntro(top.kind === 'ready' && !top.data.game.stale ? 'playing' : 'done');
+  }, [intro, top]);
+  useEffect(() => {
+    if (intro !== 'playing') return;
+    const t = window.setTimeout(() => setIntro('done'), COLLECT_INTRO_MS);
     return () => window.clearTimeout(t);
-  }, [loaded]);
+  }, [intro]);
 
   useEffect(() => {
     if (!me) return;
@@ -59,7 +62,7 @@ export function AssistantHome({
           setTop(e instanceof ApiError && e.code === 'ASSISTANT_EXPIRED' ? { kind: 'locked' } : { kind: 'error' });
         });
     void load();
-    // 採集每數分鐘一輪；首頁停留時每分鐘重抓，並更新「幾秒前」
+    // 數據每數分鐘更新一輪；首頁停留時每分鐘重抓，並更新「幾秒前」
     const refresh = window.setInterval(load, 60_000);
     const tick = window.setInterval(() => setNow(Date.now()), 15_000);
     return () => {
@@ -69,7 +72,7 @@ export function AssistantHome({
     };
   }, [me, active]);
 
-  const collecting = loaded && (!introDone || top.kind === 'loading');
+  const collecting = intro === 'playing';
   const game = !collecting && top.kind === 'ready' ? top.data.game : null;
 
   return (
@@ -90,11 +93,7 @@ export function AssistantHome({
           <InkTitle as="h1" id="aa-hero-title" className="aa-display" text="機台數據 一眼看清" height={50} />
           <p className="aa-hero-sub">ATG 房間整理 · 本金條件篩選</p>
           <HeroCat />
-          {me && active ? (
-            <PassBar me={me} onExpired={onExpired} />
-          ) : (
-            <p className="aa-hero-pass">{me ? `目前積分 ${fmtInt(me.points)}` : ' '}</p>
-          )}
+          {me && active && <PassBar me={me} onExpired={onExpired} />}
         </div>
       </section>
 
@@ -148,7 +147,7 @@ export function AssistantHome({
         {!collecting && top.kind === 'ready' &&
           (top.data.items.length === 0 ? (
             <div className="aa-notice">
-              <p>{top.data.game.stale ? '採集暫停中，恢復更新後會顯示空台排行。' : '目前沒有空台，稍後再來看看。'}</p>
+              <p>{top.data.game.stale ? '數據分析暫停中，恢復更新後會顯示空台排行。' : '目前沒有空台，稍後再來看看。'}</p>
             </div>
           ) : (
             <>

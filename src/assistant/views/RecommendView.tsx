@@ -67,6 +67,8 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
   const [result, setResult] = useState<RecommendResponse | null>(null);
   const [searches, setSearches] = useState(readSearches);
   const [waitMs, setWaitMs] = useState(COLLECT_INTRO_MS);
+  // 回應回來、確認資料正常更新後才播「數據分析中」動畫；資料暫停更新（stale）直接顯示結果
+  const [analyzing, setAnalyzing] = useState(false);
   const resultRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -102,12 +104,15 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
     setBusy(true);
     setError(null);
     setResult(null);
-    // 先播「數據助手採集中」動畫（時長依推薦次數遞增），再顯示結果；請求同時在背景送出，失敗則立即提示
+    // 先送出請求（顯示骨架），回來後資料正常才播「數據分析中」動畫（時長依推薦次數遞增）再顯示結果；
+    // 資料暫停更新時不播動畫、直接顯示；失敗則立即提示
     requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    const intro = new Promise((resolve) => window.setTimeout(resolve, wait));
     try {
       const r = await postRecommend(principal, multiplier);
-      await intro;
+      if (!r.game.stale) {
+        setAnalyzing(true);
+        await new Promise((resolve) => window.setTimeout(resolve, wait));
+      }
       recordSearch();
       setSearches(readSearches());
       setResult(r);
@@ -115,6 +120,7 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
       if (err instanceof ApiError && err.code === 'ASSISTANT_EXPIRED') setError('使用期限已到期，請先兌換開通');
       else setError(err instanceof ApiError ? ERRORS[err.code] ?? '推薦暫時無法取得，請稍後再試' : '連線失敗，請稍後再試');
     } finally {
+      setAnalyzing(false);
       setBusy(false);
     }
   }
@@ -207,7 +213,19 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
           <div className="aa-section-head">
             <InkTitle id="aa-results-title" className="aa-display" text="符合條件的機台" height={32} />
           </div>
-          <CollectingLoader steps={RECOMMEND_STEPS} durationMs={waitMs} />
+          {analyzing ? (
+            <CollectingLoader steps={RECOMMEND_STEPS} durationMs={waitMs} />
+          ) : (
+            <ol className="aa-rooms" aria-busy="true">
+              {[1, 2, 3].map((r) => (
+                <li key={r} className="aa-room is-skeleton">
+                  <span className="aa-room-rank">{r}</span>
+                  <span className="aa-skel aa-skel--icon" />
+                  <span className="aa-skel aa-skel--text" />
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
       )}
 

@@ -5,8 +5,8 @@ export const COLLECT_INTRO_MS = 4500;
 
 /** 精選空台用的預設步驟 */
 export const TOP_ROOM_STEPS = [
-  '連線 ATG 採集節點',
-  '正在採集房間資料',
+  '連線 ATG 分析節點',
+  '正在分析房間資料',
   '搜尋空台中',
   '讀取最新參數',
   '對照今日 RTP 與下注量',
@@ -17,7 +17,7 @@ export const TOP_ROOM_STEPS = [
 
 /** 本金推薦用的步驟 */
 export const RECOMMEND_STEPS = [
-  '連線 ATG 採集節點',
+  '連線 ATG 分析節點',
   '讀取最新房間參數',
   '比對本金級距與門檻',
   '搜尋符合條件的空台',
@@ -38,7 +38,7 @@ function streamLine(): string {
   return `0x${hex} · R-${room} · ${val} · ${tag}`;
 }
 
-/** 「數據助手採集中」載入面板：逐行跑出採集步驟、進度百分比、背景資料流與金色掃描光 */
+/** 「數據分析中」載入面板：逐行跑出分析步驟、進度百分比、背景資料流與金色掃描光 */
 export function CollectingLoader({ steps = TOP_ROOM_STEPS, durationMs = COLLECT_INTRO_MS }: { steps?: string[]; durationMs?: number }) {
   const stream = useMemo(() => Array.from({ length: STREAM_ROWS }, streamLine), []);
   const [pct, setPct] = useState(0);
@@ -48,7 +48,7 @@ export function CollectingLoader({ steps = TOP_ROOM_STEPS, durationMs = COLLECT_
     const start = performance.now();
     const tick = (t: number) => {
       const p = Math.min(1, (t - start) / durationMs);
-      // ease-out，前段跑快、後段收慢，貼近「採集→整理」的節奏
+      // ease-out，前段跑快、後段收慢，貼近「分析→整理」的節奏
       setPct(Math.round((1 - Math.pow(1 - p, 2.2)) * 100));
       if (p < 1) raf.current = requestAnimationFrame(tick);
     };
@@ -59,7 +59,7 @@ export function CollectingLoader({ steps = TOP_ROOM_STEPS, durationMs = COLLECT_
   const stepGap = durationMs / steps.length;
 
   return (
-    <div className="aa-collect" role="status" aria-live="polite" aria-label="數據助手正在採集空台資料">
+    <div className="aa-collect" role="status" aria-live="polite" aria-label="數據助手正在分析空台資料">
       <div className="aa-collect-stream" aria-hidden="true">
         <div className="aa-collect-stream-track">
           {[...stream, ...stream].map((line, i) => (
