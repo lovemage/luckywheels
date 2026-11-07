@@ -1163,30 +1163,6 @@ body:has(.aa-stage) {
   line-height: 1.65;
 }
 
-.aa-rule-example {
-  display: grid;
-  gap: 2px;
-  margin-top: 10px;
-  padding: 10px 12px;
-  border: 1px dashed var(--aa-line-strong);
-  border-radius: 8px;
-}
-
-.aa-rule-example-label {
-  margin-bottom: 2px;
-  color: var(--aa-gold);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.aa-rule-example p {
-  margin: 0;
-  color: var(--aa-ink);
-  font-size: 13.5px;
-  line-height: 1.6;
-  font-variant-numeric: tabular-nums;
-}
-
 .aa-rule-note {
   display: grid;
   gap: 4px;

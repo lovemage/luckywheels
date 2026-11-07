@@ -6,6 +6,7 @@ import { OpenPassButton } from '../OpenPassButton.js';
 
 // 曜金規則：說明畫面上的數字怎麼看、助手怎麼排序。未開通也能看（讓會員先了解助手能提供什麼）。
 // 措辭維持中立：數字是已發生的紀錄，不暗示中獎機率、預測或保證獲利。
+// 只說明數字代表什麼、怎麼看，不放計算公式與試算範例。
 
 interface Metric {
   id: string;
@@ -13,7 +14,6 @@ interface Metric {
   weight: string;
   meaning: string;
   points: string[];
-  example?: { label: string; lines: string[] };
 }
 
 const METRICS: Metric[] = [
@@ -27,10 +27,6 @@ const METRICS: Metric[] = [
       '可以搭配「前兩次開出間隔」一起看，知道這台近期大約隔多少轉開出一次',
       '助手會把每台的未開轉數跟同一款遊戲的所有機台比較，告訴你它多於多少比例的機台',
     ],
-    example: {
-      label: '對照範例',
-      lines: ['前兩次分別隔 300 轉、500 轉開出，平均 400 轉', '目前未開 900 轉，已經超過這台近期的平均間隔'],
-    },
   },
   {
     id: 'rtp',
@@ -43,10 +39,6 @@ const METRICS: Metric[] = [
       '兩個數字對照著看。今日 RTP 偏低、近 30 天 RTP 正常或偏高，代表這台今天派出的比例低於它平常的表現',
       '單日 RTP 偶爾會出現上千 % 的極端數字，助手計分時看的是它在同遊戲中的排名，單一極端值不會把排序拉歪',
     ],
-    example: {
-      label: '計算方式',
-      lines: ['今天累積下注 10,000、派出 9,500', '今日 RTP ＝ 9,500 ÷ 10,000 ＝ 95%'],
-    },
   },
   {
     id: 'bet',
@@ -95,14 +87,6 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
               <li key={p}>{p}</li>
             ))}
           </ul>
-          {m.example && (
-            <div className="aa-rule-example">
-              <span className="aa-rule-example-label">{m.example.label}</span>
-              {m.example.lines.map((l) => (
-                <p key={l}>{l}</p>
-              ))}
-            </div>
-          )}
         </section>
       ))}
 
