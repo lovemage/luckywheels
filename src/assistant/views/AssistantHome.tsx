@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { ApiError } from '../../api/client.js';
 import { fetchTeaserRooms, fetchTopRooms, type AssistantMe, type RoomsResponse } from '../../api/assistant.js';
 import { LightPillars } from '../LightPillars.js';
-import { HeroCat } from '../HeroCat.js';
 import { InkIcon, InkTitle, inkTitleSrc } from '../InkTitle.js';
 import { COLLECT_INTRO_MS, CollectingLoader } from '../CollectingLoader.js';
 import { fmtAgo, fmtClock, fmtInt, fmtRemainingDetail, fmtRtp, fmtStamp, slotIconFor } from '../format.js';
@@ -88,11 +87,13 @@ export function AssistantHome({
       </p>
 
       <section className="aa-hero" aria-labelledby="aa-hero-title">
+        {/* 金虎在流光後方，由看不到慢慢浮現 */}
+        <img className="aa-tiger" src="/assets/assistant/tiger.webp" alt="" aria-hidden="true" draggable={false} />
         <LightPillars />
         <div className="aa-hero-copy">
           <InkTitle as="h1" id="aa-hero-title" className="aa-display" text="機台數據 一眼看清" height={50} />
           <p className="aa-hero-sub">ATG 房間整理 · 本金條件篩選</p>
-          <HeroCat />
+          <div className="aa-hero-space" aria-hidden="true" />
           {me && active && <PassBar me={me} onExpired={onExpired} />}
         </div>
       </section>

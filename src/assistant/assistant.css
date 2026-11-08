@@ -208,31 +208,35 @@ body:has(.aa-stage) {
   text-align: center;
 }
 
-/* Hero 金色胖貓（精靈條逐幀播放） */
-.aa-cat {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  height: 142px;
-  margin-top: 2px;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(232, 194, 116, 0.18));
+/* Hero 金虎：位在流光（.aa-pillars, z -1）後方，進場由看不到慢慢浮現 */
+.aa-hero-space {
+  height: 144px;
 }
 
-.aa-cat-frame {
-  overflow: hidden;
-}
-
-.aa-cat-strip {
-  display: block;
-  max-width: none;
-  animation: aa-cat-play 2.6s steps(16) infinite;
+.aa-tiger {
+  position: absolute;
+  z-index: -2;
+  left: 50%;
+  bottom: 18px;
+  width: min(300px, 80%);
+  height: auto;
+  opacity: 0.85;
+  transform: translateX(-50%);
   user-select: none;
   pointer-events: none;
+  animation: aa-tiger-reveal 2.4s var(--aa-ease) 0.3s both;
 }
 
-@keyframes aa-cat-play {
+@keyframes aa-tiger-reveal {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.06);
+    filter: blur(8px) brightness(0.4);
+  }
   to {
-    transform: translateX(-100%);
+    opacity: 0.85;
+    transform: translateX(-50%) scale(1);
+    filter: blur(0) brightness(1);
   }
 }
 
@@ -1597,7 +1601,7 @@ fieldset.aa-field {
   .aa-streaks {
     display: none;
   }
-  .aa-cat-strip,
+  .aa-tiger,
   .aa-passbar-fill::after,
   .aa-ink-note {
     animation: none;
