@@ -208,13 +208,77 @@ const NOTE_LINES = [
   '請依自己的預算設定本金，理性遊玩',
 ];
 
+// 首頁開場（第一次進入）：黑底虎頭 → 虎頭沒入黑暗 → 金光由下往上流動 → 收縮成 Hero 區塊。
+// 看過一次（localStorage）或系統設定「減少動態效果」就不播；點一下或按任意鍵略過。
+const introRays = (() => {
+  let seed = 0x9e3779b9;
+  const r = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 0x1_0000_0000);
+  return Array.from({ length: 56 }, () => {
+    const x = (r() * 100).toFixed(2);
+    const h = (28 + r() * 62).toFixed(1);
+    const w = r() < 0.18 ? 2 : 1;
+    const d = (r() * 0.9).toFixed(2);
+    const o = (0.35 + r() * 0.65).toFixed(2);
+    return `<i style="left:${x}%;height:${h}%;width:${w}px;--d:${d}s;opacity:${o}"></i>`;
+  }).join('');
+})();
+const introOverlay = `<div class="lw-intro" id="lw-intro" aria-hidden="true" hidden>
+  <div class="lw-intro-stage">
+    <img class="lw-intro-tiger" src="/assets/assistant/tiger.webp" alt="" draggable="false">
+    <div class="lw-intro-rays">${introRays}</div>
+    <div class="lw-intro-horizon"></div>
+  </div>
+  <p class="lw-intro-skip">點一下略過</p>
+</div>
+<script>
+(function () {
+  var el = document.getElementById('lw-intro');
+  if (!el) return;
+  var KEY = 'lw.intro.v1';
+  var seen = false;
+  try { seen = localStorage.getItem(KEY) === '1'; } catch (e) {}
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (seen || reduce || !el.animate) { el.parentNode.removeChild(el); return; }
+  try { localStorage.setItem(KEY, '1'); } catch (e) {}
+  var root = document.documentElement;
+  el.hidden = false;
+  root.classList.add('lw-intro-on');
+  var done = false;
+  var timers = [];
+  function finish() {
+    if (done) return;
+    done = true;
+    timers.forEach(clearTimeout);
+    root.classList.remove('lw-intro-on');
+    if (el.parentNode) el.parentNode.removeChild(el);
+  }
+  function shrink() {
+    var hero = document.querySelector('.aa-hero');
+    if (!hero) return finish();
+    var r = hero.getBoundingClientRect();
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var to = 'inset(' + Math.max(0, r.top) + 'px ' + Math.max(0, vw - r.right) + 'px ' + Math.max(0, vh - r.bottom) + 'px ' + Math.max(0, r.left) + 'px)';
+    var a = el.animate(
+      [{ clipPath: 'inset(0px 0px 0px 0px)', opacity: 1 }, { clipPath: to, opacity: 1, offset: 0.7 }, { clipPath: to, opacity: 0 }],
+      { duration: 900, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' }
+    );
+    a.onfinish = finish;
+  }
+  el.addEventListener('click', finish);
+  window.addEventListener('keydown', finish, { once: true });
+  timers.push(setTimeout(shrink, 3200));
+  timers.push(setTimeout(finish, 4700));
+})();
+</script>`;
+
 // ════════════════ 首頁 ════════════════
 const home = shell('home', {
   title: '曜金數據助手｜金光之下，每台機台都有紀錄',
   description: '曜金數據助手把 ATG 數千台機台的紀錄排成一道看得見的光：精選空台、本金推薦、曜金訊號，遊戲中也能隨時叫出。LINE 登入，用幸運輪盤的積分開通。',
   ogTitle: '曜金數據助手',
   ogDesc: '金光之下，每台機台都有紀錄。LINE 登入轉輪盤，積分開通數據助手。',
-  body: `<section class="aa-hero" aria-labelledby="hero-title">
+  body: `${introOverlay}
+<section class="aa-hero" aria-labelledby="hero-title">
   <img class="aa-tiger" alt="" aria-hidden="true" draggable="false" src="/assets/assistant/tiger.webp">
   ${pillars}
   <div class="aa-hero-copy">
