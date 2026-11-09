@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/client.js';
-import { fetchSignal, refreshSignal, type SignalResponse } from '../api/assistant.js';
+import { fetchSignal, type SignalResponse } from '../api/assistant.js';
 import { atgSymbol } from './atgSymbols.js';
 import { fmtClock } from './format.js';
 
-// 曜金訊號：2–3 種戰神賽特 II 的盤面符號 × 數量＋強度（呈現方式比照遊戲內訊號，2026-11-09 由金屬改為遊戲符號）。
-// 符號組合隨機，但每則都綁一間發出當下符合條件的真實空台（會員看不到是哪一台）；
-// 綁定機台有人入座、開過免遊、RTP 變動或資料逾時，伺服器在讀取時自動換組。
+// 曜金訊號：首頁「精選空台 TOP 5」其中一台的房間訊號（2026-11-09 起；不公開是哪一台）。
+// 會員從 TOP5 逐台用「房間訊號」查房號，符號對得上的就是那台；未開通看不到 TOP5 房號，當作開通誘因。
+// 綁定機台有人入座、開過免遊、RTP 變動、資料逾時、掉出 TOP5 或換日，伺服器在讀取時自動換組。
+// 「免遊結束，換一組」按鈕已移到房間訊號（換的是自己正在玩的那台）。
 // 首頁停留時每分鐘重抓一次，讓自動換組能及時反映。
 
 const symbolList = (symbols: { symbol: string; count: number }[]) =>
@@ -14,11 +15,9 @@ const symbolList = (symbols: { symbol: string; count: number }[]) =>
 
 type State = { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; data: SignalResponse };
 
-export function SignalCard({ onExpired }: { onExpired?: () => void }) {
+export function SignalCard({ onExpired, locked = false }: { onExpired?: () => void; /** 未開通：看不到 TOP5 房號 */ locked?: boolean }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
-  const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const alive = useRef(true);
 
   const apply = useCallback(
@@ -56,26 +55,6 @@ export function SignalCard({ onExpired }: { onExpired?: () => void }) {
     };
   }, [apply, fail]);
 
-  const onRefresh = async () => {
-    setBusy(true);
-    setError(null);
-    setNote(null);
-    try {
-      apply(await refreshSignal());
-    } catch (e) {
-      if (e instanceof ApiError && e.code === 'SIGNAL_REFRESH_COOLDOWN') {
-        const sec = Number(/(\d+)/.exec(e.message)?.[1]);
-        setError(sec ? `剛換過，請 ${sec} 秒後再換` : '剛換過，請稍後再換');
-      } else if (e instanceof ApiError && e.code === 'ASSISTANT_EXPIRED') {
-        onExpired?.();
-      } else {
-        setError('換組失敗，請稍後再試');
-      }
-    } finally {
-      if (alive.current) setBusy(false);
-    }
-  };
-
   const data = state.kind === 'ready' ? state.data : null;
   const signal = data?.signal ?? null;
 
@@ -85,6 +64,11 @@ export function SignalCard({ onExpired }: { onExpired?: () => void }) {
         <h2 id="aa-signal-title" className="aa-display">曜金訊號</h2>
         {signal && <span className="aa-section-note">發出 {fmtClock(signal.issuedAt)}</span>}
       </div>
+      <p className="aa-signal-intro">
+        {locked
+          ? '上方 TOP 5 其中一台的房間訊號，不公開是哪一台。開通後看得到這五台的房號，逐台查房間訊號，對得上的就是那台'
+          : '上方 TOP 5 其中一台的房間訊號，不公開是哪一台。逐台用房間訊號查房號，對得上的就是那台'}
+      </p>
 
       {state.kind === 'loading' && (
         <div className="aa-signal-plate is-skeleton" aria-busy="true">
@@ -147,16 +131,6 @@ export function SignalCard({ onExpired }: { onExpired?: () => void }) {
         </p>
       )}
 
-      {data && (
-        <button type="button" className="aa-button aa-button--ghost aa-button--block" disabled={busy} onClick={onRefresh}>
-          {busy ? '換組中…' : '免遊結束，換一組'}
-        </button>
-      )}
-      {error && (
-        <p className="aa-error" role="alert">
-          {error}
-        </p>
-      )}
 
       <p className="aa-disclaimer">強度依機台綜合分數換算 · {data?.disclaimer ?? '數據攻略僅供參考'}</p>
     </section>

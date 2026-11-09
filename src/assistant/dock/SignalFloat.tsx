@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { backToGame, reportDockHeight, requestDockMode } from '../../native.js';
 import { atgSymbol } from '../atgSymbols.js';
-import { roomSignalState, setRoomSignalEnabled, subscribeRoomSignal } from './roomSignal.js';
+import { nextRoomSignalSet, roomSignalState, setRoomSignalEnabled, subscribeRoomSignal } from './roomSignal.js';
 import '../assistant.css';
 import './dock.css';
 
 // 房間訊號浮窗（App 1.4.0+）：只顯示目前機台的訊號——每種符號「最近一轉的數量／門檻」，
 // 全部達標時顯示「訊號達標，可買免遊」。窄版，疊在遊戲一角，不擋操作。
+// 每台每天依序 5 組：買完免遊按「換下一組」（組數與完整助手的房間訊號共用）。
 
 export function SignalFloat() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -38,6 +39,11 @@ export function SignalFloat() {
         <p>
           {st.roomNo ? <span className="aa-dock-room">#{st.roomNo}</span> : null}
           <span className="aa-sigfloat-title">房間訊號</span>
+          {st.symbols && st.setTotal > 1 && (
+            <span className="aa-sigfloat-set">
+              {st.setIndex + 1}/{st.setTotal} 組
+            </span>
+          )}
         </p>
         <button type="button" className="aa-dock-close" onClick={backToGame} aria-label="收合訊號浮窗">
           收合
@@ -74,6 +80,16 @@ export function SignalFloat() {
       )}
 
       <p className="aa-sigfloat-foot">今日達標 {st.today} 次 · 不代表遊戲結果</p>
+      {st.symbols && st.setTotal > 1 && (
+        <button
+          type="button"
+          className="aa-dock-btn aa-sigfloat-next"
+          disabled={st.setIndex + 1 >= st.setTotal}
+          onClick={() => nextRoomSignalSet()}
+        >
+          {st.setIndex + 1 >= st.setTotal ? '今天這台的訊號已用完' : '免遊結束，換下一組'}
+        </button>
+      )}
       <div className="aa-sigfloat-actions">
         <button type="button" className="aa-dock-btn" onClick={() => requestDockMode('dock')}>
           小卡

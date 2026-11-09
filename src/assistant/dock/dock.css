@@ -719,6 +719,20 @@ html.is-dock body {
   font-size: 11px;
 }
 
+.aa-sigfloat-set {
+  margin-left: 6px;
+  color: var(--aa-gold);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-sigfloat-next {
+  width: 100%;
+  min-height: 36px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
 .aa-sigfloat-actions {
   display: flex;
   gap: 6px;

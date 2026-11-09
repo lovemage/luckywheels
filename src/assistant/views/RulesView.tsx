@@ -73,6 +73,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
         ))}
         <a href="#aa-rule-score">怎麼排序</a>
         <a href="#aa-rule-signal">曜金訊號</a>
+        <a href="#aa-rule-roomsig">房間訊號</a>
       </nav>
 
       {METRICS.map((m) => (
@@ -107,8 +108,8 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
         <div className="aa-section-head">
           <h2 id="aa-rule-signal-title" className="aa-display">曜金訊號</h2>
         </div>
-        <p className="aa-rule-weight">開通期間在首頁顯示 · 一次一組</p>
-        <p className="aa-rule-meaning">每一組訊號都對應一台發出當下符合條件、目前沒人使用的機台</p>
+        <p className="aa-rule-weight">首頁精選空台 TOP 5 下方 · 不需開通 · 一次一組</p>
+        <p className="aa-rule-meaning">曜金訊號是上方 TOP 5 其中一台的房間訊號（第 1 組），不公開是哪一台；逐台用房間訊號查房號，對得上的就是那台</p>
         {SIGNAL_SYMBOL_ROWS.map((row) => (
           <ul key={row.label} className="aa-rule-metals" data-count={row.keys.length} aria-label={`訊號符號：${row.label}`}>
             {row.keys.map((k) => (
@@ -122,9 +123,23 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
         <ul className="aa-reasons aa-rule-points">
           <li>每組訊號由 2–3 種戰神賽特 II 的盤面符號加上數量組成，例如「眼睛 3 個、紫寶石 5 個」，至少有一種高分符號</li>
           <li>訊號強度由對應機台的綜合分數換算，分數越高，強度越高</li>
-          <li>對應的機台有人入座、開過免費遊戲、今日 RTP 明顯變動，或資料停止更新時，系統會自動換一組新的訊號，並在畫面上說明原因</li>
-          <li>玩完一輪免費遊戲後，可以按「免遊結束，換一組」取得新訊號；剛換過需要稍候一段時間才能再換</li>
+          <li>對應的機台有人入座、開過免費遊戲、今日 RTP 明顯變動、資料停止更新、掉出 TOP 5，或到了隔天，系統會自動換一組新的訊號，並在畫面上說明原因</li>
+          <li>未開通時看不到 TOP 5 的房號，開通後才能逐台查房間訊號</li>
           <li>同一台機台同時對應的訊號數有上限，避免太多會員擠進同一台</li>
+        </ul>
+      </section>
+
+      <section id="aa-rule-roomsig" className="aa-rule" aria-labelledby="aa-rule-roomsig-title">
+        <div className="aa-section-head">
+          <h2 id="aa-rule-roomsig-title" className="aa-display">房間訊號</h2>
+        </div>
+        <p className="aa-rule-weight">開通後使用 · 每台每天 5 組</p>
+        <p className="aa-rule-meaning">每台機台每天依序有 5 組訊號，所有會員看到的相同</p>
+        <ul className="aa-reasons aa-rule-points">
+          <li>坐上機台後查房號（Android App 會自動帶入），每轉結束時盤面上這些符號都達到數量，就是訊號達標，可買免遊</li>
+          <li>買完免遊後按「免遊結束，換下一組」，接著看同一台的下一組；按錯可以回上一組</li>
+          <li>網頁版會記得上次查的房號與組數，在遊戲和助手之間切換時不用重新輸入</li>
+          <li>隔天，或系統偵測到這台自然開出免遊時，整串 5 組會換新，從第 1 組開始</li>
         </ul>
       </section>
 

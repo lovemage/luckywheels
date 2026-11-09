@@ -1,15 +1,17 @@
 import { createHash, randomInt } from 'node:crypto';
 import type { AssistantSignal, AssistantSignalEndReason, Prisma, PrismaClient, Room } from '@prisma/client';
 import { AppError } from '../errors.js';
-import { loadScoreBoard } from './board.js';
+import { loadScoreBoard, type ScoreBoard, type ScoredRoom } from './board.js';
+import { roomNoCompare } from './rooms.js';
+import { toDisplayScore } from './scoring.js';
 import type { FreshnessSettings, RecommendSettings, SignalSettings } from './settings.js';
 
-// 訊號（計劃 M3 訊號草案，2026-11-03 折衷做法）：
-// - 符號組合隨機（2–3 種 ATG 戰神賽特 II 的盤面符號＋數量，呈現方式比照遊戲內訊號；2026-11-09 由金屬改為遊戲符號），
-//   但每則都綁一間「發出當下」未逾時、分數 ≥ 門檻的真實空台
+// 曜金訊號（計劃 M3 訊號草案；2026-11-09 改為「TOP5 其中一台的房間訊號」）：
+// - 每則綁一間「發出當下」首頁精選空台 TOP5 裡、分數 ≥ 門檻的空台，符號＝那台的第 1 組房間訊號（roomSignalFor），
+//   所以會員從 TOP5 逐台查房間訊號，對得上的就是那台
 // - 會員端不顯示綁定的房間，後台可追查；強度 % 由綁定房間的分數換算，不是亂數
 // - 換組條件（任一成立）：會員按「免遊結束，換一組」、綁定房間開過免遊、今日 RTP 變動達門檻、
-//   房間變成有人／被預約／停用、資料逾時
+//   房間變成有人／被預約／停用、資料逾時、掉出 TOP5、台北時間換日（房間訊號每天換）
 // - 每位會員同時只有一則有效訊號；在讀取時檢查換組條件（之後的推播 worker 沿用 endReasonFor）
 
 /** 戰神賽特 II 的一般符號（圖片 public/assets/assistant/atg/symbol_01–09.webp；Scatter 與倍數球不列入） */
@@ -40,7 +42,27 @@ const END_MESSAGES: Record<AssistantSignalEndReason, string> = {
   rtp_changed: '機台數據變動，已換一組新訊號',
   room_unavailable: '機台已有人使用，已換一組新訊號',
   data_stale: '數據暫停更新，已換一組新訊號',
+  left_top: '機台已不在 TOP5，已換一組新訊號',
+  day_changed: '房間訊號每日更新，已換一組新訊號',
 };
+
+/** 首頁「精選空台 TOP 5」的筆數；曜金訊號只綁這幾台 */
+export const SIGNAL_TOP_SIZE = 5;
+
+/** 與首頁 TOP5 相同的排序（空台、顯示分數高到低、房號）；listRooms sort=score 也是這個順序 */
+export function topIdle(board: ScoreBoard, n = SIGNAL_TOP_SIZE): ScoredRoom[] {
+  return board.rooms
+    .filter((x) => x.room.status === 'idle')
+    .map((x) => ({ x, d: toDisplayScore(x.score.score) }))
+    .sort((a, b) => b.d - a.d || roomNoCompare(a.x.room, b.x.room))
+    .slice(0, n)
+    .map((v) => v.x);
+}
+
+const sameSymbols = (a: unknown, b: SignalSymbolPick[]) =>
+  Array.isArray(a) &&
+  a.length === b.length &&
+  (a as SignalSymbolPick[]).every((x, i) => x?.symbol === b[i]!.symbol && x?.count === b[i]!.count);
 
 type Rand = (min: number, maxExclusive: number) => number;
 
@@ -80,14 +102,26 @@ export function seededRand(seed: string): Rand {
 
 const TAIPEI_DATE = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' });
 
+/** 每間房每天依序有幾組房間訊號（買完免遊按「換一組」接下一組） */
+export const ROOM_SIGNAL_SETS = 5;
+
 /**
- * 房間訊號（App 遊戲內浮窗）：每間房一組，所有會員看到的相同。
- * 種子＝房間＋前一次開出免遊的轉數（開過免遊就變）＋台北日期（每天換），所以不必存資料表。
+ * 房間訊號（App 遊戲內浮窗、網頁版查房號）：每間房一串 ROOM_SIGNAL_SETS 組，所有會員看到的相同。
+ * 種子＝房間＋前一次開出免遊的轉數（開過免遊就整串換新）＋台北日期（每天換）＋第幾組，所以不必存資料表。
+ * 第 1 組（index 0）的種子沿用改成多組以前的寫法，舊版 App 讀 symbols 拿到的就是第 1 組。
  */
-export function roomSignalFor(room: { id: string; prev1Spins: number | null }, now: Date): { key: string; symbols: SignalSymbolPick[] } {
-  const key = `${room.id}:${room.prev1Spins ?? '-'}:${TAIPEI_DATE.format(now)}`;
-  return { key: createHash('sha256').update(key).digest('hex').slice(0, 12), symbols: randomSymbols(seededRand(key)) };
+export function roomSignalFor(
+  room: { id: string; prev1Spins: number | null },
+  now: Date,
+  index = 0,
+): { key: string; symbols: SignalSymbolPick[] } {
+  const base = `${room.id}:${room.prev1Spins ?? '-'}:${TAIPEI_DATE.format(now)}`;
+  const seed = index === 0 ? base : `${base}#${index}`;
+  return { key: createHash('sha256').update(seed).digest('hex').slice(0, 12), symbols: randomSymbols(seededRand(seed)) };
 }
+
+export const roomSignalSets = (room: { id: string; prev1Spins: number | null }, now: Date) =>
+  Array.from({ length: ROOM_SIGNAL_SETS }, (_, i) => roomSignalFor(room, now, i));
 
 /** 目前格式的訊號（遊戲符號＋數量）；舊的金屬／寶石訊號回傳 false，讀取時無聲換新 */
 const hasCurrentSymbols = (s: Pick<AssistantSignal, 'symbols'>) =>
@@ -156,21 +190,29 @@ export interface SignalContext {
   rand?: Rand;
 }
 
-async function issue(tx: Prisma.TransactionClient, ctx: SignalContext, excludeRoomId: string | null): Promise<AssistantSignal | null> {
-  const board = await loadScoreBoard(tx, ctx.gameId, ctx.now, ctx.freshness, ctx.recommend.weights, ctx.recommend.premiumPercent);
-  const candidates = board.rooms.filter(
-    (x) => x.room.status === 'idle' && x.score.score >= ctx.signal.minScore && x.room.id !== excludeRoomId,
-  );
+async function issue(
+  tx: Prisma.TransactionClient,
+  ctx: SignalContext,
+  board: ScoreBoard,
+  excludeRoomId: string | null,
+): Promise<AssistantSignal | null> {
+  const top = topIdle(board).filter((x) => x.score.score >= ctx.signal.minScore);
+  // 換組時避開剛結束的那台；TOP5 只剩那台時仍可再發（符號會不同或換日）
+  const candidates = top.length > 1 ? top.filter((x) => x.room.id !== excludeRoomId) : top;
   if (candidates.length === 0) return null;
-  // 同一間房同時有效的訊號數有上限，避免把太多會員導到同一台
+  // 同一間房同時有效的訊號數有上限，分散會員；TOP5 都滿了就挑目前最少人綁的那幾台
   const busy = await tx.assistantSignal.groupBy({
     by: ['roomId'],
     where: { endedAt: null, roomId: { in: candidates.map((x) => x.room.id) } },
     _count: { _all: true },
   });
-  const full = new Set(busy.filter((b) => b._count._all >= ctx.signal.maxPerRoom).map((b) => b.roomId));
-  const open = candidates.filter((x) => !full.has(x.room.id));
-  if (open.length === 0) return null;
+  const load = new Map(busy.map((b) => [b.roomId, b._count._all]));
+  const loadOf = (x: ScoredRoom) => load.get(x.room.id) ?? 0;
+  let open = candidates.filter((x) => loadOf(x) < ctx.signal.maxPerRoom);
+  if (open.length === 0) {
+    const least = Math.min(...candidates.map(loadOf));
+    open = candidates.filter((x) => loadOf(x) === least);
+  }
   const rand = ctx.rand ?? randomInt;
   const pick = open[rand(0, open.length)]!;
   return tx.assistantSignal.create({
@@ -178,7 +220,7 @@ async function issue(tx: Prisma.TransactionClient, ctx: SignalContext, excludeRo
       userId: ctx.userId,
       gameId: ctx.gameId,
       roomId: pick.room.id,
-      symbols: randomSymbols(rand) as unknown as Prisma.InputJsonValue,
+      symbols: roomSignalFor(pick.room, ctx.now).symbols as unknown as Prisma.InputJsonValue,
       strength: strengthFor(pick.score.score, ctx.signal),
       scoreAtIssue: pick.score.score,
       rtpAtIssue: pick.room.todayRtp!,
@@ -204,6 +246,7 @@ export async function currentSignal(ctx: SignalContext, refresh = false): Promis
         orderBy: { issuedAt: 'desc' },
       });
 
+      const board = await loadScoreBoard(tx, ctx.gameId, ctx.now, ctx.freshness, ctx.recommend.weights, ctx.recommend.premiumPercent);
       let replaced: SignalResult['replaced'] = null;
       if (active) {
         let reason: AssistantSignalEndReason | null;
@@ -215,16 +258,22 @@ export async function currentSignal(ctx: SignalContext, refresh = false): Promis
           reason = 'member_refresh';
         } else {
           reason = endReasonFor(active, active.room, ctx.now, ctx.freshness, ctx.signal);
+          if (!reason && TAIPEI_DATE.format(active.issuedAt) !== TAIPEI_DATE.format(ctx.now)) reason = 'day_changed';
+          if (!reason && !topIdle(board).some((x) => x.room.id === active.roomId)) reason = 'left_top';
         }
-        // 舊格式訊號（2026-11-05 以前的寶石、2026-11-09 以前的金屬）：直接換成新訊號，不提示會員
-        const legacy = !refresh && !hasCurrentSymbols(active);
+        // 舊格式訊號（2026-11-05 以前的寶石、2026-11-09 以前的金屬、改成房間訊號以前的隨機組合）：
+        // 直接換成新訊號，不提示會員
+        // 其他換組原因優先（照常提示）；只有格式不符時才無聲換新
+        const legacy =
+          !reason &&
+          (!hasCurrentSymbols(active) || (active.room !== null && !sameSymbols(active.symbols, roomSignalFor(active.room, ctx.now).symbols)));
         if (legacy) reason = 'member_refresh';
         if (!reason) return { signal: present(active), replaced: null, message: null, disclaimer: SIGNAL_DISCLAIMER };
         await tx.assistantSignal.update({ where: { id: active.id }, data: { endedAt: ctx.now, endReason: reason } });
         replaced = legacy ? null : { reason, message: END_MESSAGES[reason] };
       }
 
-      const next = await issue(tx, ctx, active?.roomId ?? null);
+      const next = await issue(tx, ctx, board, active?.roomId ?? null);
       return {
         signal: next ? present(next) : null,
         replaced,

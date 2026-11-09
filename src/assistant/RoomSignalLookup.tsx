@@ -1,14 +1,16 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { api, ApiError } from '../api/client.js';
-import type { SignalSymbol } from '../api/assistant.js';
 import { currentGameHud, isNativeApp, onGameHud } from '../native.js';
 import { atgSymbol } from './atgSymbols.js';
 import { roomSignalState, subscribeRoomSignal } from './dock/roomSignal.js';
+import { currentSetIndex, saveSetIndex, setsOf, subscribeSetIndex, type RoomSignalResponse } from './roomSignalSets.js';
 
 // 房間訊號（完整助手首頁）：
 // - 網頁版（iPhone）讀不到遊戲盤面，由會員輸入目前坐的房號，顯示該房的訊號門檻，每轉結束後自己對照
 // - Android App 內：自動帶入目前坐的機台、自動查詢，並顯示最近一轉的數量（現有／門檻）
 // 與 App 訊號浮窗用同一組訊號（訊號綁房間）。
+// 每台每天依序 5 組：會員買完免遊按「免遊結束，換一組」接下一組（2026-11-09；按鈕由曜金訊號移來）。
+// 第幾組記在本機，與 App 浮窗共用。
 
 /** App 內目前坐的機台號（App 從遊戲畫面讀出；網頁版為 null） */
 function useGameRoom(): string | null {
@@ -16,12 +18,6 @@ function useGameRoom(): string | null {
     (fn) => (isNativeApp ? onGameHud(() => fn()) : () => {}),
     () => (isNativeApp ? currentGameHud()?.room ?? null : null),
   );
-}
-
-interface RoomSignalResponse {
-  roomNo: string;
-  symbols: { symbol: SignalSymbol; count: number }[];
-  disclaimer: string;
 }
 
 const KEY = 'lw.roomSignal.lastRoom';
@@ -39,10 +35,36 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
   const gameRoom = useGameRoom();
   const [roomNo, setRoomNo] = useState(() => gameRoom ?? readLast());
   const [state, setState] = useState<State>({ kind: 'idle' });
+  const [note, setNote] = useState<string | null>(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  /** 目前顯示的房號（切回分頁時重抓用） */
+  const latest = useRef<string | null>(null);
+  // 換組（本機或 App 另一個畫面）時重新渲染
+  useSyncExternalStore(subscribeSetIndex, () => (state.kind === 'ready' ? currentSetIndex(state.data) : -1));
   // 最近一轉的各符號數量（App 讀盤面；只在顯示的房間＝目前機台時採用）
   const board = useSyncExternalStore(subscribeRoomSignal, roomSignalState);
+  const sets = state.kind === 'ready' ? setsOf(state.data) : [];
+  const setIndex = state.kind === 'ready' ? currentSetIndex(state.data) : 0;
+  const symbols = sets[setIndex]?.symbols ?? [];
   const live = isNativeApp && gameRoom !== null && state.kind === 'ready' && state.data.roomNo === gameRoom;
   const counts = live ? board.counts : null;
+
+  // 網頁版（iPhone 在 Safari 與遊戲之間來回切換）：記得上次的房號，打開就直接顯示，不用每次重查；
+  // 切回這個分頁時安靜地重抓一次（隔天或伺服器偵測到自然開出免遊時，整串訊號會換新）
+  useEffect(() => {
+    if (isNativeApp) return;
+    const last = readLast();
+    if (last) void lookup(last);
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      const no = latest.current;
+      if (no) void lookup(no, true);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // App 內：坐上（或換了）機台就自動查詢
   useEffect(() => {
@@ -57,12 +79,28 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
     await lookup(roomNo.trim());
   }
 
-  async function lookup(no: string) {
-    if (!/^\d{1,6}$/.test(no)) {
-      setState({ kind: 'error', message: '請輸入房號（數字）' });
+  /** 買完免遊：換這台的下一組；step＝-1 是按錯時退回上一組 */
+  function move(step: 1 | -1) {
+    if (state.kind !== 'ready') return;
+    const to = setIndex + step;
+    if (to >= sets.length) {
+      setNote(`今天這台的 ${sets.length} 組都用過了，隔天會換新`);
       return;
     }
-    setState({ kind: 'loading' });
+    if (to < 0) return;
+    saveSetIndex(state.data, to);
+    setNote(step === 1 ? `已換到第 ${to + 1} 組` : `已回到第 ${to + 1} 組`);
+  }
+
+  /** quiet＝切回分頁時重抓：不清掉畫面，訊號換新了才提示 */
+  async function lookup(no: string, quiet = false): Promise<RoomSignalResponse | null> {
+    if (!quiet) setNote(null);
+    if (!/^\d{1,6}$/.test(no)) {
+      setState({ kind: 'error', message: '請輸入房號（數字）' });
+      return null;
+    }
+    const prev = stateRef.current.kind === 'ready' ? stateRef.current.data : null;
+    if (!quiet) setState({ kind: 'loading' });
     try {
       const data = await api<RoomSignalResponse>(`/api/assistant/room-signal?roomNo=${encodeURIComponent(no)}`);
       try {
@@ -70,16 +108,21 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
       } catch {
         /* 不保存 */
       }
+      latest.current = no;
       setState({ kind: 'ready', data });
+      if (quiet && prev && prev.roomNo === data.roomNo && prev.key !== data.key) setNote('這台的訊號已換新，回到第 1 組');
+      return data;
     } catch (err) {
       if (err instanceof ApiError && err.code === 'ASSISTANT_EXPIRED') {
         onExpired?.();
-        return;
+        return null;
       }
+      if (quiet) return null; // 背景重抓失敗：保留畫面上的訊號
       setState({
         kind: 'error',
         message: err instanceof ApiError && err.code === 'ROOM_NOT_FOUND' ? `找不到 ${no} 號機台，請確認房號` : '訊號暫時無法載入，請稍後再試',
       });
+      return null;
     }
   }
 
@@ -113,9 +156,9 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
       )}
 
       {state.kind === 'ready' && (
-        <div className="aa-signal-plate">
-          <ul className="aa-signal-symbols" data-count={state.data.symbols.length}>
-            {state.data.symbols.map((s, i) => {
+        <div className="aa-signal-plate" key={sets[setIndex]?.key}>
+          <ul className="aa-signal-symbols" data-count={symbols.length}>
+            {symbols.map((s, i) => {
               const cur = counts?.[s.symbol];
               const ok = cur !== undefined && cur >= s.count;
               return (
@@ -147,7 +190,7 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
               );
             })}
           </ul>
-          {counts && state.data.symbols.every((s) => (counts[s.symbol] ?? 0) >= s.count) ? (
+          {counts && symbols.every((s) => (counts[s.symbol] ?? 0) >= s.count) ? (
             <p className="aa-roomsig-hit" role="status">
               訊號達標！可買免遊
             </p>
@@ -160,7 +203,39 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
           )}
         </div>
       )}
-      <p className="aa-disclaimer">訊號每間房一組，開過免遊或隔天會換新 · 不代表遊戲結果</p>
+      {state.kind === 'ready' && (
+        <div className="aa-roomsig-sets">
+          <div className="aa-roomsig-progress">
+            <span>
+              第 <b>{setIndex + 1}</b> / {sets.length} 組
+            </span>
+            <span className="aa-roomsig-dots" aria-hidden="true">
+              {sets.map((x, i) => (
+                <i key={x.key} className={i < setIndex ? 'is-used' : i === setIndex ? 'is-current' : undefined} />
+              ))}
+            </span>
+            {setIndex > 0 && (
+              <button type="button" className="aa-roomsig-back" onClick={() => move(-1)}>
+                回上一組
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            className="aa-button aa-button--block"
+            disabled={setIndex + 1 >= sets.length}
+            onClick={() => move(1)}
+          >
+            {setIndex + 1 >= sets.length ? '今天這台的訊號已用完' : '免遊結束，換下一組'}
+          </button>
+        </div>
+      )}
+      {note && (
+        <p className="aa-signal-note" role="status">
+          {note}
+        </p>
+      )}
+      <p className="aa-disclaimer">每台每天依序 {sets.length || 5} 組，買完免遊換下一組；隔天整串換新 · 不代表遊戲結果</p>
     </section>
   );
 }

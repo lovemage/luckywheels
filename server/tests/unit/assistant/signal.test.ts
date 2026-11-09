@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Prisma } from '@prisma/client';
-import { endReasonFor, HIGH_SYMBOLS, hitRate, randomSymbols, roomSignalFor, seededRand, SIGNAL_SYMBOLS, strengthFor } from '../../../src/assistant/signal.js';
+import { endReasonFor, HIGH_SYMBOLS, hitRate, randomSymbols, ROOM_SIGNAL_SETS, roomSignalFor, roomSignalSets, seededRand, SIGNAL_SYMBOLS, strengthFor, topIdle } from '../../../src/assistant/signal.js';
+import type { ScoreBoard } from '../../../src/assistant/board.js';
 import type { SignalSettings } from '../../../src/assistant/settings.js';
 import { planLabel } from '../../../src/assistant/pass.js';
 
@@ -53,6 +54,16 @@ describe('roomSignalFor', () => {
     expect(roomSignalFor({ ...room, prev1Spins: 88 }, new Date('2026-11-09T02:00:00Z')).key).not.toBe(a.key);
     expect(roomSignalFor(room, new Date('2026-11-09T16:30:00Z')).key).not.toBe(a.key); // 台北隔天 00:30
   });
+  it('has a fixed series of sets per room and day; set 1 keeps the pre-series seed', () => {
+    const at = new Date('2026-11-09T02:00:00Z');
+    const sets = roomSignalSets(room, at);
+    expect(sets).toHaveLength(ROOM_SIGNAL_SETS);
+    expect(sets[0]).toEqual(roomSignalFor(room, at));
+    expect(new Set(sets.map((x) => x.key)).size).toBe(ROOM_SIGNAL_SETS);
+    expect(roomSignalSets(room, new Date('2026-11-09T10:00:00Z'))).toEqual(sets);
+    // 自然開出免遊（prev1 變）或隔天：整串換新
+    expect(roomSignalSets({ ...room, prev1Spins: 88 }, at)[2]!.key).not.toBe(sets[2]!.key);
+  });
   it('seededRand stays within bounds', () => {
     const r = seededRand('x');
     for (let i = 0; i < 1000; i++) {
@@ -60,6 +71,26 @@ describe('roomSignalFor', () => {
       expect(v).toBeGreaterThanOrEqual(3);
       expect(v).toBeLessThan(7);
     }
+  });
+});
+
+describe('topIdle', () => {
+  const r = (id: string, roomNo: string, status: string, score: number) =>
+    ({ room: { id, roomNo, status }, score: { score }, premium: false }) as unknown as ScoreBoard['rooms'][number];
+  it('matches the home TOP 5: idle only, display score desc, then room number', () => {
+    const board = {
+      rooms: [r('a', '010', 'idle', 90), r('b', '002', 'busy', 85), r('c', '003', 'idle', 80), r('d', '004', 'idle', 75),
+        r('e', '005', 'idle', 70), r('f', '006', 'idle', 65), r('g', '007', 'idle', 60)],
+      map: new Map(),
+    } as ScoreBoard;
+    const ids = topIdle(board).map((x) => x.room.id);
+    expect(ids).toHaveLength(5);
+    expect(ids).not.toContain('b');
+    expect(ids).not.toContain('g');
+  });
+  it('ties on the display score (raw 93+ all show 98) fall back to room number, like the home list', () => {
+    const board = { rooms: [r('a', '010', 'idle', 99), r('b', '003', 'idle', 94)], map: new Map() } as ScoreBoard;
+    expect(topIdle(board).map((x) => x.room.id)).toEqual(['b', 'a']);
   });
 });
 

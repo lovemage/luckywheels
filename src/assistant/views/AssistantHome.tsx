@@ -107,7 +107,6 @@ export function AssistantHome({
       </nav>
 
       {me && active && <RoomSignalLookup onExpired={onExpired} />}
-      {me && <SignalCard onExpired={onExpired} />}
 
       <section className="aa-top" id="aa-top" aria-labelledby="aa-top-title">
         <div className="aa-section-head">
@@ -194,6 +193,9 @@ export function AssistantHome({
 
         <p className="aa-disclaimer">數據攻略僅供參考</p>
       </section>
+
+      {/* 曜金訊號＝上方 TOP5 其中一台的房間訊號，所以放在 TOP5 下面 */}
+      {me && <SignalCard onExpired={onExpired} locked={!active} />}
 
       {showAppInstall && (
         <a className="aa-app-install" href="/android/">

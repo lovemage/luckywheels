@@ -33,7 +33,7 @@ export interface AssistantSettings {
   };
 }
 
-export type SignalEndReason = 'member_refresh' | 'bonus_detected' | 'rtp_changed' | 'room_unavailable' | 'data_stale';
+export type SignalEndReason = 'member_refresh' | 'bonus_detected' | 'rtp_changed' | 'room_unavailable' | 'data_stale' | 'left_top' | 'day_changed';
 
 export interface AdminSignal {
   id: string;

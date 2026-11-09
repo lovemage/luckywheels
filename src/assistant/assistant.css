@@ -1757,6 +1757,13 @@ fieldset.aa-field {
   text-align: right;
 }
 
+.aa-signal-intro {
+  margin: 0 0 12px;
+  color: var(--aa-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 .aa-signal-note {
   margin: 12px 0 0;
   color: var(--aa-gold);
@@ -1876,6 +1883,61 @@ fieldset.aa-field {
 
 .aa-roomsig .aa-signal-cell.is-ok .aa-signal-name {
   color: var(--aa-success);
+}
+
+/* 房間訊號：第幾組＋換下一組（iPhone 在 Safari 與遊戲間切換，按一下就換） */
+.aa-roomsig-sets {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+.aa-roomsig-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--aa-muted);
+  font-size: 14px;
+}
+.aa-roomsig-progress b {
+  color: var(--aa-gold-hi);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.aa-roomsig-dots {
+  display: inline-flex;
+  gap: 6px;
+}
+.aa-roomsig-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--aa-line-strong);
+}
+.aa-roomsig-dots i.is-used {
+  background: var(--aa-gold-deep);
+  border-color: var(--aa-gold-deep);
+  opacity: 0.55;
+}
+.aa-roomsig-dots i.is-current {
+  background: var(--aa-gold-hi);
+  border-color: var(--aa-gold-hi);
+}
+.aa-roomsig-back {
+  margin-left: auto;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--aa-gold);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.aa-roomsig-back:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: 2px;
 }
 
 .aa-roomsig-hit {

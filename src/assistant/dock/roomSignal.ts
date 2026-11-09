@@ -1,22 +1,17 @@
 // 房間訊號（App 1.4.0+ 遊戲內浮窗）：會員目前坐的機台有一組符號門檻（GET /api/assistant/room-signal），
 // App 從遊戲頁讀出每一轉結束時的盤面，這裡比對「各符號數量都達到門檻」就提醒可買免遊。
 // 只提醒，不替會員按任何按鈕。狀態放在模組層級：浮窗收起來時照樣比對。
+// 每台每天依序 5 組訊號；目前第幾組記在 roomSignalSets（與網頁版查房號共用），會員買完免遊按「換一組」往下。
 
 import { api, ApiError } from '../../api/client.js';
 import type { SignalSymbol } from '../../api/assistant.js';
 import { currentGameHud, isNativeApp, onGameHud, signalHitNative, type BoardResult, type GameHud } from '../../native.js';
 import { atgSymbol } from '../atgSymbols.js';
+import { currentSetIndex, saveSetIndex, setsOf, subscribeSetIndex, type RoomSignalResponse } from '../roomSignalSets.js';
 
 export interface RoomSignalSymbol {
   symbol: SignalSymbol;
   count: number;
-}
-
-interface RoomSignalResponse {
-  roomNo: string;
-  key: string;
-  symbols: RoomSignalSymbol[];
-  disclaimer: string;
 }
 
 export type RoomSignalStatus = 'off' | 'no-room' | 'loading' | 'ready' | 'expired' | 'error';
@@ -26,6 +21,9 @@ export interface RoomSignalState {
   status: RoomSignalStatus;
   roomNo: string | null;
   symbols: RoomSignalSymbol[] | null;
+  /** 目前第幾組（0 起算）／共幾組 */
+  setIndex: number;
+  setTotal: number;
   /** 最近一轉結束時的各符號數量 */
   counts: Record<string, number> | null;
   /** 最近一轉是否達標 */
@@ -71,10 +69,13 @@ let state: RoomSignalState = {
   status: initiallyOn ? 'no-room' : 'off',
   roomNo: null,
   symbols: null,
+  setIndex: 0,
+  setTotal: 0,
   counts: null,
   hit: false,
   today: readToday(),
 };
+let lastResponse: RoomSignalResponse | null = null;
 const listeners = new Set<() => void>();
 const set = (next: Partial<RoomSignalState>) => {
   state = { ...state, ...next };
@@ -104,11 +105,36 @@ async function load(roomNo: string) {
   try {
     const r = await api<RoomSignalResponse>(`/api/assistant/room-signal?roomNo=${encodeURIComponent(roomNo)}`);
     if (mine !== fetchSeq) return;
-    set({ status: 'ready', symbols: r.symbols });
+    lastResponse = r;
+    applySet(r);
+    set({ status: 'ready' });
   } catch (e) {
     if (mine !== fetchSeq) return;
     set({ status: e instanceof ApiError && e.code === 'ASSISTANT_EXPIRED' ? 'expired' : 'error' });
   }
+}
+
+/** 依目前組數套用符號；換了組就重新判斷達標 */
+function applySet(r: RoomSignalResponse) {
+  const sets = setsOf(r);
+  const setIndex = currentSetIndex(r);
+  const symbols = sets[setIndex]!.symbols;
+  const changed = setIndex !== state.setIndex || JSON.stringify(symbols) !== JSON.stringify(state.symbols);
+  set({ symbols, setIndex, setTotal: sets.length, ...(changed ? { hit: !!state.counts && meets(symbols, state.counts) } : {}) });
+}
+
+subscribeSetIndex(() => {
+  if (lastResponse && lastResponse.roomNo === state.roomNo) applySet(lastResponse);
+});
+
+/** 買完免遊：目前機台換下一組訊號（最後一組時不動，回傳 false） */
+export function nextRoomSignalSet(): boolean {
+  const r = lastResponse;
+  if (!r || r.roomNo !== state.roomNo) return false;
+  const next = currentSetIndex(r) + 1;
+  if (next >= setsOf(r).length) return false;
+  saveSetIndex(r, next);
+  return true;
 }
 
 function schedule() {
@@ -125,7 +151,8 @@ const boardId = (b: BoardResult & { sid?: string }) => `${b.sid ?? ''}:${b.seq}`
 function onHud(hud: GameHud | null) {
   const roomNo = hud?.room ?? null;
   if (roomNo !== state.roomNo) {
-    set({ roomNo, symbols: null, counts: null, hit: false, status: state.enabled ? (roomNo ? 'loading' : 'no-room') : 'off' });
+    lastResponse = null;
+    set({ roomNo, symbols: null, setIndex: 0, setTotal: 0, counts: null, hit: false, status: state.enabled ? (roomNo ? 'loading' : 'no-room') : 'off' });
     if (state.enabled && roomNo) void load(roomNo);
   }
   const boards = (hud?.boards ?? []) as (BoardResult & { sid?: string })[];

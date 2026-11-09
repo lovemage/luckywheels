@@ -343,8 +343,8 @@ const home = shell('home', {
       </div>
       <div>
         <div class="aa-section-head has-q">${qv('gem')}<h2 id="signal-title" class="aa-display">曜金訊號</h2></div>
-        <p class="lw-mystic">眼睛、眼鏡蛇、寶石……和遊戲盤面上一模一樣的符號。每一組訊號，都對應著某一台此刻符合條件、無人入座的機台。</p>
-        <p class="lw-lead" style="margin-top:12px">那台機台是哪一台，畫面上不會說；機台一有變化，訊號就自動換成新的一組。</p>
+        <p class="lw-mystic">眼睛、眼鏡蛇、寶石……和遊戲盤面上一模一樣的符號。每一組訊號，都是精選空台 TOP 5 其中一台的房間訊號。</p>
+        <p class="lw-lead" style="margin-top:12px">是哪一台，畫面上不會說；逐台查房間訊號，對得上的就是那台。機台一有變化，訊號就自動換成新的一組。</p>
         <p style="margin-top:18px"><a href="/intro/signal/">讀懂曜金訊號 ›</a></p>
       </div>
     </div>
@@ -461,9 +461,9 @@ const rules = shell('rules', {
 // ════════════════ 曜金訊號 ════════════════
 const signal = shell('signal', {
   title: '曜金訊號｜盤面上的符號，一組只屬於此刻｜曜金數據助手',
-  description: '曜金訊號用戰神賽特 II 盤面上的符號與數量組成，和遊戲裡看到的一模一樣；每一組都對應一台發出當下符合條件、無人入座的機台，機台一有變化就自動換組。',
+  description: '曜金訊號用戰神賽特 II 盤面上的符號與數量組成，和遊戲裡看到的一模一樣；每一組都是精選空台 TOP 5 其中一台的房間訊號，機台一有變化就自動換組。',
   ogTitle: '曜金訊號｜盤面上的符號，一組只屬於此刻',
-  ogDesc: '眼睛、眼鏡蛇、寶石，和遊戲盤面一模一樣。每一組訊號，都對應著此刻某一台符合條件的空台。',
+  ogDesc: '眼睛、眼鏡蛇、寶石，和遊戲盤面一模一樣。每一組訊號，都是此刻 TOP 5 其中一台的房間訊號。',
   body: `${subhero('signal', '<h1 class="aa-ink-title"><img src="/intro/assets/ink/title-signal.webp" alt="曜金訊號" draggable="false"></h1>', '盤面上的符號，排成此刻的訊號')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="what-title">
@@ -474,16 +474,16 @@ const signal = shell('signal', {
       </div>
       <div>
         <div class="aa-section-head has-q">${qv('point')}<h2 id="what-title" class="aa-display">訊號是什麼</h2></div>
-        <p class="lw-mystic">每一組訊號，都綁著一台發出當下符合條件、目前沒人使用的機台。</p>
-        <p class="lw-lead" style="margin-top:12px">那台機台是哪一台，畫面上不會顯示；訊號只在開通期間、於助手首頁出現，一次一組。</p>
+        <p class="lw-mystic">每一組訊號，都是助手首頁精選空台 TOP 5 其中一台的房間訊號。</p>
+        <p class="lw-lead" style="margin-top:12px">是哪一台，畫面上不會顯示；開通後看得到 TOP 5 的房號，逐台查房間訊號，對得上的就是那台。曜金訊號不用開通也看得到，一次一組。</p>
       </div>
     </div>
   </section>
 
   <section class="lw-band" id="room-signal" aria-labelledby="room-title">
     <div class="aa-section-head has-q">${qv('wave')}<h2 id="room-title" class="aa-display">房間訊號</h2><span class="aa-section-note">坐上機台之後</span></div>
-    <p class="lw-mystic">每一間房，都有一組只屬於它的訊號。</p>
-    <p class="lw-lead" style="margin-top:10px">房間訊號列出幾種符號各需要幾個。坐上機台後，每轉結束時盤面上這些符號都達到數量，就是訊號達標，可買免遊。同一間房開過免遊或到了隔天，訊號會換新。</p>
+    <p class="lw-mystic">每一間房，每天都有依序 5 組只屬於它的訊號。</p>
+    <p class="lw-lead" style="margin-top:10px">房間訊號列出幾種符號各需要幾個。坐上機台後，每轉結束時盤面上這些符號都達到數量，就是訊號達標，可買免遊。買完免遊按「免遊結束，換下一組」，接著看同一台的下一組；隔天整串換新。</p>
     <div class="lw-grid is-center" style="margin-top:22px">
       <figure class="lw-shot lw-float-shot">
         <img src="/intro/assets/shot-signal-float.webp" width="460" height="417" loading="lazy" decoding="async" alt="Android App 的房間訊號浮窗：訊號達標！可買免遊，眼睛 5/4、紅寶石 3/3、紫寶石 6/5">
@@ -541,13 +541,15 @@ const signal = shell('signal', {
           <li>開過免費遊戲</li>
           <li>今日 RTP 明顯變動</li>
           <li>資料停止更新</li>
+          <li>掉出精選空台 TOP 5</li>
+          <li>到了隔天</li>
         </ul>
       </section>
       <section class="aa-rule" aria-labelledby="refresh-title" style="margin:0">
-        <div class="aa-section-head"><h2 id="refresh-title" class="aa-display">免遊結束，換一組</h2></div>
+        <div class="aa-section-head"><h2 id="refresh-title" class="aa-display">免遊結束，換下一組</h2></div>
         <ul class="aa-reasons aa-rule-points">
-          <li>玩完一輪免費遊戲後，可以按「免遊結束，換一組」取得新訊號</li>
-          <li>剛換過需要稍候一段時間才能再換</li>
+          <li>按鈕在房間訊號：買完免遊後按「免遊結束，換下一組」，接著看同一台的下一組</li>
+          <li>每台每天 5 組，按錯可以回上一組</li>
         </ul>
       </section>
       <section class="aa-rule" aria-labelledby="limit-title" style="margin:0">
@@ -684,8 +686,8 @@ const install = shell('install', {
       <ol class="lw-steps is-cols2 lw-ios-steps">
         <li><div><b>用 Safari 開啟、LINE 登入</b><p>在 Safari 網址列輸入 <em>luckyds.com</em>。從 LINE 收到連結時，點右上角「⋯」選<em>在 Safari 中開啟</em>，再按「用 LINE 登入」。</p></div><img class="lw-step-shot" src="/intro/assets/ios-login.webp" width="600" height="1298" loading="lazy" alt="LINE 登入畫面"></li>
         <li><div><b>加入主畫面</b><p>點 Safari 下方的<em>分享</em>按鈕，往下滑選<em>加入主畫面</em>，再按右上角「新增」。之後從主畫面的圖示直接打開。</p></div>${IOS_A2HS}</li>
-        <li><div><b>開通、看數據</b><p>用輪盤積分開通後，首頁就有精選空台、曜金訊號與本金推薦。</p></div><img class="lw-step-shot" src="/intro/assets/ios-home.webp" width="600" height="1298" loading="lazy" alt="助手首頁畫面（示意數據）"></li>
-        <li><div><b>入座後查房間訊號</b><p>在娛樂城選好機台入座，回到助手首頁的<em>房間訊號</em>輸入房號。每轉結束後對照盤面，符號都達到數量就是訊號達標，可買免遊。</p></div><img class="lw-step-shot" src="/intro/assets/ios-roomsig.webp" width="600" height="1298" loading="lazy" alt="房間訊號查詢畫面（示意數據）"></li>
+        <li><div><b>開通、看數據</b><p>首頁的曜金訊號不用開通就看得到；用輪盤積分開通後，還有精選空台房號、房間訊號與本金推薦。</p></div><img class="lw-step-shot" src="/intro/assets/ios-home.webp" width="600" height="1298" loading="lazy" alt="助手首頁畫面（示意數據）"></li>
+        <li><div><b>入座後查房間訊號</b><p>在娛樂城選好機台入座，回到助手首頁的<em>房間訊號</em>輸入房號。每轉結束後對照盤面，符號都達到數量就是訊號達標，可買免遊；買完免遊按<em>換下一組</em>。網頁會記得房號與組數，來回切換不用重打。</p></div><img class="lw-step-shot" src="/intro/assets/ios-roomsig.webp" width="600" height="1298" loading="lazy" alt="房間訊號查詢畫面（示意數據）"></li>
       </ol>
       <p class="lw-lead" style="margin-top:18px">網頁版讀不到遊戲畫面，所以房間訊號要自己對照；遊戲內浮窗、自動比對與震動提醒目前只有 Android App。iPhone App 推出後，安裝方式會放在這裡。</p>
     </div>

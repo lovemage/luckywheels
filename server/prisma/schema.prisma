@@ -401,9 +401,11 @@ enum AssistantSignalEndReason {
   rtp_changed // 綁定房間今日 RTP 與發出時相差達門檻
   room_unavailable // 綁定房間變成有人／被預約、停用
   data_stale // 綁定房間資料逾時
+  left_top // 綁定房間掉出首頁精選空台 TOP5
+  day_changed // 台北時間換日（房間訊號每天換）
 }
 
-/// 會員目前的訊號（計劃 M3 訊號草案）。符號組合隨機，但每則都綁一間發出當下符合條件的真實空台；
+/// 會員目前的曜金訊號（計劃 M3 訊號草案）。每則綁一間發出當下 TOP5 裡的空台，符號＝那台的房間訊號；
 /// 會員端不顯示房間，後台可追查。endedAt 為 null 表示仍有效，每位會員同時最多一則（以 advisory lock 保證）。
 model AssistantSignal {
   id              String                    @id @default(cuid())

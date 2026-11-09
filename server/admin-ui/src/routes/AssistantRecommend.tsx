@@ -30,6 +30,8 @@ const END_REASONS: Record<SignalEndReason, string> = {
   rtp_changed: 'RTP 變動',
   room_unavailable: '有人入座',
   data_stale: '資料逾時',
+  left_top: '掉出 TOP5',
+  day_changed: '換日',
 };
 
 const SYMBOL_LABELS: Record<string, string> = {

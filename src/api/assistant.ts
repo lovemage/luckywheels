@@ -190,4 +190,3 @@ export interface SignalResponse {
 export const fetchSignal = () => api<SignalResponse>('/api/assistant/signal');
 
 /** 「免遊結束，換一組」；冷卻中回 429 SIGNAL_REFRESH_COOLDOWN */
-export const refreshSignal = () => api<SignalResponse>('/api/assistant/signal/refresh', { method: 'POST' });

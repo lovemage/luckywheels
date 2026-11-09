@@ -4,6 +4,7 @@ import { prisma } from '../../src/db.js';
 import { signSession } from '../../src/auth/jwt.js';
 import { SESSION_COOKIE } from '../../src/auth/cookies.js';
 import { resetDb } from '../helpers/db.js';
+import { roomSignalFor } from '../../src/assistant/signal.js';
 import { createUser, grantAssistantPass } from '../helpers/factories.js';
 import { adminHeaders, createAdmin } from '../helpers/admin.ts';
 
@@ -74,6 +75,13 @@ describe('assistant signals', { timeout: 120_000 }, () => {
     expect(JSON.stringify(first.body)).not.toContain(ids['001']!);
     expect(first.body.signal.roomNo).toBeUndefined();
     expect(await boundRoom(first.body.signal.id)).toBe(ids['001']);
+    // 符號＝那台的第 1 組房間訊號
+    const room001 = await prisma.room.findUniqueOrThrow({ where: { id: ids['001']! } });
+    expect(first.body.signal.symbols).toEqual(roomSignalFor(room001, new Date()).symbols);
+    const rs = await req('/api/assistant/room-signal?roomNo=001', headers);
+    expect(rs.body.sets).toHaveLength(5);
+    expect(rs.body.symbols).toEqual(first.body.signal.symbols);
+    expect(rs.body.sets[0].symbols).toEqual(first.body.signal.symbols);
 
     const again = await req('/api/assistant/signal', headers);
     expect(again.body.signal.id).toBe(first.body.signal.id);
@@ -122,24 +130,54 @@ describe('assistant signals', { timeout: 120_000 }, () => {
     expect(early.body.error.code).toBe('SIGNAL_REFRESH_COOLDOWN');
 
     await setting('assistantSignalRefreshCooldownSeconds', '0');
-    // 換組時排除剛才那間；001 是唯一符合的空台 → 暫時沒有訊號
+    // 換組時避開剛才那間；但 001 是 TOP5 裡唯一符合的空台 → 仍綁回 001
     const r = await req('/api/assistant/signal/refresh', headers, 'POST');
-    expect(r.body).toMatchObject({ signal: null, replaced: { reason: 'member_refresh' }, message: '目前沒有符合條件的空台，稍後資料更新再試' });
+    expect(r.body).toMatchObject({ replaced: { reason: 'member_refresh' }, message: null });
+    expect(await boundRoom(r.body.signal.id)).toBe(ids['001']);
 
-    // 資料逾時：001 重新可用前，下一次讀取會再綁回 001
-    const back = await req('/api/assistant/signal', headers);
-    expect(await boundRoom(back.body.signal.id)).toBe(ids['001']);
+    // 資料逾時；之後沒有符合的空台 → 暫時沒有訊號
     await prisma.room.update({ where: { id: ids['001']! }, data: { listCapturedAt: minutesAgo(120) } });
-    expect((await req('/api/assistant/signal', headers)).body.replaced.reason).toBe('data_stale');
+    const stale = await req('/api/assistant/signal', headers);
+    expect(stale.body).toMatchObject({ signal: null, replaced: { reason: 'data_stale' }, message: '目前沒有符合條件的空台，稍後資料更新再試' });
   });
 
-  it('caps active signals per room', async () => {
-    await seedRooms();
+  it('replaces the signal when the room drops out of the home TOP 5', async () => {
+    const ids = await seedRooms();
+    await setting('assistantSignalMinScore', '0');
+    await setting('assistantSignalMaxPerRoom', '50');
+    const { headers } = await member();
+    // 固定綁到 004（0 分、TOP5 第 4 名）
+    await prisma.room.updateMany({ where: { id: { in: [ids['001']!, ids['003']!, ids['005']!] } }, data: { status: 'busy' } });
+    const s1 = (await req('/api/assistant/signal', headers)).body.signal;
+    expect(await boundRoom(s1.id)).toBe(ids['004']);
+    await prisma.room.updateMany({ where: { id: { in: [ids['001']!, ids['003']!, ids['005']!] } }, data: { status: 'idle' } });
+    // 原始分數 55 以下都顯示 83（003、004、005 同分，依房號排）；多三台高分空台 → TOP5＝001、006–008、003，004 掉出
+    const game = await prisma.game.findFirstOrThrow();
+    for (const roomNo of ['006', '007', '008']) {
+      await prisma.room.create({
+        data: {
+          gameId: game.id, roomNo, sourceRoomId: `s${roomNo}`, status: 'idle', todayRtp: '50.00', listCapturedAt: minutesAgo(5),
+          unopenedSpins: 900, prev1Spins: 300, prev2Spins: 500, todayBet: '9000.00', thirtyDayRtp: '99.00', detailCapturedAt: minutesAgo(5),
+        },
+      });
+    }
+    const r = await req('/api/assistant/signal', headers);
+    expect(r.body.replaced.reason).toBe('left_top');
+    expect(await boundRoom(r.body.signal.id)).not.toBe(ids['004']);
+  });
+
+  it('spreads members across TOP 5 rooms, falling back to the least-bound room when all are full', async () => {
+    const ids = await seedRooms();
+    await setting('assistantSignalMinScore', '20');
     await setting('assistantSignalMaxPerRoom', '1');
-    const a = await member();
-    const b = await member();
-    expect((await req('/api/assistant/signal', a.headers)).body.signal).not.toBeNull();
-    expect((await req('/api/assistant/signal', b.headers)).body.signal).toBeNull();
+    const bound: string[] = [];
+    for (let i = 0; i < 4; i++) {
+      const m = await member();
+      bound.push(await boundRoom((await req('/api/assistant/signal', m.headers)).body.signal.id));
+    }
+    // 符合的空台 001、005、003：前三位各一台，第四位滿了仍拿得到（最少人綁的其中一台）
+    expect(new Set(bound.slice(0, 3))).toEqual(new Set([ids['001'], ids['005'], ids['003']]));
+    expect([ids['001'], ids['005'], ids['003']]).toContain(bound[3]);
   });
 
   it('admin can read and update recommend/signal settings and trace bound rooms', async () => {
