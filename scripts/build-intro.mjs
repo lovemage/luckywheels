@@ -110,7 +110,7 @@ function shell(page, { title, description, ogTitle, ogDesc, body }) {
 <body>
 <div class="aa-stage lw-site">
 <header class="aa-topbar lw-top">
-  <a class="aa-brand" href="/intro/">${MARK}<span>曜金數據助手</span></a>
+  <a class="aa-brand" href="/intro/">${MARK}<span>天盛輪盤 × 曜金助手</span></a>
   <nav class="lw-nav" aria-label="網站導覽">
     ${PAGES.map((p) => `<a href="${p.path}"${cur(p)}>${p.label}</a>`).join('\n    ')}
   </nav>

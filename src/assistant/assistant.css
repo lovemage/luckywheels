@@ -1887,3 +1887,35 @@ fieldset.aa-field {
   font-weight: 800;
   text-align: center;
 }
+
+/* 頂部列右側：回到主頁（/intro/）＋積分 */
+.aa-topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aa-home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--aa-line);
+  border-radius: 6px;
+  color: var(--aa-gold);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.aa-home-link svg {
+  width: 14px;
+  height: 14px;
+}
+
+.aa-home-link:hover {
+  color: var(--aa-gold-hi);
+  background: var(--aa-surface);
+}

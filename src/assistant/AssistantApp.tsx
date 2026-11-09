@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Gamepad2 } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Home } from 'lucide-react';
 import { ApiError } from '../api/client.js';
 import { fetchAssistantMe, type AssistantMe } from '../api/assistant.js';
 import type { MeProfile } from '../state/session.js';
@@ -84,7 +84,13 @@ export function AssistantApp({
               <span>首頁</span>
             </button>
           )}
-          {me && <span className="aa-badge">積分：{fmtInt(me.points)}</span>}
+          <div className="aa-topbar-end">
+            <a className="aa-home-link" href="/intro/" aria-label="回到主頁">
+              <Home aria-hidden="true" />
+              <span>主頁</span>
+            </a>
+            {me && <span className="aa-badge">積分：{fmtInt(me.points)}</span>}
+          </div>
         </header>
 
         <div className="aa-content">

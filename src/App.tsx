@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Gift, LayoutList } from 'lucide-react';
+import { Gift, Home, LayoutList } from 'lucide-react';
 import { ApiError, setUnauthorizedHandler } from './api/client.js';
 import { fetchMe } from './api/me.js';
 import {
@@ -605,6 +605,11 @@ function MainApp({
               }}
             />
           </div>
+
+          <a className="home-link" href="/intro/" aria-label="回到主頁">
+            <Home aria-hidden="true" />
+            <span>主頁</span>
+          </a>
 
           <aside className="member-card">
             {me.pictureUrl ? <img className="avatar" src={me.pictureUrl} alt="" /> : <div className="avatar" />}
