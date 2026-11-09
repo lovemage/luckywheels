@@ -18,6 +18,7 @@ import '../assistant.css';
 import './dock.css';
 import { exchangeClosedMessage, exchangeOpen } from '../OpenPassButton.js';
 import { GuardBar } from './GuardBar.js';
+import { DockSignalRow } from './DockSignalRow.js';
 
 // App 駐守小卡：疊在遊戲上方。助手只是輔助，只放三件事：
 //   1. 守護（止盈止損）：本場損益與兩條線，撞線提醒（見 guard.ts）
@@ -292,11 +293,7 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
               </button>
             </div>
           )}
-          {hasSignalFloat && roomNo && (
-            <button type="button" className="aa-dock-btn aa-dock-btn--solid aa-dock-signal" onClick={() => requestDockMode('signal')}>
-              房間訊號 #{roomNo}
-            </button>
-          )}
+          {roomNo && <DockSignalRow roomNo={roomNo} onOpen={hasSignalFloat ? () => requestDockMode('signal') : undefined} />}
           {!compact && picks && picks.length > 0 && (
             <ul className="aa-dock-picks">
               {picks.map((r) => (

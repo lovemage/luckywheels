@@ -164,3 +164,8 @@ export function setRoomSignalEnabled(on: boolean) {
 }
 
 if (state.enabled && typeof window !== 'undefined') schedule();
+
+/** 只顯示（駐守小卡、完整助手）：載入目前機台的訊號門檻，但不開啟達標提醒 */
+export function ensureRoomSignal() {
+  if (state.roomNo && !state.symbols && state.status !== 'loading') void load(state.roomNo);
+}

@@ -738,3 +738,82 @@ html.is-dock body {
   margin-top: 6px;
   font-size: 13px;
 }
+
+/* 駐守小卡：一行房間訊號 */
+.aa-dock-sig {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  margin: 6px 0 0;
+  padding: 4px 10px;
+  border: 1px solid var(--aa-line);
+  border-radius: 10px;
+  background: var(--aa-surface);
+  color: var(--aa-ink);
+  font: inherit;
+  text-align: left;
+}
+
+.aa-dock-sig.is-hit {
+  border-color: transparent;
+  background: rgba(191, 227, 168, 0.14);
+}
+
+.aa-dock-sig:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: 2px;
+}
+
+.aa-dock-sig-label {
+  flex: none;
+  color: var(--aa-muted);
+  font-size: 12px;
+}
+
+.aa-dock-sig-list {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.aa-dock-sig-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.aa-dock-sig-item img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.aa-dock-sig-item b {
+  color: var(--aa-gold-hi);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-dock-sig-item.is-ok b {
+  color: var(--aa-success);
+}
+
+.aa-dock-sig-hit {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffe3a6, #e8c274 55%, #b9852f);
+  color: #1a1206;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.aa-dock-sig-note {
+  margin-top: 6px;
+  font-size: 12px;
+}
