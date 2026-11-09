@@ -7,8 +7,11 @@
 // - 標題字：從所有頁面的標題文字產生子集 public/intro/assets/intro-display.woff2（需要 python3 + fonttools + brotli）。
 // - 每頁各自的 OG 圖在 public/intro/assets/og/*.jpg（底圖由 Codex CLI 生成，再疊上標題）。
 // - 畫面中的機台數字都是示意數據，頁面上一律標示。
+// - 快取：Cloudflare 會在邊緣快取 CSS／圖片／字型（/assets/* 更是一年 immutable），同名覆蓋的檔案會一直是舊版。
+//   所以 HTML 與 CSS 裡引用的本站靜態檔一律加上內容雜湊 ?v=xxxxxxxx，內容一變網址就變。
 
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -582,14 +585,17 @@ const install = shell('install', {
 
 // ── 輸出 ──
 const pages = { '': home, rules, signal, wheel, install };
-for (const [dir, html] of Object.entries(pages)) {
-  const d = join(OUT, dir);
-  mkdirSync(d, { recursive: true });
-  writeFileSync(join(d, 'index.html'), html);
-}
-mkdirSync(join(OUT, 'assets'), { recursive: true });
-copyFileSync(join(ROOT, 'src/assistant/assistant.css'), join(OUT, 'assets/assistant.css'));
-copyFileSync(join(ROOT, 'scripts/intro/site.css'), join(OUT, 'assets/site.css'));
+
+// 本站靜態檔加內容雜湊（public/ 底下找得到的才加；字型子集在下面產生後才雜湊，所以 CSS 與 HTML 最後處理）
+const hashOf = (urlPath) => {
+  const file = join(ROOT, 'public', urlPath);
+  return existsSync(file) ? createHash('md5').update(readFileSync(file)).digest('hex').slice(0, 8) : null;
+};
+const versioned = (text) =>
+  text.replace(/(?<![\w./])((?:https:\/\/luckyds\.com)?(\/(?:intro\/)?assets\/[\w./-]+\.(?:css|woff2|webp|png|jpg|svg)))(?![\w?])/g, (m, full, p) => {
+    const h = hashOf(p);
+    return h ? `${full}?v=${h}` : m;
+  });
 
 // 標題字子集：所有頁面的 h1–h3、標題類文字
 const all = Object.values(pages).join('\n');
@@ -608,5 +614,14 @@ f = TTFont('/usr/share/fonts/opentype/noto/NotoSerifCJK-SemiBold.ttc', fontNumbe
 s = subset.Subsetter(opts); s.populate(text=''.join(sorted(chars))); s.subset(f)
 f.flavor = 'woff2'; f.save(sys.argv[2])
 `, display, join(OUT, 'assets/intro-display.woff2')]);
+
+mkdirSync(join(OUT, 'assets'), { recursive: true });
+writeFileSync(join(OUT, 'assets/assistant.css'), versioned(readFileSync(join(ROOT, 'src/assistant/assistant.css'), 'utf8')));
+writeFileSync(join(OUT, 'assets/site.css'), versioned(readFileSync(join(ROOT, 'scripts/intro/site.css'), 'utf8')));
+for (const [dir, html] of Object.entries(pages)) {
+  const d = join(OUT, dir);
+  mkdirSync(d, { recursive: true });
+  writeFileSync(join(d, 'index.html'), versioned(html));
+}
 
 console.log('built', Object.keys(pages).map((d) => '/intro/' + (d ? d + '/' : '')).join(' '));
