@@ -12,7 +12,8 @@ import { redeemHandoffCode } from '../app/handoff.js';
 
 export const APP_PACKAGE = 'com.luckyds.assistant';
 export const APP_SCHEME = 'luckyds-assistant';
-const DEFAULT_CASINO_URL = 'https://ds555.net/sty4_home.php?invite_code=su001&c=3';
+// 不可用 ds555.net：它會先 301 到 http:// 再轉回 https，App 只允許 https，會顯示「遊戲載入失敗」
+const DEFAULT_CASINO_URL = 'https://www.ds8899.net/sty4_home.php?invite_code=su001&c=3';
 
 const optionalInt = (v: string | undefined) => {
   const n = Number(v);

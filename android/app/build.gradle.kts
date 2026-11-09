@@ -26,7 +26,7 @@ android {
         // 本機測試可用 ./gradlew assembleDebug -PassistantOrigin=http://localhost:5199 指向開發伺服器
         val assistantOrigin = (project.findProperty("assistantOrigin") as String?) ?: "https://luckyds.com"
         buildConfigField("String", "ASSISTANT_ORIGIN", "\"$assistantOrigin\"")
-        buildConfigField("String", "DEFAULT_CASINO_URL", "\"https://ds555.net/sty4_home.php?invite_code=su001&c=3\"")
+        buildConfigField("String", "DEFAULT_CASINO_URL", "\"https://www.ds8899.net/sty4_home.php?invite_code=su001&c=3\"")
     }
 
     signingConfigs {

@@ -2,7 +2,7 @@
 
 會員在 App 內登入娛樂城、進遊戲；曜金數據助手以面板疊在遊戲上方，收合後變成可拖曳的金色按鈕。
 
-- 遊戲層：`WebView` 載入娛樂城（網址由 `GET /api/public/app-config` 的 `casinoUrl` 下發，預設 `https://ds555.net/sty4_home.php?invite_code=su001&c=3`）。
+- 遊戲層：`WebView` 載入娛樂城（網址由 `GET /api/public/app-config` 的 `casinoUrl` 下發，預設 `https://www.ds8899.net/sty4_home.php?invite_code=su001&c=3`）。
 - 助手層：`WebView` 載入 `https://luckyds.com/`（同一套會員 SPA）。User-Agent 帶 `LuckyDsApp/<版本>`，SPA 以此進入 App 模式
   （直接開助手、底部多一顆「進入遊戲」），並可呼叫 `window.LuckyApp.collapse()`（`src/native.ts`）。
 - App 只讀遊戲畫面上的文字（機台號、點數、贏分、押注，`assets/game-bridge.js`），並在會員點推薦機台時替他切換機台；
