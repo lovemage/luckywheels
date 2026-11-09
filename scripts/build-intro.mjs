@@ -468,7 +468,7 @@ const signal = shell('signal', {
   description: '曜金訊號用戰神賽特 II 盤面上的符號與數量組成，和遊戲裡看到的一模一樣；每一組都對應一台發出當下符合條件、無人入座的機台，機台一有變化就自動換組。',
   ogTitle: '曜金訊號｜盤面上的符號，一組只屬於此刻',
   ogDesc: '眼睛、眼鏡蛇、寶石，和遊戲盤面一模一樣。每一組訊號，都對應著此刻某一台符合條件的空台。',
-  body: `${subhero('signal', '<h1>曜金訊號</h1>', '盤面上的符號，排成此刻的訊號')}
+  body: `${subhero('signal', '<h1 class="aa-ink-title"><img src="/intro/assets/ink/title-signal.webp" alt="曜金訊號" draggable="false"></h1>', '盤面上的符號，排成此刻的訊號')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="what-title">
     <div class="lw-grid is-center">
@@ -575,7 +575,7 @@ const wheel = shell('wheel', {
   description: 'LINE 登入就能轉幸運輪盤，用積分抽彩金；同一份積分也能開通曜金數據助手。單抽 6 積分、十連抽 48 積分，結果由伺服器判定。',
   ogTitle: '幸運輪盤｜LINE 登入，轉動今天的手氣',
   ogDesc: '積分抽彩金，也能開通曜金數據助手。',
-  body: `${subhero('wheel', '<h1>幸運輪盤</h1>', 'LINE 登入，轉動今天的手氣')}
+  body: `${subhero('wheel', '<h1 class="aa-ink-title"><img src="/intro/assets/ink/title-wheel.webp" alt="幸運輪盤" draggable="false"></h1>', 'LINE 登入，轉動今天的手氣')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="wheel-how">
     <div class="lw-grid is-center">
@@ -628,7 +628,7 @@ const install = shell('install', {
   description: '下載曜金數據助手 Android App：在 App 裡登入娛樂城、直接玩遊戲，駐守小卡隨時叫出。iPhone 版準備中，現在可先使用網頁版。',
   ogTitle: '安裝 App｜把助手帶進遊戲裡',
   ogDesc: 'Android 立即下載；iPhone 版準備中，可先使用網頁版。',
-  body: `${subhero('install', '<h1>把助手帶進遊戲裡</h1>', 'Android 裝 App，iPhone 用網頁版')}
+  body: `${subhero('install', '<h1 class="aa-ink-title"><img src="/intro/assets/ink/title-install.webp" alt="把助手帶進遊戲裡" draggable="false"></h1>', 'Android 裝 App，iPhone 用網頁版')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="dock-title">
     <div class="lw-grid is-center">
