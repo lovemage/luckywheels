@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>曜金規則｜讀懂數字背後的紀錄｜曜金數據助手</title>
+<meta name="description" content="曜金規則說明數據助手畫面上的每個數字：未開轉數、RTP 返還率、今日下注量代表什麼，以及綜合分數、精選空台與本金推薦如何排序。">
+<meta name="theme-color" content="#050403">
+<link rel="canonical" href="https://luckyds.com/intro/rules/">
+<link rel="icon" href="/assets/favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="曜金數據助手">
+<meta property="og:title" content="曜金規則｜讀懂數字背後的紀錄">
+<meta property="og:description" content="未開轉數、RTP 返還率、今日下注量，曜金怎麼把它們排成一道光。">
+<meta property="og:url" content="https://luckyds.com/intro/rules/">
+<meta property="og:image" content="https://luckyds.com/intro/assets/og/rules.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="曜金規則｜讀懂數字背後的紀錄">
+<meta name="twitter:image" content="https://luckyds.com/intro/assets/og/rules.jpg">
+<link rel="preload" href="/intro/assets/intro-display.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/intro/assets/assistant.css">
+<link rel="stylesheet" href="/intro/assets/site.css">
+</head>
+<body>
+<div class="aa-stage lw-site">
+<header class="aa-topbar lw-top">
+  <a class="aa-brand" href="/intro/"><svg class="aa-mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lw-mark-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c2"/><stop offset="0.5" stop-color="#e7b552"/><stop offset="1" stop-color="#9c6a1c"/></linearGradient></defs><path d="M16 1 L19 13 L31 16 L19 19 L16 31 L13 19 L1 16 L13 13 Z" fill="url(#lw-mark-gold)"/><path d="M16 7 L17.4 14.6 L25 16 L17.4 17.4 L16 25 L14.6 17.4 L7 16 L14.6 14.6 Z" fill="#120c05" opacity="0.55"/><circle cx="16" cy="16" r="1.6" fill="#fff6d8"/></svg><span>曜金數據助手</span></a>
+  <nav class="lw-nav" aria-label="網站導覽">
+    <a href="/intro/">首頁</a>
+    <a href="/intro/rules/" aria-current="page">曜金規則</a>
+    <a href="/intro/signal/">曜金訊號</a>
+    <a href="/intro/wheel/">幸運輪盤</a>
+    <a href="/intro/install/">安裝 App</a>
+  </nav>
+  <a class="aa-badge lw-login" href="/">LINE 登入</a>
+</header>
+<main class="lw-main" id="main">
+<section class="lw-subhero" style="--lw-art:url('/intro/assets/og/rules-art.webp')">
+  <div class="lw-wrap">
+    <h1 class="aa-ink-title"><img class="" src="/assets/assistant/ink/title-rules.webp" alt="曜金規則" draggable="false"></h1>
+    <p class="lw-hero-lead">每個數字都是一段已經發生的紀錄。讀懂它們，才看得懂曜金替你排出的順序。</p>
+  </div>
+</section>
+<div class="lw-wrap">
+  <section class="lw-band">
+    <nav class="aa-rules-toc" aria-label="本頁內容" style="margin:0">
+      <a href="#rule-unopened">未開轉數</a><a href="#rule-rtp">RTP 返還率</a><a href="#rule-bet">今日下注量</a><a href="#rule-score">怎麼排序</a><a href="#rule-recommend">本金推薦</a><a href="#symbols">盤面符號</a><a href="/intro/signal/">曜金訊號</a>
+    </nav>
+  </section>
+  <div class="lw-grid" style="margin-top:8px">
+    <div>
+      <section id="rule-unopened" class="aa-rule" aria-labelledby="rule-unopened-title">
+      <div class="aa-section-head"><h2 id="rule-unopened-title" class="aa-display aa-ink-title"><img class="lw-ink-h" src="/assets/assistant/ink/title-unopened.webp" alt="未開轉數" draggable="false"></h2></div>
+      <p class="aa-rule-weight">綜合分數比重 35%</p>
+      <p class="aa-rule-meaning">這台機台從上一次開出到現在，已經累積轉了幾轉還沒開出</p>
+      <ul class="aa-reasons aa-rule-points">
+        <li>數字越大，代表這台距離上一次開出越久</li>
+        <li>可以搭配「前兩次開出間隔」一起看，知道這台近期大約隔多少轉開出一次</li>
+        <li>助手會把每台的未開轉數跟同一款遊戲的所有機台比較，告訴你它多於多少比例的機台</li>
+      </ul>
+    </section>
+      <section id="rule-rtp" class="aa-rule" aria-labelledby="rule-rtp-title">
+      <div class="aa-section-head"><h2 id="rule-rtp-title" class="aa-display aa-ink-title"><img class="lw-ink-h" src="/assets/assistant/ink/title-rtp.webp" alt="RTP 返還率" draggable="false"></h2></div>
+      <p class="aa-rule-weight">今日 RTP 比重 25% · 近 30 天 RTP 比重 20%</p>
+      <p class="aa-rule-meaning">機台派出的金額占玩家總下注的比例</p>
+      <ul class="aa-reasons aa-rule-points">
+        <li>今日 RTP 是今天到目前為止的返還率，下注量少的時候數字起伏很大</li>
+        <li>近 30 天 RTP 涵蓋較長的期間，比較能反映這台機台平常的水準</li>
+        <li>兩個數字對照著看。今日 RTP 偏低、近 30 天 RTP 正常或偏高，代表這台今天派出的比例低於它平常的表現</li>
+        <li>單日 RTP 偶爾會出現上千 % 的極端數字，助手計分時看的是它在同遊戲中的排名，單一極端值不會把排序拉歪</li>
+      </ul>
+    </section>
+      <section id="rule-bet" class="aa-rule" aria-labelledby="rule-bet-title">
+      <div class="aa-section-head"><h2 id="rule-bet-title" class="aa-display aa-ink-title"><img class="lw-ink-h" src="/assets/assistant/ink/title-bet.webp" alt="今日下注量" draggable="false"></h2></div>
+      <p class="aa-rule-weight">綜合分數比重 20%</p>
+      <p class="aa-rule-meaning">今天所有玩家在這台機台累積的下注金額</p>
+      <ul class="aa-reasons aa-rule-points">
+        <li>下注量高，代表今天有很多人在這台遊玩，是熱度的參考</li>
+        <li>下注量也決定今日 RTP 有多可信。同樣是 80%，累積下注 100 元和累積下注 10 萬元，代表的意義差很多</li>
+        <li>看到今日 RTP 很低或很高時，先確認下注量夠不夠大，再決定要不要參考這個數字</li>
+      </ul>
+    </section>
+    </div>
+    <div>
+      <section id="rule-score" class="aa-rule" aria-labelledby="rule-score-title">
+        <div class="aa-section-head"><h2 id="rule-score-title" class="aa-display aa-ink-title"><img class="lw-ink-h" src="/assets/assistant/ink/title-score.webp" alt="助手怎麼排序" draggable="false"></h2></div>
+        <ul class="aa-reasons aa-rule-points">
+          <li>四項數字各自換算成在同遊戲中的排名，再依比重合成綜合分數</li>
+          <li>未開轉數越多、今日 RTP 越低、近 30 天 RTP 越高、今日下注量越高，分數越高</li>
+          <li>精選空台只列目前沒人使用的機台，依綜合分數取前 5 名；分數前 5% 的空台標為「精品」</li>
+          <li>超過 30 分鐘沒有更新的機台不列入排序；細項資料較舊時，該項以中間值計算</li>
+        </ul>
+      </section>
+      <section id="rule-recommend" class="aa-rule" aria-labelledby="rule-recommend-title">
+        <div class="aa-section-head"><h2 id="rule-recommend-title" class="aa-display aa-ink-title"><img class="lw-ink-h" src="/assets/assistant/ink/title-recommend.webp" alt="本金推薦" draggable="false"></h2></div>
+        <p class="aa-rule-meaning">輸入這次準備的本金、選今天的目標倍數，曜金只從空台裡挑分數達到門檻的機台</p>
+        <ul class="aa-reasons aa-rule-points">
+          <li>本金分成三個級距，級距越高、目標倍數越高，門檻分數跟著提高</li>
+          <li>每台推薦附兩三條理由，例如「未開 412 轉，多於 92% 的機台」</li>
+          <li>推薦會分散到不同機台，減少多人同時擠進同一台；符合的機台不足時，會以分數最高的空台補上並標示</li>
+          <li>建議單注 10 元以上</li>
+        </ul>
+        <figure class="lw-shot lw-phone" style="margin-top:22px">
+          <img src="/intro/assets/shot-assistant-recommend.webp" width="780" height="1688" loading="lazy" decoding="async" alt="本金推薦畫面：本金 8,000、目標 2 倍，列出符合門檻的空台與推薦理由">
+          <span class="lw-demo">示意數據</span>
+        </figure>
+      </section>
+    </div>
+  </div>
+  <section class="lw-band" id="symbols" aria-labelledby="symbols-title">
+    <div class="aa-section-head"><h2 id="symbols-title" class="aa-display aa-ink-title"><img class="lw-ink-h" src="/assets/assistant/ink/title-game.webp" alt="戰神賽特 II" draggable="false"></h2><span class="aa-section-note">盤面符號</span></div>
+    <p class="lw-lead">盤面 6 欄 × 5 列，共 30 格。認得這些符號，在遊戲裡就讀得懂每一次落下的盤面。</p>
+    <div class="lw-symgroups">
+      <div class="lw-symgroup">
+        <h3 class="aa-display">高分符號</h3>
+        <p>四種神器圖騰，出現在盤面任意位置都算數</p>
+        <ul class="lw-symbols">
+          <li><img src="/intro/assets/symbols/symbol_01.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>眼睛</span></li>
+          <li><img src="/intro/assets/symbols/symbol_02.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>眼鏡蛇</span></li>
+          <li><img src="/intro/assets/symbols/symbol_03.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>弓</span></li>
+          <li><img src="/intro/assets/symbols/symbol_04.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>鐮刀</span></li>
+        </ul>
+      </div>
+      <div class="lw-symgroup">
+        <h3 class="aa-display">寶石</h3>
+        <p>五種寶石，數量最多、最常落下</p>
+        <ul class="lw-symbols">
+          <li><img src="/intro/assets/symbols/symbol_05.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>黃寶石</span></li>
+          <li><img src="/intro/assets/symbols/symbol_06.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>紅寶石</span></li>
+          <li><img src="/intro/assets/symbols/symbol_07.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>紫寶石</span></li>
+          <li><img src="/intro/assets/symbols/symbol_08.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>藍寶石</span></li>
+          <li><img src="/intro/assets/symbols/symbol_09.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>綠寶石</span></li>
+        </ul>
+      </div>
+      <div class="lw-symgroup">
+        <h3 class="aa-display">倍數球</h3>
+        <p>球上會浮現倍數（例：2x、3x、8x），顏色有紅、紫、藍、綠四種</p>
+        <ul class="lw-symbols">
+          <li><img src="/intro/assets/symbols/symbol_10.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>紅</span></li>
+          <li><img src="/intro/assets/symbols/symbol_11.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>紫</span></li>
+          <li><img src="/intro/assets/symbols/symbol_12.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>藍</span></li>
+          <li><img src="/intro/assets/symbols/symbol_13.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>綠</span></li>
+        </ul>
+      </div>
+      <div class="lw-symgroup">
+        <h3 class="aa-display">特殊符號</h3>
+        <p>金色 Scatter 出現 3 個、再加 1 個紫色 Scatter，就會喚醒「覺醒之力」</p>
+        <ul class="lw-symbols">
+          <li><img src="/intro/assets/symbols/symbol_15.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>金色 Scatter</span></li>
+          <li><img src="/intro/assets/symbols/symbol_16.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>紫色 Scatter</span></li>
+          <li><img src="/intro/assets/symbols/symbol_14.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>JP</span></li>
+          <li><img src="/intro/assets/symbols/symbol_17.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>男神</span></li>
+          <li><img src="/intro/assets/symbols/symbol_18.webp" alt="" width="72" height="72" loading="lazy" decoding="async"><span>女神</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="aa-disclaimer" style="margin-top:14px">符號圖示取自遊戲畫面，版權屬原遊戲商所有</p>
+  </section>
+  <section class="lw-band">
+    <section class="aa-rule aa-rule-note" aria-labelledby="note-title">
+      <img class="aa-rule-note-title" src="/assets/assistant/ink/title-note.webp" alt="使用提醒" draggable="false">
+      <p>畫面上的數字都是已經發生的紀錄，每一轉的結果仍由遊戲獨立決定</p>
+      <p>綜合分數與訊號強度都是排序參考，不代表中獎機率，也不保證獲利</p>
+      <p>請依自己的預算設定本金，理性遊玩</p>
+    </section>
+  </section>
+</div>
+</main>
+<footer class="lw-foot">
+  <div class="lw-wrap">
+    <nav aria-label="頁尾連結">
+      <a href="/intro/">首頁</a>
+      <a href="/intro/rules/">曜金規則</a>
+      <a href="/intro/signal/">曜金訊號</a>
+      <a href="/intro/wheel/">幸運輪盤</a>
+      <a href="/intro/install/">安裝 App</a>
+      <a href="/">會員登入</a>
+    </nav>
+    <p><span class="lw-age" aria-label="未滿 18 歲請勿使用">18+</span></p>
+    <p>曜金數據助手的分數、排序、訊號與推薦，都是依已發生的紀錄整理的參考資訊，不代表遊戲結果，也不保證獲利。</p>
+    <p>每一轉的結果都由遊戲伺服器獨立決定，長期而言對玩家不利。請先設定預算、量力而為；未滿 18 歲請勿使用。</p>
+    <p>標示「示意數據」的畫面為介面說明用，數字並非真實機台資料。遊戲畫面與符號圖示版權屬原遊戲商所有。</p>
+    <p>© luckyds.com</p>
+  </div>
+</footer>
+<nav class="aa-tabs lw-tabs" aria-label="網站導覽">
+  <a class="aa-tab" href="/intro/"><span class="aa-tab-icon" aria-hidden="true"><img src="/assets/assistant/ink/icon-home.webp" alt=""></span><span>首頁</span></a>
+  <a class="aa-tab is-active" href="/intro/rules/" aria-current="page"><span class="aa-tab-icon" aria-hidden="true"><img src="/assets/assistant/ink/icon-rules.webp" alt=""></span><span>規則</span></a>
+  <a class="aa-tab" href="/intro/signal/"><span class="aa-tab-icon" aria-hidden="true"><img src="/assets/assistant/metal/gold.webp" alt=""></span><span>訊號</span></a>
+  <a class="aa-tab" href="/intro/wheel/"><span class="aa-tab-icon" aria-hidden="true"><img src="/assets/assistant/ink/icon-wheel.webp" alt=""></span><span>輪盤</span></a>
+  <a class="aa-tab" href="/intro/install/"><span class="aa-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.6 9.48 19.44 6.3a.38.38 0 0 0-.66-.38l-1.86 3.22a11.5 11.5 0 0 0-9.84 0L5.22 5.92a.38.38 0 1 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52ZM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z"/></svg></span><span>安裝</span></a>
+</nav>
+</div>
+</body>
+</html>
