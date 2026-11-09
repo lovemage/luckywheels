@@ -110,7 +110,7 @@ function shell(page, { title, description, ogTitle, ogDesc, body }) {
 <body>
 <div class="aa-stage lw-site">
 <header class="aa-topbar lw-top">
-  <a class="aa-brand" href="/intro/">${MARK}<span>天盛輪盤 × 曜金助手</span></a>
+  <a class="aa-brand" href="/intro/">${MARK}<span>曜金分析助手 × 輪盤</span></a>
   <nav class="lw-nav" aria-label="網站導覽">
     ${PAGES.map((p) => `<a href="${p.path}"${cur(p)}>${p.label}</a>`).join('\n    ')}
   </nav>
@@ -665,7 +665,7 @@ const install = shell('install', {
         <li><div><b>下載安裝檔</b><p>用手機 Chrome 開這一頁按下載。Chrome 提醒「檔案可能有害」時按<em>仍要下載</em>，Play 商店以外的安裝檔都會這樣提醒。</p></div><img class="lw-step-img" src="/assets/app-install/01-download.webp" width="540" height="1200" loading="lazy" alt="Chrome 下載提示"></li>
         <li><div><b>允許 Chrome 安裝</b><p>第一次會被擋下來，按<em>設定</em>，打開「允許這個來源的應用程式」。只要設定一次。</p></div><img class="lw-step-img" src="/assets/app-install/04-allow.webp" width="540" height="1200" loading="lazy" alt="允許此來源的應用程式開關"></li>
         <li><div><b>安裝並開啟</b><p>回到安裝畫面按<em>安裝</em>，完成後按<em>開啟</em>。已裝過舊版的直接覆蓋，不用先移除。</p></div><img class="lw-step-img" src="/assets/app-install/06-install.webp" width="540" height="1200" loading="lazy" alt="安裝確認畫面"></li>
-        <li><div><b>LINE 登入、進入遊戲</b><p>在 App 裡用 LINE 登入，按<em>進入遊戲</em>登入娛樂城。遊戲中點左側金色按鈕，就能喚出駐守小卡。</p></div></li>
+        <li><div><b>LINE 登入、進入遊戲</b><p>在 App 裡用 LINE 登入，按<em>進入遊戲</em>登入娛樂城。遊戲中點左側金色按鈕，就能喚出駐守小卡。</p></div><img class="lw-step-img" src="/assets/app-install/09-home.webp" width="540" height="1200" loading="lazy" alt="曜金數據助手首頁，右下角「進入遊戲」按鈕"></li>
       </ol>
       <p class="lw-lead" style="margin-top:18px">在 LINE 裡打開這頁的話，先點右上角選單「以預設瀏覽器開啟」再下載。<a href="/android/">完整安裝說明（含各品牌手機設定）</a></p>
     </div>
