@@ -26,6 +26,7 @@ import { Legal, type LegalTab } from './components/Legal.js';
 import { AssistantApp } from './assistant/AssistantApp.js';
 import { fetchPreviewStatus, type PreviewStatus } from './api/preview.js';
 import { AppDock, DockMessage } from './assistant/dock/AppDock.js';
+import { SignalFloat } from './assistant/dock/SignalFloat.js';
 import { currentDockMode, hasDock, isNativeApp, onDockModeChange, requestDockMode, type DockMode } from './native.js';
 
 function proxiedImageUrl(url: string | null | undefined): string | null {
@@ -137,7 +138,8 @@ export function App() {
   const [dockMode, setDockMode] = useState<DockMode>(() => (hasDock ? currentDockMode() : 'full'));
   const [fullView, setFullView] = useState<'home' | 'exchange'>('home');
   useEffect(() => (hasDock ? onDockModeChange(setDockMode) : undefined), []);
-  const inDock = hasDock && dockMode === 'dock';
+  // dock＝駐守小卡、signal＝房間訊號浮窗（1.4.0+），兩者都是疊在遊戲上的小面板
+  const inDock = hasDock && (dockMode === 'dock' || dockMode === 'signal');
   useEffect(() => {
     document.documentElement.classList.toggle('is-dock', inDock);
   }, [inDock]);
@@ -211,7 +213,7 @@ export function App() {
     } else if (!preview?.unlocked) {
       body = <DockMessage note="數據助手暫停服務" />;
     } else {
-      body = <AppDock onOpenFull={(v) => openFull(v ?? 'home')} />;
+      body = dockMode === 'signal' ? <SignalFloat /> : <AppDock onOpenFull={(v) => openFull(v ?? 'home')} />;
     }
   } else if (session.phase === 'loading') {
     body = <main className="splash"><p>載入中…</p></main>;

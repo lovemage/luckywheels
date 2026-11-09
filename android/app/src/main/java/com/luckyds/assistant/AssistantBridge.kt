@@ -14,7 +14,16 @@ class AssistantBridge(
     private val onResize: (Double) -> Unit,
     private val onSwitchRoom: (String) -> Unit,
     private val onAlert: (String) -> Unit,
+    private val onSignalHit: (String) -> Unit,
 ) {
+    /** 1.4.0+：App 支援的功能（網頁據此決定要不要顯示房間訊號入口） */
+    @JavascriptInterface
+    fun capabilities(): String = "signal"
+
+    /** 1.4.0+：房間訊號達標：震動、打開訊號浮窗、顯示訊息（只提醒，不操作遊戲） */
+    @JavascriptInterface
+    fun signalHit(message: String) = onSignalHit(message.take(200))
+
     /** 1.3.0+：守護（止盈止損）撞線提醒：震動、打開駐守小卡、顯示訊息（只提醒，不操作遊戲） */
     @JavascriptInterface
     fun alert(message: String) = onAlert(message.take(200))
@@ -27,7 +36,7 @@ class AssistantBridge(
     @JavascriptInterface
     fun collapse() = onCollapse()
 
-    /** "dock"＝駐守小卡、"full"＝完整助手 */
+    /** "dock"＝駐守小卡、"full"＝完整助手、"signal"＝房間訊號浮窗（1.4.0+） */
     @JavascriptInterface
     fun setMode(mode: String) = onSetMode(mode)
 

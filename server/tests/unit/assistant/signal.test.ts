@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Prisma } from '@prisma/client';
-import { endReasonFor, HIGH_SYMBOLS, randomSymbols, SIGNAL_SYMBOLS, strengthFor } from '../../../src/assistant/signal.js';
+import { endReasonFor, HIGH_SYMBOLS, hitRate, randomSymbols, roomSignalFor, seededRand, SIGNAL_SYMBOLS, strengthFor } from '../../../src/assistant/signal.js';
 import type { SignalSettings } from '../../../src/assistant/settings.js';
 import { planLabel } from '../../../src/assistant/pass.js';
 
@@ -19,7 +19,7 @@ const room = (o: Record<string, unknown> = {}) => ({
 });
 
 describe('randomSymbols', () => {
-  it('picks 2–3 distinct game symbols with board counts, at least one high symbol', () => {
+  it('picks 2–3 distinct game symbols with thresholds 3–6, at least one high symbol, hit rate 4–15%', () => {
     const high = HIGH_SYMBOLS as readonly string[];
     for (let i = 0; i < 300; i++) {
       const s = randomSymbols();
@@ -27,15 +27,38 @@ describe('randomSymbols', () => {
       expect(s.length).toBeLessThanOrEqual(3);
       expect(new Set(s.map((x) => x.symbol)).size).toBe(s.length);
       expect(s.some((x) => high.includes(x.symbol))).toBe(true);
+      expect(hitRate(s)).toBeGreaterThanOrEqual(0.04);
+      expect(hitRate(s)).toBeLessThanOrEqual(0.15);
       for (const x of s) {
         expect(SIGNAL_SYMBOLS).toContain(x.symbol);
-        const [lo, hi] = high.includes(x.symbol) ? [2, 5] : [3, 8];
-        expect(x.count).toBeGreaterThanOrEqual(lo);
-        expect(x.count).toBeLessThanOrEqual(hi);
+        expect(x.count).toBeGreaterThanOrEqual(3);
+        expect(x.count).toBeLessThanOrEqual(6);
       }
       // 依固定順序（高分符號在前）
       const order = s.map((x) => SIGNAL_SYMBOLS.indexOf(x.symbol));
       expect([...order].sort((a, b) => a - b)).toEqual(order);
+    }
+  });
+});
+
+describe('roomSignalFor', () => {
+  const room = { id: 'room-459', prev1Spins: 120 };
+  it('is stable for the same room, free-game state and Taipei day', () => {
+    const a = roomSignalFor(room, new Date('2026-11-09T02:00:00Z'));
+    const b = roomSignalFor(room, new Date('2026-11-09T15:00:00Z')); // 台北 23:00，同一天
+    expect(b).toEqual(a);
+  });
+  it('changes after a free game (prev1 changes) or on the next Taipei day', () => {
+    const a = roomSignalFor(room, new Date('2026-11-09T02:00:00Z'));
+    expect(roomSignalFor({ ...room, prev1Spins: 88 }, new Date('2026-11-09T02:00:00Z')).key).not.toBe(a.key);
+    expect(roomSignalFor(room, new Date('2026-11-09T16:30:00Z')).key).not.toBe(a.key); // 台北隔天 00:30
+  });
+  it('seededRand stays within bounds', () => {
+    const r = seededRand('x');
+    for (let i = 0; i < 1000; i++) {
+      const v = r(3, 7);
+      expect(v).toBeGreaterThanOrEqual(3);
+      expect(v).toBeLessThan(7);
     }
   });
 });

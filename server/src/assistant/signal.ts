@@ -1,4 +1,4 @@
-import { randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import type { AssistantSignal, AssistantSignalEndReason, Prisma, PrismaClient, Room } from '@prisma/client';
 import { AppError } from '../errors.js';
 import { loadScoreBoard } from './board.js';
@@ -19,12 +19,18 @@ export const SIGNAL_SYMBOLS = [...HIGH_SYMBOLS, ...GEM_SYMBOLS] as const;
 export type SignalSymbol = (typeof SIGNAL_SYMBOLS)[number];
 export interface SignalSymbolPick {
   symbol: SignalSymbol;
-  /** 盤面數量：高分符號 2–5、寶石 3–8（盤面 6×5 共 30 格） */
+  /** 盤面數量門檻（一轉結束時至少要有幾個），3–6 */
   count: number;
 }
 
-const COUNT_RANGE: Record<'high' | 'gem', [number, number]> = { high: [2, 5], gem: [3, 8] };
-const isHigh = (s: string) => (HIGH_SYMBOLS as readonly string[]).includes(s);
+// 一轉結束時「某一種符號至少 k 個」的大約機率。2026-11-09 實測 30 個穩定盤面，九種符號的分布相近，
+// 取平均（docs/plans/2026-11-09-board-signal-recon.md）。用來讓整組訊號的達標機率落在合理範圍。
+const P_AT_LEAST: Record<number, number> = { 3: 0.62, 4: 0.45, 5: 0.27, 6: 0.14 };
+const COUNT_MIN = 3;
+const COUNT_MAX = 6;
+/** 整組（各符號都達標）的大約機率：每轉 4%–15%，平均 7–25 轉碰到一次 */
+const HIT_RATE: [number, number] = [0.04, 0.15];
+export const hitRate = (picks: SignalSymbolPick[]) => picks.reduce((p, x) => p * (P_AT_LEAST[x.count] ?? 0), 1);
 
 export const SIGNAL_DISCLAIMER = '數據攻略僅供參考';
 
@@ -38,7 +44,7 @@ const END_MESSAGES: Record<AssistantSignalEndReason, string> = {
 
 type Rand = (min: number, maxExclusive: number) => number;
 
-/** 隨機 2–3 種不重複符號（至少一種高分符號），各配盤面數量；高分符號排前面 */
+/** 隨機 2–3 種不重複符號（至少一種高分符號），各配數量門檻 3–6，整組達標機率落在 HIT_RATE；高分符號排前面 */
 export function randomSymbols(rand: Rand = randomInt): SignalSymbolPick[] {
   const n = rand(2, 4);
   const high = [...HIGH_SYMBOLS];
@@ -48,10 +54,39 @@ export function randomSymbols(rand: Rand = randomInt): SignalSymbolPick[] {
   const picked: SignalSymbol[] = [first];
   while (picked.length < n) picked.push(pool.splice(rand(0, pool.length), 1)[0]!);
   picked.sort((a, b) => SIGNAL_SYMBOLS.indexOf(a) - SIGNAL_SYMBOLS.indexOf(b));
-  return picked.map((symbol) => {
-    const [lo, hi] = COUNT_RANGE[isHigh(symbol) ? 'high' : 'gem'];
-    return { symbol, count: rand(lo, hi + 1) };
-  });
+  // 重抽數量直到整組機率落在範圍內（2 種符號需要較高門檻、3 種較低）
+  let best: SignalSymbolPick[] = [];
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const picks = picked.map((symbol) => ({ symbol, count: rand(COUNT_MIN, COUNT_MAX + 1) }));
+    const p = hitRate(picks);
+    if (p >= HIT_RATE[0] && p <= HIT_RATE[1]) return picks;
+    if (!best.length || Math.abs(p - 0.08) < Math.abs(hitRate(best) - 0.08)) best = picks;
+  }
+  return best;
+}
+
+/** 由字串產生固定的亂數序列（同一個種子永遠得到同一組訊號） */
+export function seededRand(seed: string): Rand {
+  let s = createHash('sha256').update(seed).digest().readUInt32LE(0);
+  const next = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  return (min, maxExclusive) => min + Math.floor(next() * (maxExclusive - min));
+}
+
+const TAIPEI_DATE = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' });
+
+/**
+ * 房間訊號（App 遊戲內浮窗）：每間房一組，所有會員看到的相同。
+ * 種子＝房間＋前一次開出免遊的轉數（開過免遊就變）＋台北日期（每天換），所以不必存資料表。
+ */
+export function roomSignalFor(room: { id: string; prev1Spins: number | null }, now: Date): { key: string; symbols: SignalSymbolPick[] } {
+  const key = `${room.id}:${room.prev1Spins ?? '-'}:${TAIPEI_DATE.format(now)}`;
+  return { key: createHash('sha256').update(key).digest('hex').slice(0, 12), symbols: randomSymbols(seededRand(key)) };
 }
 
 /** 目前格式的訊號（遊戲符號＋數量）；舊的金屬／寶石訊號回傳 false，讀取時無聲換新 */

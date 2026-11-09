@@ -10,6 +10,10 @@
 - 守護（止盈止損，1.3.0+）：會員在駐守小卡設定停損／停利，網頁依讀到的點數計算本場損益（`src/assistant/dock/guard.ts`），
   撞線時呼叫 `window.LuckyApp.alert(message)`：App 震動、打開駐守小卡並顯示訊息。只提醒，不替會員停止遊戲。
   舊版 App 沒有 `alert`，提醒只在小卡打開時看得到。
+- 房間訊號（1.4.0+）：`game-bridge.js` 在遊戲頁每 150ms 讀 `SymbolView` 盤面，偵測「一轉結束」（30 格齊、無消除動畫、維持 0.5 秒）
+  後把各符號數量放進 HUD 的 `boards`。網頁（`src/assistant/dock/roomSignal.ts`）比對目前房間的訊號門檻
+  （`GET /api/assistant/room-signal`），全部達標時呼叫 `window.LuckyApp.signalHit(message)`：震動並打開訊號浮窗（模式 `signal`）。
+  網頁以 `LuckyApp.capabilities()` 含 `signal` 判斷 App 是否支援。
 
 ## LINE 登入
 

@@ -26,7 +26,7 @@ import { readDisplaySettings,
   type RecommendSettings,
 } from '../assistant/settings.js';
 import { exchangePointsForTime, getPass, presentExchange, presentPlans } from '../assistant/pass.js';
-import { currentSignal } from '../assistant/signal.js';
+import { currentSignal, roomSignalFor, SIGNAL_DISCLAIMER } from '../assistant/signal.js';
 
 // 數據助手會員端 API（計劃 M1、M3）。
 // - /me、兌換、兌換紀錄、推薦設定：登入＋會員條件即可（未開通也要能兌換）
@@ -252,3 +252,20 @@ assistantRoutes.get('/api/assistant/signal', paid, async (c) => c.json(await sig
 
 // 會員按「免遊結束，換一組」
 assistantRoutes.post('/api/assistant/signal/refresh', paid, async (c) => c.json(await signalFor(c, c.req.query('game'), true)));
+
+// 房間訊號（Android App 遊戲內浮窗）：會員目前坐的機台的符號門檻；App 讀盤面比對，達標時提醒
+const RoomSignalQuery = z.object({ roomNo: z.string().trim().regex(/^\d{1,6}$/), game: z.string().min(1).max(60).optional() });
+assistantRoutes.get('/api/assistant/room-signal', paid, async (c) => {
+  const parsed = RoomSignalQuery.safeParse(c.req.query());
+  if (!parsed.success) throw new AppError('ROOMS_QUERY_INVALID', 'roomNo is required', 400);
+  const now = new Date();
+  const freshness = await readFreshnessSettings(prisma);
+  const game = pickGame(await listGames(prisma, now, freshness), parsed.data.game);
+  const room = await prisma.room.findFirst({
+    where: { gameId: game.id, roomNo: parsed.data.roomNo },
+    select: { id: true, roomNo: true, prev1Spins: true },
+  });
+  if (!room) throw new AppError('ROOM_NOT_FOUND', 'room not found', 404);
+  const { key, symbols } = roomSignalFor(room, now);
+  return c.json({ game: { code: game.code, name: game.name }, roomNo: room.roomNo, key, symbols, disclaimer: SIGNAL_DISCLAIMER, serverTime: now.toISOString() });
+});

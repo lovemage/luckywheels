@@ -6,7 +6,7 @@
 //   dock：遊戲中點金色按鈕出現的駐守小卡，疊在遊戲上方、不擋操作；「完整助手」回到 full
 // App 端掌管目前模式；網頁以 setMode() 要求切換，App 套用後以 `luckyapp:mode` 事件通知回來。
 
-export type DockMode = 'dock' | 'full';
+export type DockMode = 'dock' | 'full' | 'signal';
 
 interface LuckyAppBridge {
   /** 收合面板，回到遊戲畫面 */
@@ -21,6 +21,16 @@ interface LuckyAppBridge {
   switchRoom?(roomNo: string): void;
   /** 1.3.0+：守護提醒（震動、打開駐守小卡、顯示訊息） */
   alert?(message: string): void;
+  /** 1.4.0+：房間訊號達標（震動、打開訊號浮窗、顯示訊息） */
+  signalHit?(message: string): void;
+  /** 1.4.0+：App 支援的功能，逗號分隔（例："signal"） */
+  capabilities?(): string;
+}
+
+/** 遊戲頁讀到的一轉結束盤面（App 1.4.0+）：seq 每轉遞增，counts 為各符號數量 */
+export interface BoardResult {
+  seq: number;
+  counts: Record<string, number>;
 }
 
 /** 遊戲畫面上讀到的資訊（App 1.2.0+ 每 2 秒更新；不在遊戲頁時為 null） */
@@ -29,6 +39,8 @@ export interface GameHud {
   balance: string | null;
   win: string | null;
   stake: string | null;
+  /** 1.4.0+：最近幾轉的最終盤面（由舊到新） */
+  boards?: BoardResult[];
 }
 
 declare global {
@@ -54,8 +66,10 @@ export function backToGame(): void {
   call(() => window.LuckyApp?.collapse(), undefined);
 }
 
+const toMode = (m: unknown): DockMode => (m === 'full' || m === 'signal' ? m : 'dock');
+
 export function currentDockMode(): DockMode {
-  return call(() => (window.LuckyApp?.getMode?.() === 'full' ? 'full' : 'dock'), 'dock');
+  return call(() => toMode(window.LuckyApp?.getMode?.()), 'dock');
 }
 
 export function requestDockMode(mode: DockMode): void {
@@ -68,7 +82,7 @@ export function reportDockHeight(cssHeight: number): void {
 
 /** 訂閱 App 端的模式變化 */
 export function onDockModeChange(fn: (mode: DockMode) => void): () => void {
-  const handler = (e: Event) => fn((e as CustomEvent<string>).detail === 'full' ? 'full' : 'dock');
+  const handler = (e: Event) => fn(toMode((e as CustomEvent<string>).detail));
   window.addEventListener('luckyapp:mode', handler);
   return () => window.removeEventListener('luckyapp:mode', handler);
 }
@@ -85,6 +99,16 @@ export const hasNativeAlert = isNativeApp && typeof window !== 'undefined' && ty
 
 export function alertNative(message: string): void {
   call(() => window.LuckyApp?.alert?.(message.slice(0, 200)), undefined);
+}
+
+/** App 支援房間訊號浮窗（1.4.0+） */
+export const hasSignalFloat =
+  isNativeApp &&
+  typeof window !== 'undefined' &&
+  call(() => (window.LuckyApp?.capabilities?.() ?? '').split(',').includes('signal'), false);
+
+export function signalHitNative(message: string): void {
+  call(() => window.LuckyApp?.signalHit?.(message.slice(0, 200)), undefined);
 }
 
 // App 只在數值變化時通知，所以從頁面載入起就記住最新一筆（小卡重新掛載時直接取用）

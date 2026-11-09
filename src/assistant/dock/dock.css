@@ -618,3 +618,123 @@ html.is-dock body {
 .aa-guard.is-compact .aa-guard-alert p {
   font-size: 12px;
 }
+
+/* ── 房間訊號浮窗（App 1.4.0+）：窄版，只顯示目前機台的訊號 ── */
+.aa-sigfloat {
+  padding: 8px 10px 10px;
+}
+
+.aa-sigfloat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.aa-sigfloat-head p {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.aa-sigfloat-title {
+  color: var(--aa-muted);
+  font-size: 12px;
+}
+
+.aa-sigfloat .aa-dock-close {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.aa-sigfloat-hit {
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffe3a6, #e8c274 55%, #b9852f);
+  color: #1a1206;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.aa-sigfloat-rows {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aa-sigfloat-rows li {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px 3px 4px;
+  border-radius: 8px;
+  background: var(--aa-surface);
+}
+
+.aa-sigfloat-rows li.is-ok {
+  background: rgba(191, 227, 168, 0.14);
+}
+
+.aa-sigfloat-rows img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.aa-sigfloat-name {
+  overflow: hidden;
+  color: var(--aa-ink);
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.aa-sigfloat-count {
+  color: var(--aa-muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-sigfloat-count b {
+  color: var(--aa-gold-hi);
+  font-size: 17px;
+}
+
+.aa-sigfloat-rows li.is-ok .aa-sigfloat-count b {
+  color: var(--aa-success);
+}
+
+.aa-sigfloat-foot {
+  margin: 8px 0 0;
+  color: var(--aa-muted);
+  font-size: 11px;
+}
+
+.aa-sigfloat-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.aa-sigfloat-actions .aa-dock-btn {
+  flex: 1;
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+.aa-dock-signal {
+  width: 100%;
+  min-height: 36px;
+  margin-top: 6px;
+  font-size: 13px;
+}

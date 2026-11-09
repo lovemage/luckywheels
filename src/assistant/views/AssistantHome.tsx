@@ -8,6 +8,7 @@ import { fmtAgo, fmtClock, fmtInt, fmtRemainingDetail, fmtRtp, fmtStamp, slotIco
 import type { AssistantView } from '../AssistantApp.js';
 import { isNativeApp } from '../../native.js';
 import { SignalCard } from '../SignalCard.js';
+import { RoomSignalLookup } from '../RoomSignalLookup.js';
 import { exchangeClosedMessage, exchangeOpen, OpenPassButton } from '../OpenPassButton.js';
 
 // Android 手機的瀏覽器（不在 App 內）才顯示安裝 App 的入口
@@ -106,6 +107,7 @@ export function AssistantHome({
       </nav>
 
       {me && active && <SignalCard onExpired={onExpired} />}
+      {me && active && <RoomSignalLookup onExpired={onExpired} />}
 
       <section className="aa-top" id="aa-top" aria-labelledby="aa-top-title">
         <div className="aa-section-head">

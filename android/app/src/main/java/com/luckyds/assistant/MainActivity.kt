@@ -287,6 +287,14 @@ class MainActivity : AppCompatActivity() {
         if (enteredGame && (!expanded || mode != MODE_DOCK)) expand(MODE_DOCK)
     }
 
+    /** 房間訊號達標：震動、打開訊號浮窗（停在原本的模式就不切換），並顯示訊息 */
+    private fun signalHit(message: String) {
+        if (isFinishing || isDestroyed) return
+        vibrate()
+        if (message.isNotBlank()) toast(message)
+        if (enteredGame && (!expanded || mode == MODE_FULL)) expand(MODE_SIGNAL)
+    }
+
     private fun vibrate() {
         try {
             val v = if (android.os.Build.VERSION.SDK_INT >= 31) {
@@ -335,6 +343,24 @@ class MainActivity : AppCompatActivity() {
         val m = (12 * dp).toInt()
         val bottom = max(safe.bottom, imeBottom) + m
         val lp = panel.layoutParams as FrameLayout.LayoutParams
+        if (mode == MODE_SIGNAL) {
+            // 房間訊號浮窗：窄版，開在金色按鈕那一側的上角
+            panel.setBackgroundResource(R.drawable.panel_bg)
+            panel.setPadding((1 * dp).toInt(), (1 * dp).toInt(), (1 * dp).toInt(), (1 * dp).toInt())
+            panel.clipToOutline = true
+            val content = if (dockHeightPx > 0) dockHeightPx + panel.paddingTop + panel.paddingBottom else (160 * dp).toInt()
+            lp.width = min((230 * dp).toInt(), ((if (w < h) 0.62f else 0.3f) * w).toInt())
+            lp.height = content.coerceAtMost((h * 0.7f).toInt())
+            if (bubble.isLeft) {
+                lp.gravity = android.view.Gravity.START or android.view.Gravity.TOP
+                lp.setMargins(safe.left + m, safe.top + m, 0, 0)
+            } else {
+                lp.gravity = android.view.Gravity.END or android.view.Gravity.TOP
+                lp.setMargins(0, safe.top + m, safe.right + m, 0)
+            }
+            panel.layoutParams = lp
+            return
+        }
         if (mode == MODE_DOCK) {
             panel.setBackgroundResource(R.drawable.panel_bg)
             panel.setPadding((1 * dp).toInt(), (1 * dp).toInt(), (1 * dp).toInt(), (1 * dp).toInt())
@@ -371,7 +397,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 切換面板模式並通知網頁（src/native.ts 的 luckyapp:mode 事件） */
     private fun setMode(next: String) {
-        if (next != MODE_DOCK && next != MODE_FULL) return
+        if (next != MODE_DOCK && next != MODE_FULL && next != MODE_SIGNAL) return
         val changed = mode != next
         mode = next
         if (expanded) layoutPanel()
@@ -520,10 +546,11 @@ class MainActivity : AppCompatActivity() {
                 currentMode = { mode },
                 onSwitchRoom = { roomNo -> runOnUiThread { switchRoom(roomNo) } },
                 onAlert = { message -> runOnUiThread { guardAlert(message) } },
+                onSignalHit = { message -> runOnUiThread { signalHit(message) } },
                 onResize = { cssHeight ->
                     runOnUiThread {
                         dockHeightPx = (cssHeight * dp).toInt()
-                        if (expanded && mode == MODE_DOCK) layoutPanel()
+                        if (expanded && mode != MODE_FULL) layoutPanel()
                     }
                 },
             ),
@@ -610,6 +637,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val MODE_DOCK = "dock"
         const val MODE_FULL = "full"
+        const val MODE_SIGNAL = "signal"
         const val GAME_HOST = "godeebxp.com"
         const val HUD_INTERVAL_MS = 2000L
         const val SWITCH_TIMEOUT_MS = 20_000L

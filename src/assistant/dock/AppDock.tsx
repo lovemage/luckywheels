@@ -7,6 +7,8 @@ import {
   backToGame,
   currentGameHud,
   hasRoomSwitch,
+  hasSignalFloat,
+  requestDockMode,
   onGameHud,
   reportDockHeight,
   switchGameRoom,
@@ -286,6 +288,11 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
                 {busy ? '…' : '換'}
               </button>
             </div>
+          )}
+          {hasSignalFloat && roomNo && (
+            <button type="button" className="aa-dock-btn aa-dock-btn--solid aa-dock-signal" onClick={() => requestDockMode('signal')}>
+              房間訊號 #{roomNo}
+            </button>
           )}
           {!compact && picks && picks.length > 0 && (
             <ul className="aa-dock-picks">

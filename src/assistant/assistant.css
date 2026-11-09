@@ -1847,3 +1847,24 @@ fieldset.aa-field {
   font-size: 12px;
   letter-spacing: 0.08em;
 }
+
+/* 房間訊號（網頁版）：輸入房號＋按鈕 */
+.aa-roomsig-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.aa-roomsig-form .aa-money {
+  flex: 1;
+  min-width: 0;
+}
+
+.aa-roomsig-form .aa-money-unit {
+  margin-right: 6px;
+}
+
+.aa-roomsig-form .aa-button {
+  flex: none;
+  min-height: 56px;
+}
