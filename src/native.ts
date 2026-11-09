@@ -19,6 +19,8 @@ interface LuckyAppBridge {
   resize?(cssHeight: number): void;
   /** 1.2.0+：在遊戲裡切換到指定機台（只切換、不下注） */
   switchRoom?(roomNo: string): void;
+  /** 1.3.0+：守護提醒（震動、打開駐守小卡、顯示訊息） */
+  alert?(message: string): void;
 }
 
 /** 遊戲畫面上讀到的資訊（App 1.2.0+ 每 2 秒更新；不在遊戲頁時為 null） */
@@ -76,6 +78,13 @@ export const hasRoomSwitch = isNativeApp && typeof window !== 'undefined' && typ
 
 export function switchGameRoom(roomNo: string): void {
   call(() => window.LuckyApp?.switchRoom?.(roomNo), undefined);
+}
+
+/** App 支援守護提醒（1.3.0+）；舊版 App 只在小卡打開時看得到提醒 */
+export const hasNativeAlert = isNativeApp && typeof window !== 'undefined' && typeof window.LuckyApp?.alert === 'function';
+
+export function alertNative(message: string): void {
+  call(() => window.LuckyApp?.alert?.(message.slice(0, 200)), undefined);
 }
 
 // App 只在數值變化時通知，所以從頁面載入起就記住最新一筆（小卡重新掛載時直接取用）

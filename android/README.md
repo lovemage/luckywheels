@@ -2,10 +2,14 @@
 
 會員在 App 內登入娛樂城、進遊戲；曜金數據助手以面板疊在遊戲上方，收合後變成可拖曳的金色按鈕。
 
-- 遊戲層：`WebView` 載入娛樂城（網址由 `GET /api/public/app-config` 的 `casinoUrl` 下發，預設 `https://www.ds8899.net`）。
+- 遊戲層：`WebView` 載入娛樂城（網址由 `GET /api/public/app-config` 的 `casinoUrl` 下發，預設 `https://ds555.net/sty4_home.php?invite_code=su001&c=3`）。
 - 助手層：`WebView` 載入 `https://luckyds.com/`（同一套會員 SPA）。User-Agent 帶 `LuckyDsApp/<版本>`，SPA 以此進入 App 模式
   （直接開助手、底部多一顆「進入遊戲」），並可呼叫 `window.LuckyApp.collapse()`（`src/native.ts`）。
-- App 不讀取、不操作遊戲畫面：不自動投注、不自動遊玩。
+- App 只讀遊戲畫面上的文字（機台號、點數、贏分、押注，`assets/game-bridge.js`），並在會員點推薦機台時替他切換機台；
+  不按 Spin、不自動投注、不自動遊玩。
+- 守護（止盈止損，1.3.0+）：會員在駐守小卡設定停損／停利，網頁依讀到的點數計算本場損益（`src/assistant/dock/guard.ts`），
+  撞線時呼叫 `window.LuckyApp.alert(message)`：App 震動、打開駐守小卡並顯示訊息。只提醒，不替會員停止遊戲。
+  舊版 App 沒有 `alert`，提醒只在小卡打開時看得到。
 
 ## LINE 登入
 

@@ -13,7 +13,12 @@ class AssistantBridge(
     private val currentMode: () -> String,
     private val onResize: (Double) -> Unit,
     private val onSwitchRoom: (String) -> Unit,
+    private val onAlert: (String) -> Unit,
 ) {
+    /** 1.3.0+：守護（止盈止損）撞線提醒：震動、打開駐守小卡、顯示訊息（只提醒，不操作遊戲） */
+    @JavascriptInterface
+    fun alert(message: String) = onAlert(message.take(200))
+
     /** 1.2.0+：在遊戲裡切換到指定機台（只切換、不下注） */
     @JavascriptInterface
     fun switchRoom(roomNo: String) = onSwitchRoom(roomNo)

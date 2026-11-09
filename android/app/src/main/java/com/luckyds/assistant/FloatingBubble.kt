@@ -20,11 +20,17 @@ class FloatingBubble(
     private val prefs = bubble.context.getSharedPreferences("bubble", Context.MODE_PRIVATE)
     private val touchSlop = ViewConfiguration.get(bubble.context).scaledTouchSlop
 
-    /** 0 = 靠左、1 = 靠右 */
-    private var side = prefs.getInt("side", 1)
+    /**
+     * 0 = 靠左、1 = 靠右。預設靠左：戰神賽特 II 右側整排是操作鈕（Spin、自動轉、選單），左側是角色立繪。
+     * 1.3.0 改了預設值與記錄鍵（side2／y2），舊版記住的右側位置不沿用。
+     */
+    private var side = prefs.getInt("side2", 0)
 
-    /** 垂直位置（0–1，佔可移動範圍的比例） */
-    private var yRatio = prefs.getFloat("y", 0.62f)
+    /** 垂直位置（0–1，佔可移動範圍的比例）；預設在左側「購買特色」上方 */
+    private var yRatio = prefs.getFloat("y2", 0.3f)
+
+    /** 駐守小卡開在按鈕這一側 */
+    val isLeft get() = side == 0
 
     /** 遊戲內容不可被遮住的邊距（瀏海、系統列） */
     private var insetLeft = 0
@@ -88,7 +94,7 @@ class FloatingBubble(
                         side = if (v.x + v.width / 2f < container.width / 2f) 0 else 1
                         val range = (maxY() - minY()).coerceAtLeast(1f)
                         yRatio = ((v.y - minY()) / range).coerceIn(0f, 1f)
-                        prefs.edit().putInt("side", side).putFloat("y", yRatio).apply()
+                        prefs.edit().putInt("side2", side).putFloat("y2", yRatio).apply()
                         v.animate().x(if (side == 0) minX() else maxX()).setDuration(220).start()
                     } else if (e.actionMasked == MotionEvent.ACTION_UP) {
                         v.performClick()

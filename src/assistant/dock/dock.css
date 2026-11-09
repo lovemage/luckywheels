@@ -6,7 +6,9 @@ html.is-dock body {
   min-height: 0;
   height: auto;
   background: var(--aa-bg, #090705);
-  overflow: hidden;
+  /* 內容超過 App 給的高度上限（直式 60% 螢幕）時可以捲動，例如展開守護設定 */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .aa-dock {
@@ -307,4 +309,312 @@ html.is-dock body {
   color: #1a1206;
   font-size: 12px;
   font-weight: 800;
+}
+
+/* 推薦榜單切換（綜合／精品）：作用中為直角色塊填滿 */
+.aa-dock-boards {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aa-dock-tabs {
+  display: flex;
+  border: 1px solid var(--aa-line);
+}
+
+.aa-dock-tab {
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--aa-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.aa-dock-tab.is-on {
+  background: var(--aa-gold);
+  color: #1a1206;
+}
+
+.aa-dock-tab:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: 2px;
+}
+
+/* 守護（止盈止損） */
+.aa-guard {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--aa-surface);
+}
+
+.aa-guard-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aa-guard-row .aa-dock-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.aa-guard-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+}
+
+.aa-guard-label {
+  color: var(--aa-muted);
+  font-size: 12px;
+}
+
+.aa-guard-pnl {
+  color: var(--aa-ink);
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-guard-pnl.is-up {
+  color: var(--aa-success);
+}
+
+.aa-guard-pnl.is-down {
+  color: #f0a08a;
+}
+
+.aa-guard-lines {
+  flex-basis: 100%;
+  color: var(--aa-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aa-guard-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.aa-guard-alert p {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+}
+
+.aa-guard-alert.is-profit {
+  background: rgba(191, 227, 168, 0.16);
+  color: var(--aa-success);
+}
+
+.aa-guard-alert.is-loss {
+  background: rgba(240, 160, 138, 0.16);
+  color: #f6c0b0;
+}
+
+.aa-guard-alert .aa-dock-btn {
+  min-height: 34px;
+  font-size: 13px;
+}
+
+.aa-guard-form {
+  margin-top: 8px;
+}
+
+.aa-guard-form label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--aa-muted);
+  font-size: 13px;
+}
+
+.aa-guard-form label span {
+  flex: none;
+  width: 6.5em;
+}
+
+.aa-guard-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--aa-line);
+  border-radius: 10px;
+  background: var(--aa-bg);
+  color: var(--aa-gold-hi);
+  font: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  caret-color: var(--aa-gold);
+}
+
+.aa-guard-form input:focus-visible,
+.aa-guard-chip:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: 2px;
+}
+
+.aa-guard-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.aa-guard-chip {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--aa-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--aa-gold);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-guard-hint {
+  font-size: 11px;
+}
+
+/* ── 精簡小卡（預設）：盡量少遮遊戲畫面 ── */
+.aa-dock {
+  padding: 8px 10px;
+}
+
+.aa-dock-head {
+  min-height: 32px;
+}
+
+.aa-dock-score {
+  color: var(--aa-gold);
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-dock-more {
+  flex: none;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--aa-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--aa-muted);
+  font: inherit;
+  font-size: 12px;
+}
+
+.aa-dock-more:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: 2px;
+}
+
+.aa-dock-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.aa-dock-chips-label {
+  flex: none;
+  color: var(--aa-muted);
+  font-size: 12px;
+}
+
+.aa-dock-chip {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--aa-line);
+  border-radius: 10px;
+  background: var(--aa-surface);
+  color: var(--aa-ink);
+  font: inherit;
+  white-space: nowrap;
+}
+
+.aa-dock-chip:disabled {
+  opacity: 1;
+}
+
+.aa-dock-chip:active:not(:disabled) {
+  background: #1a140c;
+}
+
+.aa-dock-chip:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: 2px;
+}
+
+.aa-dock-chip .aa-dock-pick-no {
+  font-size: 15px;
+}
+
+.aa-dock-chip--ghost {
+  flex: none;
+  width: 40px;
+  padding: 0;
+  color: var(--aa-gold);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.aa-guard.is-compact {
+  margin-top: 6px;
+  padding: 4px 4px 4px 10px;
+}
+
+.aa-guard.is-compact .aa-guard-info {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.aa-guard.is-compact .aa-guard-lines {
+  flex-basis: auto;
+  min-width: 0;
+}
+
+.aa-guard.is-compact .aa-guard-pnl {
+  font-size: 16px;
+}
+
+.aa-guard.is-compact .aa-dock-btn {
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.aa-guard.is-compact .aa-guard-alert {
+  margin: 0 6px 4px 0;
+  padding: 6px 8px;
+}
+
+.aa-guard.is-compact .aa-guard-alert p {
+  font-size: 12px;
 }

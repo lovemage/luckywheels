@@ -12,7 +12,7 @@ import { redeemHandoffCode } from '../app/handoff.js';
 
 export const APP_PACKAGE = 'com.luckyds.assistant';
 export const APP_SCHEME = 'luckyds-assistant';
-const DEFAULT_CASINO_URL = 'https://www.ds8899.net';
+const DEFAULT_CASINO_URL = 'https://ds555.net/sty4_home.php?invite_code=su001&c=3';
 
 const optionalInt = (v: string | undefined) => {
   const n = Number(v);

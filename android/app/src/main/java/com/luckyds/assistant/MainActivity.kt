@@ -9,6 +9,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.View
 import android.view.WindowManager
 import android.webkit.CookieManager
@@ -41,7 +44,7 @@ import kotlin.math.min
  * 單一畫面：
  *  - 底層：娛樂城（gameWeb），會員在這裡登入娛樂城、進遊戲
  *  - 上層：曜金數據助手面板（panelWeb，載入 luckyds.com 會員 SPA）＋收合後的金色懸浮按鈕
- * App 只負責「同一個畫面看得到兩者」，不讀取、不操作遊戲畫面（不自動投注、不自動遊玩）。
+ * App 讀遊戲畫面上的機台號與點數、依會員點選切換機台，不按 Spin、不自動投注、不自動遊玩。
  */
 class MainActivity : AppCompatActivity() {
 
@@ -276,6 +279,30 @@ class MainActivity : AppCompatActivity() {
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
 
+    /** 守護撞線：震動兩下、打開駐守小卡（小卡上有提醒與「知道了」），並顯示訊息 */
+    private fun guardAlert(message: String) {
+        if (isFinishing || isDestroyed) return
+        vibrate()
+        if (message.isNotBlank()) toast(message)
+        if (enteredGame && (!expanded || mode != MODE_DOCK)) expand(MODE_DOCK)
+    }
+
+    private fun vibrate() {
+        try {
+            val v = if (android.os.Build.VERSION.SDK_INT >= 31) {
+                (getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(VIBRATOR_SERVICE) as Vibrator
+            }
+            if (!v.hasVibrator()) return
+            val pattern = longArrayOf(0, 180, 120, 180)
+            v.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        } catch (_: Exception) {
+            // 沒有震動權限或硬體：略過
+        }
+    }
+
     // ── 畫面配置 ─────────────────────────────────────
 
     private fun enterImmersive() {
@@ -297,7 +324,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 駐守小卡：直向貼在上方、橫向在右上角，高度跟著內容，遊戲其他區域照常可以操作。
+     * 駐守小卡：直向貼在上方（高度上限 45%）；橫向開在金色按鈕那一側的上角、窄版，避開另一側的遊戲操作鈕。
+     * 高度跟著內容，遊戲其他區域照常可以操作。
      * 網站（full）：全螢幕，沒有外框圓角。鍵盤出現時讓出空間。
      */
     private fun layoutPanel() {
@@ -314,14 +342,19 @@ class MainActivity : AppCompatActivity() {
             val content = if (dockHeightPx > 0) dockHeightPx + panel.paddingTop + panel.paddingBottom else (120 * dp).toInt()
             if (w < h) {
                 lp.width = min(w - safe.left - safe.right - 2 * m, (460 * dp).toInt())
-                lp.height = content.coerceAtMost((h * 0.6f).toInt())
+                lp.height = content.coerceAtMost((h * 0.45f).toInt())
                 lp.gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
                 lp.setMargins(0, safe.top + m, 0, 0)
             } else {
-                lp.width = min((380 * dp).toInt(), (w * 0.45f).toInt())
+                lp.width = min((320 * dp).toInt(), (w * 0.36f).toInt())
                 lp.height = content.coerceAtMost(h - safe.top - bottom - m)
-                lp.gravity = android.view.Gravity.END or android.view.Gravity.TOP
-                lp.setMargins(0, safe.top + m, safe.right + m, 0)
+                if (bubble.isLeft) {
+                    lp.gravity = android.view.Gravity.START or android.view.Gravity.TOP
+                    lp.setMargins(safe.left + m, safe.top + m, 0, 0)
+                } else {
+                    lp.gravity = android.view.Gravity.END or android.view.Gravity.TOP
+                    lp.setMargins(0, safe.top + m, safe.right + m, 0)
+                }
             }
             panel.layoutParams = lp
             return
@@ -486,6 +519,7 @@ class MainActivity : AppCompatActivity() {
                 onSetMode = { m -> runOnUiThread { setMode(m) } },
                 currentMode = { mode },
                 onSwitchRoom = { roomNo -> runOnUiThread { switchRoom(roomNo) } },
+                onAlert = { message -> runOnUiThread { guardAlert(message) } },
                 onResize = { cssHeight ->
                     runOnUiThread {
                         dockHeightPx = (cssHeight * dp).toInt()
