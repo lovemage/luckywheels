@@ -40,7 +40,8 @@ export interface AdminSignal {
   userId: string;
   userName: string | null;
   roomNo: string;
-  symbols: { symbol: string; multiplier: number }[];
+  /** 2026-11-09 起為 { symbol, count }；之前的舊訊號為 { symbol, multiplier } */
+  symbols: { symbol: string; count?: number; multiplier?: number }[];
   strength: number;
   scoreAtIssue: number;
   rtpAtIssue: string;

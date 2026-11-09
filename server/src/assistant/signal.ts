@@ -5,18 +5,26 @@ import { loadScoreBoard } from './board.js';
 import type { FreshnessSettings, RecommendSettings, SignalSettings } from './settings.js';
 
 // 訊號（計劃 M3 訊號草案，2026-11-03 折衷做法）：
-// - 符號組合隨機（2–3 種金屬：銀／黃金／白金／曜金，各配 ×2–×6；2026-11-05 由寶石改為金屬），但每則都綁一間「發出當下」未逾時、分數 ≥ 門檻的真實空台
+// - 符號組合隨機（2–3 種 ATG 戰神賽特 II 的盤面符號＋數量，呈現方式比照遊戲內訊號；2026-11-09 由金屬改為遊戲符號），
+//   但每則都綁一間「發出當下」未逾時、分數 ≥ 門檻的真實空台
 // - 會員端不顯示綁定的房間，後台可追查；強度 % 由綁定房間的分數換算，不是亂數
 // - 換組條件（任一成立）：會員按「免遊結束，換一組」、綁定房間開過免遊、今日 RTP 變動達門檻、
 //   房間變成有人／被預約／停用、資料逾時
 // - 每位會員同時只有一則有效訊號；在讀取時檢查換組條件（之後的推播 worker 沿用 endReasonFor）
 
-export const SIGNAL_SYMBOLS = ['silver', 'gold', 'platinum', 'obsidian'] as const;
+/** 戰神賽特 II 的一般符號（圖片 public/assets/assistant/atg/symbol_01–09.webp；Scatter 與倍數球不列入） */
+export const HIGH_SYMBOLS = ['eye', 'cobra', 'bow', 'sickle'] as const;
+export const GEM_SYMBOLS = ['gem_yellow', 'gem_red', 'gem_purple', 'gem_blue', 'gem_green'] as const;
+export const SIGNAL_SYMBOLS = [...HIGH_SYMBOLS, ...GEM_SYMBOLS] as const;
 export type SignalSymbol = (typeof SIGNAL_SYMBOLS)[number];
 export interface SignalSymbolPick {
   symbol: SignalSymbol;
-  multiplier: number;
+  /** 盤面數量：高分符號 2–5、寶石 3–8（盤面 6×5 共 30 格） */
+  count: number;
 }
+
+const COUNT_RANGE: Record<'high' | 'gem', [number, number]> = { high: [2, 5], gem: [3, 8] };
+const isHigh = (s: string) => (HIGH_SYMBOLS as readonly string[]).includes(s);
 
 export const SIGNAL_DISCLAIMER = '數據攻略僅供參考';
 
@@ -30,21 +38,28 @@ const END_MESSAGES: Record<AssistantSignalEndReason, string> = {
 
 type Rand = (min: number, maxExclusive: number) => number;
 
-/** 隨機 2–3 種不重複符號，各配 ×2–×6 */
+/** 隨機 2–3 種不重複符號（至少一種高分符號），各配盤面數量；高分符號排前面 */
 export function randomSymbols(rand: Rand = randomInt): SignalSymbolPick[] {
-  const pool = [...SIGNAL_SYMBOLS];
-  const count = rand(2, 4);
-  const out: SignalSymbolPick[] = [];
-  for (let i = 0; i < count; i++) {
-    const [symbol] = pool.splice(rand(0, pool.length), 1);
-    out.push({ symbol: symbol!, multiplier: rand(2, 7) });
-  }
-  return out;
+  const n = rand(2, 4);
+  const high = [...HIGH_SYMBOLS];
+  const pool: SignalSymbol[] = [...SIGNAL_SYMBOLS];
+  const first = high[rand(0, high.length)]!;
+  pool.splice(pool.indexOf(first), 1);
+  const picked: SignalSymbol[] = [first];
+  while (picked.length < n) picked.push(pool.splice(rand(0, pool.length), 1)[0]!);
+  picked.sort((a, b) => SIGNAL_SYMBOLS.indexOf(a) - SIGNAL_SYMBOLS.indexOf(b));
+  return picked.map((symbol) => {
+    const [lo, hi] = COUNT_RANGE[isHigh(symbol) ? 'high' : 'gem'];
+    return { symbol, count: rand(lo, hi + 1) };
+  });
 }
 
+/** 目前格式的訊號（遊戲符號＋數量）；舊的金屬／寶石訊號回傳 false，讀取時無聲換新 */
 const hasCurrentSymbols = (s: Pick<AssistantSignal, 'symbols'>) =>
   Array.isArray(s.symbols) &&
-  (s.symbols as unknown as SignalSymbolPick[]).every((x) => (SIGNAL_SYMBOLS as readonly string[]).includes(x?.symbol));
+  (s.symbols as unknown as SignalSymbolPick[]).every(
+    (x) => (SIGNAL_SYMBOLS as readonly string[]).includes(x?.symbol) && Number.isInteger(x?.count),
+  );
 
 /** 分數 0 → strengthMin、100 → strengthMax */
 export const strengthFor = (score: number, s: SignalSettings) =>
@@ -166,7 +181,7 @@ export async function currentSignal(ctx: SignalContext, refresh = false): Promis
         } else {
           reason = endReasonFor(active, active.room, ctx.now, ctx.freshness, ctx.signal);
         }
-        // 2026-11-05 以前發出的寶石訊號：直接換成金屬新訊號，不提示會員
+        // 舊格式訊號（2026-11-05 以前的寶石、2026-11-09 以前的金屬）：直接換成新訊號，不提示會員
         const legacy = !refresh && !hasCurrentSymbols(active);
         if (legacy) reason = 'member_refresh';
         if (!reason) return { signal: present(active), replaced: null, message: null, disclaimer: SIGNAL_DISCLAIMER };

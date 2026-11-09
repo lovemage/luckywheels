@@ -33,6 +33,17 @@ const END_REASONS: Record<SignalEndReason, string> = {
 };
 
 const SYMBOL_LABELS: Record<string, string> = {
+  // 2026-11-09 起：戰神賽特 II 盤面符號＋數量
+  eye: '眼睛',
+  cobra: '眼鏡蛇',
+  bow: '弓',
+  sickle: '鐮刀',
+  gem_yellow: '黃寶石',
+  gem_red: '紅寶石',
+  gem_purple: '紫寶石',
+  gem_blue: '藍寶石',
+  gem_green: '綠寶石',
+  // 2026-11-05～11-09 的舊訊號
   silver: '銀',
   gold: '黃金',
   platinum: '白金',
@@ -229,7 +240,7 @@ export function AssistantRecommend() {
                     <td>{fmtTime(s.issuedAt)}</td>
                     <td>{s.userName ?? s.userId}</td>
                     <td className="is-numeric">{s.roomNo}</td>
-                    <td className="is-wrap">{s.symbols.map((x) => `${SYMBOL_LABELS[x.symbol] ?? x.symbol} ×${x.multiplier}`).join('、')}</td>
+                    <td className="is-wrap">{s.symbols.map((x) => (x.count != null ? `${SYMBOL_LABELS[x.symbol] ?? x.symbol} ${x.count} 個` : `${SYMBOL_LABELS[x.symbol] ?? x.symbol} ×${x.multiplier}`)).join('、')}</td>
                     <td className="is-numeric">{s.scoreAtIssue}</td>
                     <td className="is-numeric">{s.strength}%</td>
                     <td className="is-numeric">{s.rtpAtIssue}%</td>

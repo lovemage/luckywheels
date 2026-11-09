@@ -203,3 +203,17 @@
 .lw-symstrip { display: flex; align-items: center; margin-top: 22px; padding: 4px 0; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
 .lw-symstrip img { flex: none; width: 52px; height: 52px; margin-right: -4px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8)); transition: transform 200ms var(--aa-ease); }
 .lw-symstrip:hover img { transform: translateY(-2px); }
+
+/* 寬螢幕：光柱 SVG 以寬度等比縮放時，地平線（viewBox 188/240）會被推到 Hero 中段、穿過老虎。
+   改成依寬度鋪滿，再把地平線對齊 Hero 高度的 86%，老虎站在地平線上。手機維持助手原本的配置。 */
+@media (min-width: 720px) {
+  .lw-site .aa-hero .aa-pillars {
+    inset: auto 0 auto 0;
+    top: calc(86% - 47vw); /* 47vw = 寬度 × (240/400) × (188/240) */
+    height: auto;
+    aspect-ratio: 400 / 240;
+  }
+  .lw-site .aa-hero .aa-tiger { bottom: 14%; width: min(400px, 34vw); }
+  .lw-site .aa-hero { min-height: clamp(360px, 36vw, 500px); }
+  .lw-site .aa-hero-copy { align-self: start; padding-top: clamp(36px, 4.5vw, 64px); }
+}

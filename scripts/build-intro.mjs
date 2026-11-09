@@ -43,7 +43,7 @@ const demo = '<span class="lw-demo">示意數據</span>';
 const PAGES = [
   { id: 'home', path: '/intro/', label: '首頁', icon: '<img src="/assets/assistant/ink/icon-home.webp" alt="">' },
   { id: 'rules', path: '/intro/rules/', label: '曜金規則', tab: '規則', icon: '<img src="/assets/assistant/ink/icon-rules.webp" alt="">' },
-  { id: 'signal', path: '/intro/signal/', label: '曜金訊號', tab: '訊號', icon: '<img src="/assets/assistant/metal/gold.webp" alt="">' },
+  { id: 'signal', path: '/intro/signal/', label: '曜金訊號', tab: '訊號', icon: '<img src="/intro/assets/symbols/symbol_01.webp" alt="">' },
   { id: 'wheel', path: '/intro/wheel/', label: '幸運輪盤', tab: '輪盤', icon: '<img src="/assets/assistant/ink/icon-wheel.webp" alt="">' },
   { id: 'install', path: '/intro/install/', label: '安裝 App', tab: '安裝', icon: ICON.android },
 ];
@@ -135,11 +135,16 @@ const roomsList = `<ol class="aa-rooms">
 ${ROOMS.map(([no, icon, un, rtp, bet, score, premium], i) => `  <li class="aa-room" style="--i: ${i};"><span class="aa-room-rank" aria-label="第 ${i + 1} 名">${i + 1}</span><img class="aa-room-icon" alt="" width="56" height="56" loading="lazy" src="/assets/assistant/slots/${icon}.webp"><div class="aa-room-main"><p class="aa-room-title"><span class="aa-room-no">#${no}</span>${i < 2 ? '<img class="aa-rec-label" alt="推薦" width="52" height="28" src="/assets/assistant/rec-label.webp">' : ''}<span class="aa-chip">空台</span>${premium ? '<span class="aa-chip aa-chip--solid">精品</span>' : ''}</p><p class="aa-room-meta"><span>未開 <b>${un}</b></span><span>RTP <b>${rtp}</b></span><span>下注 <b>${bet}</b></span></p></div><div class="aa-room-score"><span>綜合分數</span><strong>${score}</strong></div></li>`).join('\n')}
 </ol>`;
 
-const METAL = { silver: '銀', gold: '黃金', platinum: '白金', obsidian: '曜金' };
+// 曜金訊號的符號（與 src/assistant/atgSymbols.ts 相同）：[圖片編號, 名稱]
+const SIG = {
+  eye: ['01', '眼睛'], cobra: ['02', '眼鏡蛇'], bow: ['03', '弓'], sickle: ['04', '鐮刀'],
+  gem_yellow: ['05', '黃寶石'], gem_red: ['06', '紅寶石'], gem_purple: ['07', '紫寶石'], gem_blue: ['08', '藍寶石'], gem_green: ['09', '綠寶石'],
+};
 const signalPlate = (symbols, strength) => `<div class="aa-signal-plate">
   <ul class="aa-signal-symbols" data-count="${symbols.length}">
-${symbols.map(([k, m], i) => `    <li class="aa-signal-cell" style="--i: ${i};"><img alt="" width="72" height="72" draggable="false" src="/assets/assistant/metal/${k}.webp"><span class="aa-signal-mult aa-display" aria-label="${METAL[k]} ${m} 倍"><span aria-hidden="true"><span class="aa-signal-x">×</span>${m}</span></span><span class="aa-signal-name" aria-hidden="true">${METAL[k]}</span></li>`).join('\n')}
+${symbols.map(([k, n], i) => `    <li class="aa-signal-cell" style="--i: ${i};"><img alt="" width="72" height="72" draggable="false" src="/intro/assets/symbols/symbol_${SIG[k][0]}.webp"><span class="aa-signal-mult aa-display" aria-label="${SIG[k][1]} ${n} 個"><span aria-hidden="true"><span class="aa-signal-x">×</span>${n}</span></span><span class="aa-signal-name" aria-hidden="true">${SIG[k][1]}</span></li>`).join('\n')}
   </ul>
+  <p class="aa-signal-summary">盤面 ${symbols.map(([k, n]) => `${SIG[k][1]} ${n} 個`).join('、')}</p>
   <div class="aa-signal-meter"><span class="aa-signal-meter-label">訊號強度</span><span class="aa-signal-meter-track" role="meter" aria-label="訊號強度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${strength}"><span class="aa-signal-meter-fill" style="width: ${strength}%;"></span></span><strong class="aa-signal-meter-value">${strength}%</strong></div>
 </div>`;
 
@@ -204,7 +209,7 @@ const home = shell('home', {
       </div>
       <nav class="aa-entries" aria-label="網站內容">
         <a class="aa-entry" href="/intro/rules/"><span class="aa-entry-icon" aria-hidden="true"><img class="aa-ink-icon" alt="" src="/assets/assistant/ink/icon-rules.webp"></span><span class="aa-entry-copy"><span class="aa-entry-title aa-display">曜金規則</span><span class="aa-entry-sub">數字怎麼讀</span></span></a>
-        <a class="aa-entry" href="/intro/signal/"><span class="aa-entry-icon" aria-hidden="true"><img class="aa-ink-icon" alt="" src="/assets/assistant/metal/gold.webp"></span><span class="aa-entry-copy"><span class="aa-entry-title aa-display">曜金訊號</span><span class="aa-entry-sub">四種元寶</span></span></a>
+        <a class="aa-entry" href="/intro/signal/"><span class="aa-entry-icon" aria-hidden="true"><img class="aa-ink-icon" alt="" src="/intro/assets/symbols/symbol_01.webp"></span><span class="aa-entry-copy"><span class="aa-entry-title aa-display">曜金訊號</span><span class="aa-entry-sub">盤面符號</span></span></a>
         <a class="aa-entry" href="/intro/wheel/"><span class="aa-entry-icon" aria-hidden="true"><img class="aa-ink-icon" alt="" src="/assets/assistant/ink/icon-wheel.webp"></span><span class="aa-entry-copy"><span class="aa-entry-title aa-display">幸運輪盤</span><span class="aa-entry-sub">積分抽彩金</span></span></a>
         <a class="aa-entry" href="/intro/install/"><span class="aa-entry-icon" aria-hidden="true"><img class="aa-ink-icon" alt="" src="/assets/assistant/ink/icon-exchange.webp"></span><span class="aa-entry-copy"><span class="aa-entry-title aa-display">安裝 App</span><span class="aa-entry-sub">帶進遊戲裡</span></span></a>
       </nav>
@@ -244,12 +249,12 @@ const home = shell('home', {
   <section class="lw-band" aria-labelledby="signal-title">
     <div class="lw-grid is-center flip">
       <div class="lw-panel">
-        ${signalPlate([['gold', 3], ['platinum', 5], ['obsidian', 2]], 92)}
+        ${signalPlate([['eye', 3], ['sickle', 2], ['gem_purple', 6]], 92)}
         <div class="lw-panel-foot"><p class="aa-disclaimer" style="margin:0">強度依機台綜合分數換算 · 排序參考</p>${demo}</div>
       </div>
       <div>
         <div class="aa-section-head"><h2 id="signal-title" class="aa-display">曜金訊號</h2></div>
-        <p class="lw-mystic">銀、黃金、白金、曜金。每一組元寶，都對應著某一台此刻符合條件、無人入座的機台。</p>
+        <p class="lw-mystic">眼睛、眼鏡蛇、寶石……和遊戲盤面上一模一樣的符號。每一組訊號，都對應著某一台此刻符合條件、無人入座的機台。</p>
         <p class="lw-lead" style="margin-top:12px">那台機台是哪一台，畫面上不會說；機台一有變化，訊號就自動換成新的一組。</p>
         <p style="margin-top:18px"><a href="/intro/signal/">讀懂曜金訊號 ›</a></p>
       </div>
@@ -363,16 +368,16 @@ const rules = shell('rules', {
 
 // ════════════════ 曜金訊號 ════════════════
 const signal = shell('signal', {
-  title: '曜金訊號｜四種元寶，一組只屬於此刻｜曜金數據助手',
-  description: '曜金訊號由銀、黃金、白金、曜金四種元寶與倍數組成，每一組都對應一台發出當下符合條件、無人入座的機台；機台一有變化就自動換組。',
-  ogTitle: '曜金訊號｜四種元寶，一組只屬於此刻',
-  ogDesc: '銀、黃金、白金、曜金。每一組訊號，都對應著此刻某一台符合條件的空台。',
-  body: `${subhero('signal', '<h1>曜金訊號</h1>', '四種元寶，排成一組只屬於此刻的訊號。它背後是一台真實存在、此刻無人入座的機台。')}
+  title: '曜金訊號｜盤面上的符號，一組只屬於此刻｜曜金數據助手',
+  description: '曜金訊號用戰神賽特 II 盤面上的符號與數量組成，和遊戲裡看到的一模一樣；每一組都對應一台發出當下符合條件、無人入座的機台，機台一有變化就自動換組。',
+  ogTitle: '曜金訊號｜盤面上的符號，一組只屬於此刻',
+  ogDesc: '眼睛、眼鏡蛇、寶石，和遊戲盤面一模一樣。每一組訊號，都對應著此刻某一台符合條件的空台。',
+  body: `${subhero('signal', '<h1>曜金訊號</h1>', '盤面上熟悉的符號，排成一組只屬於此刻的訊號。它背後是一台真實存在、此刻無人入座的機台。')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="what-title">
     <div class="lw-grid is-center">
       <div class="lw-panel">
-        ${signalPlate([['silver', 4], ['gold', 3], ['obsidian', 6]], 88)}
+        ${signalPlate([['eye', 3], ['cobra', 2], ['gem_red', 5]], 88)}
         <div class="lw-panel-foot"><p class="aa-disclaimer" style="margin:0">發出 21:06 · 排序參考，不代表遊戲結果</p>${demo}</div>
       </div>
       <div>
@@ -384,16 +389,28 @@ const signal = shell('signal', {
   </section>
 
   <section class="lw-band" aria-labelledby="metal-title">
-    <div class="aa-section-head"><h2 id="metal-title" class="aa-display">四種元寶</h2></div>
-    <ul class="lw-metals">
-      <li><img src="/assets/assistant/metal/silver.webp" alt="" width="76" height="76"><b>銀</b><span>素白的光</span></li>
-      <li><img src="/assets/assistant/metal/gold.webp" alt="" width="76" height="76"><b>黃金</b><span>溫熱的光</span></li>
-      <li><img src="/assets/assistant/metal/platinum.webp" alt="" width="76" height="76"><b>白金</b><span>冷冽的光</span></li>
-      <li><img src="/assets/assistant/metal/obsidian.webp" alt="" width="76" height="76"><b>曜金</b><span>藏在黑裡的光</span></li>
-    </ul>
+    <div class="aa-section-head"><h2 id="metal-title" class="aa-display">訊號用的符號</h2><span class="aa-section-note">與遊戲盤面相同</span></div>
+    <p class="lw-lead">訊號只用戰神賽特 II 的九種一般符號。每組 2–3 種、至少一種高分符號，每種配上盤面數量，讀法和遊戲裡一樣：「眼睛 3 個、紅寶石 5 個」。</p>
+    <div class="lw-symgroups">
+      <div class="lw-symgroup">
+        <h3 class="aa-display">高分符號</h3>
+        <p>每組至少一種，數量 2–5 個</p>
+        <ul class="lw-symbols">
+          ${['01', '02', '03', '04'].map((n) => `<li>${symImg(n)}<span>${Object.values(SIG).find((x) => x[0] === n)[1]}</span></li>`).join('\n          ')}
+        </ul>
+      </div>
+      <div class="lw-symgroup">
+        <h3 class="aa-display">寶石</h3>
+        <p>數量 3–8 個</p>
+        <ul class="lw-symbols">
+          ${['05', '06', '07', '08', '09'].map((n) => `<li>${symImg(n)}<span>${Object.values(SIG).find((x) => x[0] === n)[1]}</span></li>`).join('\n          ')}
+        </ul>
+      </div>
+    </div>
     <ul class="aa-reasons aa-rule-points" style="margin-top:18px">
-      <li>每組訊號由 2–3 種元寶加上倍數組成，用來區分不同的訊號</li>
-      <li>元寶的種類與倍數本身不代表大小或好壞，真正的差別看「訊號強度」</li>
+      <li>Scatter 與倍數球不會出現在訊號裡</li>
+      <li>符號的種類與數量用來區分不同的訊號，本身不代表大小或好壞，真正的差別看「訊號強度」</li>
+      <li>符號圖示取自遊戲畫面，版權屬原遊戲商所有</li>
     </ul>
   </section>
 

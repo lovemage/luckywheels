@@ -1,22 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/client.js';
-import { fetchSignal, refreshSignal, type SignalResponse, type SignalSymbol } from '../api/assistant.js';
+import { fetchSignal, refreshSignal, type SignalResponse } from '../api/assistant.js';
+import { atgSymbol } from './atgSymbols.js';
 import { fmtClock } from './format.js';
 
-// 曜金訊號：2–3 種金屬（銀／黃金／白金／曜金）×倍數＋強度。
+// 曜金訊號：2–3 種戰神賽特 II 的盤面符號 × 數量＋強度（呈現方式比照遊戲內訊號，2026-11-09 由金屬改為遊戲符號）。
 // 符號組合隨機，但每則都綁一間發出當下符合條件的真實空台（會員看不到是哪一台）；
 // 綁定機台有人入座、開過免遊、RTP 變動或資料逾時，伺服器在讀取時自動換組。
 // 首頁停留時每分鐘重抓一次，讓自動換組能及時反映。
 
-const METALS: Record<SignalSymbol, string> = {
-  silver: '銀',
-  gold: '黃金',
-  platinum: '白金',
-  obsidian: '曜金',
-};
-
-const metalName = (s: string) => METALS[s as SignalSymbol] ?? '黃金';
-const metalSrc = (s: string) => `/assets/assistant/metal/${s in METALS ? s : 'gold'}.webp`;
+const symbolList = (symbols: { symbol: string; count: number }[]) =>
+  symbols.map((x) => `${atgSymbol(x.symbol).name} ${x.count} 個`).join('、');
 
 type State = { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; data: SignalResponse };
 
@@ -121,14 +115,15 @@ export function SignalCard({ onExpired }: { onExpired?: () => void }) {
           <ul className="aa-signal-symbols" data-count={signal.symbols.length}>
             {signal.symbols.map((s, i) => (
               <li key={s.symbol} className="aa-signal-cell" style={{ '--i': i } as React.CSSProperties}>
-                <img src={metalSrc(s.symbol)} alt="" width="72" height="72" draggable={false} />
-                <span className="aa-signal-mult aa-display" aria-label={`${metalName(s.symbol)} ${s.multiplier} 倍`}>
-                  <span aria-hidden="true"><span className="aa-signal-x">×</span>{s.multiplier}</span>
+                <img src={atgSymbol(s.symbol).img} alt="" width="72" height="72" draggable={false} />
+                <span className="aa-signal-mult aa-display" aria-label={`${atgSymbol(s.symbol).name} ${s.count} 個`}>
+                  <span aria-hidden="true"><span className="aa-signal-x">×</span>{s.count}</span>
                 </span>
-                <span className="aa-signal-name" aria-hidden="true">{metalName(s.symbol)}</span>
+                <span className="aa-signal-name" aria-hidden="true">{atgSymbol(s.symbol).name}</span>
               </li>
             ))}
           </ul>
+          <p className="aa-signal-summary">盤面 {symbolList(signal.symbols)}</p>
           <div className="aa-signal-meter">
             <span className="aa-signal-meter-label">訊號強度</span>
             <span

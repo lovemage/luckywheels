@@ -411,7 +411,7 @@ model AssistantSignal {
   gameId          String
   roomId          String
   room            Room                      @relation(fields: [roomId], references: [id])
-  /// [{ symbol, multiplier }]
+  /// [{ symbol, count }]（2026-11-09 以前為 { symbol, multiplier }）
   symbols         Json
   /// 訊號強度 %，由綁定房間的綜合分數換算
   strength        Int

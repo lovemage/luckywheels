@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Prisma } from '@prisma/client';
-import { endReasonFor, randomSymbols, SIGNAL_SYMBOLS, strengthFor } from '../../../src/assistant/signal.js';
+import { endReasonFor, HIGH_SYMBOLS, randomSymbols, SIGNAL_SYMBOLS, strengthFor } from '../../../src/assistant/signal.js';
 import type { SignalSettings } from '../../../src/assistant/settings.js';
 import { planLabel } from '../../../src/assistant/pass.js';
 
@@ -19,17 +19,23 @@ const room = (o: Record<string, unknown> = {}) => ({
 });
 
 describe('randomSymbols', () => {
-  it('picks 2–3 distinct symbols with ×2–×6', () => {
-    for (let i = 0; i < 200; i++) {
+  it('picks 2–3 distinct game symbols with board counts, at least one high symbol', () => {
+    const high = HIGH_SYMBOLS as readonly string[];
+    for (let i = 0; i < 300; i++) {
       const s = randomSymbols();
       expect(s.length).toBeGreaterThanOrEqual(2);
       expect(s.length).toBeLessThanOrEqual(3);
       expect(new Set(s.map((x) => x.symbol)).size).toBe(s.length);
+      expect(s.some((x) => high.includes(x.symbol))).toBe(true);
       for (const x of s) {
         expect(SIGNAL_SYMBOLS).toContain(x.symbol);
-        expect(x.multiplier).toBeGreaterThanOrEqual(2);
-        expect(x.multiplier).toBeLessThanOrEqual(6);
+        const [lo, hi] = high.includes(x.symbol) ? [2, 5] : [3, 8];
+        expect(x.count).toBeGreaterThanOrEqual(lo);
+        expect(x.count).toBeLessThanOrEqual(hi);
       }
+      // 依固定順序（高分符號在前）
+      const order = s.map((x) => SIGNAL_SYMBOLS.indexOf(x.symbol));
+      expect([...order].sort((a, b) => a - b)).toEqual(order);
     }
   });
 });

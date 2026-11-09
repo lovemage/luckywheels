@@ -1696,6 +1696,15 @@ fieldset.aa-field {
   letter-spacing: 0.08em;
 }
 
+/* 文字摘要（比照遊戲內訊號通知：「眼睛 3 個、眼鏡蛇 2 個」） */
+.aa-signal-summary {
+  margin: 6px 16px 0;
+  color: var(--aa-ink);
+  font-size: 13px;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
 .aa-signal-plate.is-skeleton .aa-signal-cell {
   padding-block: 18px 22px;
 }
@@ -1801,11 +1810,24 @@ fieldset.aa-field {
 /* 曜金規則：訊號的四種元寶圖例 */
 .aa-rule-metals {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--n, 4), 1fr);
   margin: 14px 0 0;
   padding: 10px 0 8px;
   border-block: 1px solid var(--aa-line);
   list-style: none;
+}
+
+.aa-rule-metals[data-count='5'] {
+  --n: 5;
+}
+
+.aa-rule-metals + .aa-rule-metals {
+  margin-top: 0;
+  border-top: 0;
+}
+
+.aa-rule-metals img {
+  object-fit: contain;
 }
 
 .aa-rule-metals li {

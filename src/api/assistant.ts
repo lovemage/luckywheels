@@ -155,12 +155,22 @@ export const postExchange = (plan: TimePlan, idempotencyKey: string) =>
 export const fetchExchanges = () => api<{ items: ExchangeRecord[] }>('/api/assistant/exchanges');
 
 // ── 訊號 ──
-/** 銀／黃金／白金／曜金（server/src/assistant/signal.ts SIGNAL_SYMBOLS） */
-export type SignalSymbol = 'silver' | 'gold' | 'platinum' | 'obsidian';
+/** 戰神賽特 II 的一般符號（server/src/assistant/signal.ts SIGNAL_SYMBOLS） */
+export type SignalSymbol =
+  | 'eye'
+  | 'cobra'
+  | 'bow'
+  | 'sickle'
+  | 'gem_yellow'
+  | 'gem_red'
+  | 'gem_purple'
+  | 'gem_blue'
+  | 'gem_green';
 
 export interface SignalView {
   id: string;
-  symbols: { symbol: SignalSymbol; multiplier: number }[];
+  /** 符號與盤面數量 */
+  symbols: { symbol: SignalSymbol; count: number }[];
   /** 強度 %，由綁定機台的綜合分數換算 */
   strength: number;
   issuedAt: string;

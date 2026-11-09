@@ -3,6 +3,7 @@ import type { AssistantMe } from '../../api/assistant.js';
 import type { AssistantView } from '../AssistantApp.js';
 import { InkTitle } from '../InkTitle.js';
 import { OpenPassButton } from '../OpenPassButton.js';
+import { ATG_SYMBOLS } from '../atgSymbols.js';
 
 // 曜金規則：說明畫面上的數字怎麼看、助手怎麼排序。未開通也能看（讓會員先了解助手能提供什麼）。
 // 措辭維持中立：數字是已發生的紀錄，不暗示中獎機率、預測或保證獲利。
@@ -53,11 +54,10 @@ const METRICS: Metric[] = [
   },
 ];
 
-const SIGNAL_METALS = [
-  { key: 'silver', name: '銀' },
-  { key: 'gold', name: '黃金' },
-  { key: 'platinum', name: '白金' },
-  { key: 'obsidian', name: '曜金' },
+/** 訊號會用到的盤面符號：高分符號 4 種、寶石 5 種 */
+const SIGNAL_SYMBOL_ROWS: { label: string; keys: (keyof typeof ATG_SYMBOLS)[] }[] = [
+  { label: '高分符號', keys: ['eye', 'cobra', 'bow', 'sickle'] },
+  { label: '寶石', keys: ['gem_yellow', 'gem_red', 'gem_purple', 'gem_blue', 'gem_green'] },
 ];
 
 export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNavigate: (view: AssistantView) => void }) {
@@ -109,16 +109,18 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
         </div>
         <p className="aa-rule-weight">開通期間在首頁顯示 · 一次一組</p>
         <p className="aa-rule-meaning">每一組訊號都對應一台發出當下符合條件、目前沒人使用的機台</p>
-        <ul className="aa-rule-metals" aria-label="元寶種類">
-          {SIGNAL_METALS.map((m) => (
-            <li key={m.key}>
-              <img src={`/assets/assistant/metal/${m.key}.webp`} alt="" width="48" height="48" loading="lazy" />
-              <span>{m.name}</span>
-            </li>
-          ))}
-        </ul>
+        {SIGNAL_SYMBOL_ROWS.map((row) => (
+          <ul key={row.label} className="aa-rule-metals" data-count={row.keys.length} aria-label={`訊號符號：${row.label}`}>
+            {row.keys.map((k) => (
+              <li key={k}>
+                <img src={ATG_SYMBOLS[k].img} alt="" width="48" height="48" loading="lazy" />
+                <span>{ATG_SYMBOLS[k].name}</span>
+              </li>
+            ))}
+          </ul>
+        ))}
         <ul className="aa-reasons aa-rule-points">
-          <li>每組訊號由 2–3 種元寶加上倍數組成，用來區分不同的訊號</li>
+          <li>每組訊號由 2–3 種戰神賽特 II 的盤面符號加上數量組成，例如「眼睛 3 個、紫寶石 5 個」，至少有一種高分符號</li>
           <li>訊號強度由對應機台的綜合分數換算，分數越高，強度越高</li>
           <li>對應的機台有人入座、開過免費遊戲、今日 RTP 明顯變動，或資料停止更新時，系統會自動換一組新的訊號，並在畫面上說明原因</li>
           <li>玩完一輪免費遊戲後，可以按「免遊結束，換一組」取得新訊號；剛換過需要稍候一段時間才能再換</li>
