@@ -3,7 +3,7 @@
 
 @font-face {
   font-family: 'YJ Display';
-  src: url('/assets/assistant/fonts/yj-display.woff2?v=50a5d1ce') format('woff2');
+  src: url('/assets/assistant/fonts/yj-display.woff2?v=e655da9e') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
@@ -1846,4 +1846,25 @@ fieldset.aa-field {
   color: var(--aa-muted);
   font-size: 12px;
   letter-spacing: 0.08em;
+}
+
+/* 房間訊號（網頁版）：輸入房號＋按鈕 */
+.aa-roomsig-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.aa-roomsig-form .aa-money {
+  flex: 1;
+  min-width: 0;
+}
+
+.aa-roomsig-form .aa-money-unit {
+  margin-right: 6px;
+}
+
+.aa-roomsig-form .aa-button {
+  flex: none;
+  min-height: 56px;
 }

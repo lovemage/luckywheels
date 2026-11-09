@@ -39,6 +39,29 @@ const ICON = {
 
 const MARK = `<svg class="aa-mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lw-mark-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c2"/><stop offset="0.5" stop-color="#e7b552"/><stop offset="1" stop-color="#9c6a1c"/></linearGradient></defs><path d="M16 1 L19 13 L31 16 L19 19 L16 31 L13 19 L1 16 L13 13 Z" fill="url(#lw-mark-gold)"/><path d="M16 7 L17.4 14.6 L25 16 L17.4 17.4 L16 25 L14.6 17.4 L7 16 L14.6 14.6 Z" fill="#120c05" opacity="0.55"/><circle cx="16" cy="16" r="1.6" fill="#fff6d8"/></svg>`;
 
+// iPhone「分享 → 加入主畫面」示意圖（系統畫面無法截圖，用幾何線條示意）
+const IOS_A2HS = `<svg class="lw-step-shot lw-a2hs" viewBox="0 0 180 390" role="img" aria-label="示意圖：點 Safari 下方的分享按鈕，選「加入主畫面」">
+  <rect x="1" y="1" width="178" height="388" rx="26" fill="#0d0b08" stroke="rgba(236,196,116,.45)"/>
+  <rect x="14" y="40" width="152" height="120" rx="10" fill="#17120b"/>
+  <rect x="26" y="58" width="80" height="10" rx="3" fill="#e8c274" opacity=".8"/>
+  <rect x="26" y="78" width="120" height="7" rx="3" fill="#6d6150"/>
+  <rect x="26" y="92" width="100" height="7" rx="3" fill="#6d6150"/>
+  <rect x="8" y="176" width="164" height="168" rx="14" fill="#1d1810"/>
+  <rect x="20" y="190" width="140" height="30" rx="7" fill="#27201497"/>
+  <text x="30" y="210" fill="#b8aa8e" font-size="12">拷貝</text>
+  <rect x="20" y="226" width="140" height="30" rx="7" fill="#27201497"/>
+  <text x="30" y="246" fill="#b8aa8e" font-size="12">加入書籤</text>
+  <rect x="20" y="262" width="140" height="32" rx="7" fill="#e8c274"/>
+  <text x="30" y="283" fill="#1a1206" font-size="12.5" font-weight="700">加入主畫面</text>
+  <rect x="136" y="270" width="14" height="14" rx="3" fill="none" stroke="#1a1206" stroke-width="1.6"/>
+  <path d="M143 273v8M139 277h8" stroke="#1a1206" stroke-width="1.6"/>
+  <rect x="1" y="350" width="178" height="38" fill="#14110b"/>
+  <circle cx="90" cy="368" r="14" fill="none" stroke="#ffe3a6" stroke-width="2"/>
+  <path d="M90 360v12M85 364l5-5 5 5M84 370v4h12v-4" fill="none" stroke="#ffe3a6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M30 368h10M140 362v12M150 362v12" stroke="#6d6150" stroke-width="2" stroke-linecap="round"/>
+  <text x="90" y="330" fill="#e8c274" font-size="11" text-anchor="middle">示意圖</text>
+</svg>`;
+
 const ink = (key, alt, cls = 'lw-ink-h') => `<img class="${cls}" src="/assets/assistant/ink/title-${key}.webp" alt="${alt}" draggable="false">`;
 const demo = '<span class="lw-demo">示意數據</span>';
 
@@ -269,7 +292,7 @@ const home = shell('home', {
     <ol class="lw-steps is-cols">
       <li><div><b>LINE 登入</b><p>不用另外註冊。登入後就是會員，可以轉幸運輪盤。</p></div></li>
       <li><div><b>積分開通</b><p>把輪盤積分換成使用時間，<em>不用另外儲值</em>。使用中再換會往後延長。</p></div></li>
-      <li><div><b>帶進遊戲</b><p>Android 安裝 App，遊戲中隨時叫出駐守小卡；iPhone 先用網頁版。</p></div></li>
+      <li><div><b>帶進遊戲</b><p>Android 安裝 App，遊戲中隨時叫出駐守小卡；iPhone 用 Safari 網頁版、<a href="/intro/install/#ios">加入主畫面</a>。</p></div></li>
     </ol>
   </section>
 
@@ -389,6 +412,23 @@ const signal = shell('signal', {
         <p class="lw-lead" style="margin-top:12px">那台機台是哪一台，畫面上不會顯示；訊號只在開通期間、於助手首頁出現，一次一組。</p>
       </div>
     </div>
+  </section>
+
+  <section class="lw-band" id="room-signal" aria-labelledby="room-title">
+    <div class="aa-section-head"><h2 id="room-title" class="aa-display">房間訊號</h2><span class="aa-section-note">坐上機台之後</span></div>
+    <p class="lw-mystic">每一間房，都有一組只屬於它的訊號。</p>
+    <p class="lw-lead" style="margin-top:10px">房間訊號列出幾種符號各需要幾個。坐上機台後，每轉結束時盤面上這些符號都達到數量，就是訊號達標，可買免遊。同一間房開過免遊或到了隔天，訊號會換新。</p>
+    <div class="lw-grid is-center" style="margin-top:22px">
+      <figure class="lw-shot lw-float-shot">
+        <img src="/intro/assets/shot-signal-float.webp" width="460" height="417" loading="lazy" decoding="async" alt="Android App 的房間訊號浮窗：訊號達標！可買免遊，眼睛 5/4、紅寶石 3/3、紫寶石 6/5">
+        <figcaption>Android App：遊戲內浮窗自動比對，達標時震動提醒 · 示意數據</figcaption>
+      </figure>
+      <figure class="lw-shot lw-phone">
+        <img src="/intro/assets/ios-roomsig.webp" width="600" height="1298" loading="lazy" decoding="async" alt="網頁版房間訊號：輸入房號 459，顯示眼睛 4 個、紅寶石 3 個、紫寶石 5 個">
+        <figcaption>iPhone／網頁版：輸入房號查詢，自己對照盤面 · 示意數據</figcaption>
+      </figure>
+    </div>
+    <p style="margin-top:16px"><a href="/intro/install/">Android 安裝與 iPhone 使用方式 ›</a></p>
   </section>
 
   <section class="lw-band" aria-labelledby="metal-title">
@@ -518,7 +558,7 @@ const install = shell('install', {
   description: '下載曜金數據助手 Android App：在 App 裡登入娛樂城、直接玩遊戲，駐守小卡隨時叫出。iPhone 版準備中，現在可先使用網頁版。',
   ogTitle: '安裝 App｜把助手帶進遊戲裡',
   ogDesc: 'Android 立即下載；iPhone 版準備中，可先使用網頁版。',
-  body: `${subhero('install', '<h1>把助手帶進遊戲裡</h1>', '安裝 App 之後，曜金就守在遊戲畫面的一角。需要時喚出，不需要時收成一顆金色按鈕。')}
+  body: `${subhero('install', '<h1>把助手帶進遊戲裡</h1>', 'Android 安裝 App，曜金就守在遊戲畫面的一角；iPhone 用 Safari 網頁版，加入主畫面一樣隨手打開。')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="dock-title">
     <div class="lw-grid is-center">
@@ -558,15 +598,24 @@ const install = shell('install', {
     </div>
   </section>
 
-  <!-- iOS：App 尚未推出。上架後把 .is-soon 這塊換成與 #android 相同的結構（下載按鈕＋安裝步驟） -->
-  <section class="lw-band" id="ios" data-status="coming-soon" aria-labelledby="ios-title">
-    <div class="lw-platform is-soon">
+  <!-- iOS：目前用網頁版（Safari＋加入主畫面）。iPhone App 推出後，在這一塊上方加一個與 #android 相同結構的下載區塊 -->
+  <section class="lw-band" id="ios" aria-labelledby="ios-title">
+    <div class="lw-platform">
       <div class="lw-platform-head">
-        <h2 id="ios-title" class="aa-display">${ICON.apple}iPhone</h2>
-        <span class="lw-soon">準備中</span>
+        <div>
+          <h2 id="ios-title" class="aa-display">${ICON.apple}iPhone 網頁版</h2>
+          <p class="lw-meta" style="margin-top:4px">不用安裝 · Safari 開啟 · iPhone App 準備中</p>
+        </div>
+        <a class="lw-ghost" href="/">${ICON.line}開啟網頁版</a>
       </div>
-      <p class="lw-lead">iPhone App 還在準備中。現在請用 Safari 開啟網頁版，LINE 登入後一樣能轉輪盤、看機台數據與本金推薦。App 推出後，安裝方式會放在這裡。</p>
-      <p style="margin-top:16px"><a class="lw-ghost" href="/">${ICON.line}開啟網頁版</a></p>
+      <p class="lw-lead" style="margin-bottom:18px">iPhone 目前使用網頁版：用 Safari 開啟、加入主畫面，之後就像 App 一樣從主畫面打開。遊戲在娛樂城另外開啟，兩邊切換使用。</p>
+      <ol class="lw-steps is-cols2 lw-ios-steps">
+        <li><div><b>用 Safari 開啟、LINE 登入</b><p>在 Safari 網址列輸入 <em>luckyds.com</em>。從 LINE 收到連結時，點右上角「⋯」選<em>在 Safari 中開啟</em>，再按「用 LINE 登入」。</p></div><img class="lw-step-shot" src="/intro/assets/ios-login.webp" width="600" height="1298" loading="lazy" alt="LINE 登入畫面"></li>
+        <li><div><b>加入主畫面</b><p>點 Safari 下方的<em>分享</em>按鈕，往下滑選<em>加入主畫面</em>，再按右上角「新增」。之後從主畫面的圖示直接打開。</p></div>${IOS_A2HS}</li>
+        <li><div><b>開通、看數據</b><p>用輪盤積分開通後，首頁就有精選空台、曜金訊號與本金推薦。</p></div><img class="lw-step-shot" src="/intro/assets/ios-home.webp" width="600" height="1298" loading="lazy" alt="助手首頁畫面（示意數據）"></li>
+        <li><div><b>入座後查房間訊號</b><p>在娛樂城選好機台入座，回到助手首頁的<em>房間訊號</em>輸入房號。每轉結束後對照盤面，符號都達到數量就是訊號達標，可買免遊。</p></div><img class="lw-step-shot" src="/intro/assets/ios-roomsig.webp" width="600" height="1298" loading="lazy" alt="房間訊號查詢畫面（示意數據）"></li>
+      </ol>
+      <p class="lw-lead" style="margin-top:18px">網頁版讀不到遊戲畫面，所以房間訊號要自己對照；遊戲內浮窗、自動比對與震動提醒目前只有 Android App。iPhone App 推出後，安裝方式會放在這裡。</p>
     </div>
   </section>
 
@@ -575,6 +624,7 @@ const install = shell('install', {
     <div class="lw-faq">
       <details><summary>需要另外註冊或付費嗎？${ICON.plus}</summary><p>不用另外註冊，用 LINE 登入就好。數據助手用輪盤的會員積分兌換使用時間，不需要另外付費。</p></details>
       <details><summary>用了助手會比較容易中嗎？${ICON.plus}</summary><p>不會。每一轉的結果都由遊戲伺服器決定，曜金只把已發生的機台紀錄整理、排序給你參考，不改變也不預測結果。請量力而為、先設好預算。</p></details>
+      <details><summary>iPhone 可以用嗎？${ICON.plus}</summary><p>可以，用網頁版：Safari 開啟 luckyds.com、LINE 登入，建議加入主畫面。房間訊號在網頁版要輸入房號查詢、自己對照盤面；遊戲內浮窗與自動提醒目前只有 Android App。</p></details>
       <details><summary>支援哪些遊戲？${ICON.plus}</summary><p>目前支援 ATG 的戰神賽特 II。</p></details>
       <details><summary>安裝時跳出「檔案可能有害」怎麼辦？${ICON.plus}</summary><p>這是 Chrome 對所有 Play 商店以外安裝檔的固定提醒，按「仍要下載」即可。請只從 luckyds.com 下載安裝檔。</p></details>
       <details><summary>娛樂城帳號會不會被助手拿走？${ICON.plus}</summary><p>娛樂城是在娛樂城自己的頁面登入，助手不讀取、也不儲存你的娛樂城帳號密碼。App 只讀遊戲畫面上的機台號和點數，用來顯示數據和計算本場損益。</p></details>

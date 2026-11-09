@@ -217,3 +217,12 @@
   .lw-site .aa-hero { min-height: clamp(360px, 36vw, 500px); }
   .lw-site .aa-hero-copy { align-self: start; padding-top: clamp(36px, 4.5vw, 64px); }
 }
+
+/* ── 安裝頁：iPhone 步驟的手機畫面與示意圖 ── */
+.lw-steps .lw-step-shot { grid-column: 2; display: block; width: 150px; height: auto; border-radius: 16px; box-shadow: 0 0 0 1px var(--aa-line), 0 16px 30px -18px rgba(0, 0, 0, 0.9); }
+.lw-steps svg.lw-step-shot { aspect-ratio: 180 / 390; }
+.lw-a2hs text { font-family: 'Noto Sans TC', 'PingFang TC', sans-serif; }
+
+/* ── 訊號頁：房間訊號浮窗截圖 ── */
+.lw-float-shot { width: min(100%, 300px); margin-inline: auto; }
+.lw-float-shot img { border-radius: 14px; }
