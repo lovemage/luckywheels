@@ -63,6 +63,9 @@ const IOS_A2HS = `<svg class="lw-step-shot lw-a2hs" viewBox="0 0 180 390" role="
   <text x="90" y="330" fill="#e8c274" font-size="11" text-anchor="middle">示意圖</text>
 </svg>`;
 
+// Q 版主要角色（區塊標題旁）：public/intro/assets/ip/q-<pose>.webp
+const qv = (pose) => `<img class="lw-q" src="/intro/assets/ip/q-${pose}.webp" width="160" height="160" alt="" aria-hidden="true">`;
+
 const ink = (key, alt, cls = 'lw-ink-h') => `<img class="${cls}" src="/assets/assistant/ink/title-${key}.webp" alt="${alt}" draggable="false">`;
 const demo = '<span class="lw-demo">示意數據</span>';
 
@@ -143,7 +146,8 @@ const ctaPair = `<div class="lw-hero-cta">
         <a class="lw-ghost" href="/">${ICON.line}LINE 登入網頁版</a>
       </div>`;
 
-const subhero = (art, heading, lead) => `<section class="lw-subhero" style="--lw-art:url('/intro/assets/og/${art}-art.webp')">
+// 各分頁頂部：主要角色場景圖（public/intro/assets/ip/<page>.webp，Codex CLI 以角色參考圖生成；原圖在 docs/assistant-assets/ip）
+const subhero = (art, heading, lead) => `<section class="lw-subhero has-ip" style="--lw-art:url('/intro/assets/ip/${art}.webp')">
   <div class="lw-wrap">
     ${heading}
     <p class="lw-hero-lead">${lead}</p>
@@ -227,7 +231,7 @@ const home = shell('home', {
   <section class="lw-band" aria-labelledby="intro-title">
     <div class="lw-grid is-center">
       <div>
-        <div class="aa-section-head"><h2 id="intro-title" class="aa-display">它不猜，它只看</h2></div>
+        <div class="aa-section-head has-q">${qv('wave')}<h2 id="intro-title" class="aa-display">它不猜，它只看</h2></div>
         <p class="lw-mystic">曜金不替你按下轉動，也不說下一轉會怎樣。它只做一件事：把散落在數千台機台上的紀錄，排成一道你看得見的光。</p>
         <p class="lw-lead" style="margin-top:14px">同一個 LINE 帳號、同一份積分：可以拿去轉幸運輪盤，也可以換成曜金的使用時間。</p>
       ${symbolStrip}
@@ -258,7 +262,7 @@ const home = shell('home', {
   </section>
 
   <section class="lw-band" aria-labelledby="ingame-title">
-    <div class="aa-section-head"><h2 id="ingame-title" class="aa-display">遊戲裡，它安靜地守在一角</h2></div>
+    <div class="aa-section-head has-q">${qv('phone')}<h2 id="ingame-title" class="aa-display">遊戲裡，它安靜地守在一角</h2></div>
     <p class="lw-lead">在 App 裡登入娛樂城、直接進遊戲。點一下金色按鈕，駐守小卡只佔左上角，右側的轉動與功能鍵完全不擋。</p>
     <figure class="lw-shot" style="margin-top:20px">
       <img src="/intro/assets/shot-ingame.webp" width="1366" height="768" loading="lazy" decoding="async" alt="遊戲畫面左上角疊著駐守小卡：目前機台 #0459、本場損益 +320 與停損停利線，以及兩台推薦機台">
@@ -278,7 +282,7 @@ const home = shell('home', {
         <div class="lw-panel-foot"><p class="aa-disclaimer" style="margin:0">強度依機台綜合分數換算 · 排序參考</p>${demo}</div>
       </div>
       <div>
-        <div class="aa-section-head"><h2 id="signal-title" class="aa-display">曜金訊號</h2></div>
+        <div class="aa-section-head has-q">${qv('gem')}<h2 id="signal-title" class="aa-display">曜金訊號</h2></div>
         <p class="lw-mystic">眼睛、眼鏡蛇、寶石……和遊戲盤面上一模一樣的符號。每一組訊號，都對應著某一台此刻符合條件、無人入座的機台。</p>
         <p class="lw-lead" style="margin-top:12px">那台機台是哪一台，畫面上不會說；機台一有變化，訊號就自動換成新的一組。</p>
         <p style="margin-top:18px"><a href="/intro/signal/">讀懂曜金訊號 ›</a></p>
@@ -286,13 +290,16 @@ const home = shell('home', {
     </div>
   </section>
 
-  <section class="lw-band" aria-labelledby="start-title">
-    <div class="aa-section-head"><h2 id="start-title" class="aa-display">三步，開啟曜金</h2></div>
-    <ol class="lw-steps is-cols">
-      <li><div><b>LINE 登入</b><p>不用另外註冊。登入後就是會員，可以轉幸運輪盤。</p></div></li>
-      <li><div><b>積分開通</b><p>把輪盤積分換成使用時間，<em>不用另外儲值</em>。使用中再換會往後延長。</p></div></li>
-      <li><div><b>帶進遊戲</b><p>Android 安裝 App，遊戲中隨時叫出駐守小卡；iPhone 用 Safari 網頁版、<a href="/intro/install/#ios">加入主畫面</a>。</p></div></li>
-    </ol>
+  <section class="lw-band lw-start" aria-labelledby="start-title">
+    <div class="lw-start-copy">
+      <div class="aa-section-head"><h2 id="start-title" class="aa-display">三步，開啟曜金</h2></div>
+      <ol class="lw-steps">
+        <li><div><b>LINE 登入</b><p>不用另外註冊。登入後就是會員，可以轉幸運輪盤。</p></div></li>
+        <li><div><b>積分開通</b><p>把輪盤積分換成使用時間，<em>不用另外儲值</em>。使用中再換會往後延長。</p></div></li>
+        <li><div><b>帶進遊戲</b><p>Android 安裝 App，遊戲中隨時叫出駐守小卡；iPhone 用 Safari 網頁版、<a href="/intro/install/#ios">加入主畫面</a>。</p></div></li>
+      </ol>
+    </div>
+    <img class="lw-start-figure" src="/intro/assets/ip/full.webp" width="730" height="1100" loading="lazy" decoding="async" alt="">
   </section>
 
   <section class="lw-band">
@@ -353,7 +360,7 @@ const rules = shell('rules', {
     </div>
     <div>
       <section id="rule-score" class="aa-rule" aria-labelledby="rule-score-title">
-        <div class="aa-section-head"><h2 id="rule-score-title" class="aa-display aa-ink-title">${ink('score', '助手怎麼排序')}</h2></div>
+        <div class="aa-section-head has-q">${qv('point')}<h2 id="rule-score-title" class="aa-display aa-ink-title">${ink('score', '助手怎麼排序')}</h2></div>
         <ul class="aa-reasons aa-rule-points">
           <li>四項數字各自換算成在同遊戲中的排名，再依比重合成綜合分數</li>
           <li>未開轉數越多、今日 RTP 越低、近 30 天 RTP 越高、今日下注量越高，分數越高</li>
@@ -378,7 +385,7 @@ const rules = shell('rules', {
     </div>
   </div>
   <section class="lw-band" id="symbols" aria-labelledby="symbols-title">
-    <div class="aa-section-head"><h2 id="symbols-title" class="aa-display aa-ink-title">${ink('game', '戰神賽特 II')}</h2><span class="aa-section-note">盤面符號</span></div>
+    <div class="aa-section-head has-q">${qv('gem')}<h2 id="symbols-title" class="aa-display aa-ink-title">${ink('game', '戰神賽特 II')}</h2><span class="aa-section-note">盤面符號</span></div>
     <p class="lw-lead">盤面 6 欄 × 5 列，共 30 格。認得這些符號，在遊戲裡就讀得懂每一次落下的盤面。</p>
     <div class="lw-symgroups">
       ${symbolGroups}
@@ -406,7 +413,7 @@ const signal = shell('signal', {
         <div class="lw-panel-foot"><p class="aa-disclaimer" style="margin:0">發出 21:06 · 排序參考，不代表遊戲結果</p>${demo}</div>
       </div>
       <div>
-        <div class="aa-section-head"><h2 id="what-title" class="aa-display">訊號是什麼</h2></div>
+        <div class="aa-section-head has-q">${qv('point')}<h2 id="what-title" class="aa-display">訊號是什麼</h2></div>
         <p class="lw-mystic">每一組訊號，都綁著一台發出當下符合條件、目前沒人使用的機台。</p>
         <p class="lw-lead" style="margin-top:12px">那台機台是哪一台，畫面上不會顯示；訊號只在開通期間、於助手首頁出現，一次一組。</p>
       </div>
@@ -414,7 +421,7 @@ const signal = shell('signal', {
   </section>
 
   <section class="lw-band" id="room-signal" aria-labelledby="room-title">
-    <div class="aa-section-head"><h2 id="room-title" class="aa-display">房間訊號</h2><span class="aa-section-note">坐上機台之後</span></div>
+    <div class="aa-section-head has-q">${qv('wave')}<h2 id="room-title" class="aa-display">房間訊號</h2><span class="aa-section-note">坐上機台之後</span></div>
     <p class="lw-mystic">每一間房，都有一組只屬於它的訊號。</p>
     <p class="lw-lead" style="margin-top:10px">房間訊號列出幾種符號各需要幾個。坐上機台後，每轉結束時盤面上這些符號都達到數量，就是訊號達標，可買免遊。同一間房開過免遊或到了隔天，訊號會換新。</p>
     <div class="lw-grid is-center" style="margin-top:22px">
@@ -431,7 +438,7 @@ const signal = shell('signal', {
   </section>
 
   <section class="lw-band" aria-labelledby="metal-title">
-    <div class="aa-section-head"><h2 id="metal-title" class="aa-display">訊號用的符號</h2><span class="aa-section-note">與遊戲盤面相同</span></div>
+    <div class="aa-section-head has-q">${qv('gem')}<h2 id="metal-title" class="aa-display">訊號用的符號</h2><span class="aa-section-note">與遊戲盤面相同</span></div>
     <p class="lw-lead">訊號只用戰神賽特 II 的九種一般符號。每組 2–3 種、至少一種高分符號，每種配上盤面數量，讀法和遊戲裡一樣：「眼睛 3 個、紅寶石 5 個」。</p>
     <div class="lw-symgroups">
       <div class="lw-symgroup">
@@ -512,7 +519,7 @@ const wheel = shell('wheel', {
         <img src="/intro/assets/shot-wheel.webp" width="780" height="1688" loading="lazy" decoding="async" alt="幸運輪盤畫面：六個獎項的金色輪盤、會員積分與抽獎按鈕">
       </figure>
       <div>
-        <div class="aa-section-head"><h2 id="wheel-how" class="aa-display">怎麼轉</h2></div>
+        <div class="aa-section-head has-q">${qv('wave')}<h2 id="wheel-how" class="aa-display">怎麼轉</h2></div>
         <p class="lw-lead">不用另外註冊。用 LINE 登入、填好會員資料，就能用積分轉輪盤。</p>
         <ul class="lw-facts">
           <li><span>單抽</span><span>6 積分</span></li>
@@ -536,7 +543,7 @@ const wheel = shell('wheel', {
         ${demo}
       </figure>
       <div>
-        <div class="aa-section-head"><h2 id="exchange-title" class="aa-display aa-ink-title">${ink('exchange', '積分兌換')}</h2></div>
+        <div class="aa-section-head has-q">${qv('point')}<h2 id="exchange-title" class="aa-display aa-ink-title">${ink('exchange', '積分兌換')}</h2></div>
         <p class="lw-mystic">同一份積分，可以交給輪盤，也可以拿來點亮曜金。</p>
         <p class="lw-lead" style="margin-top:12px">選好方案就開始計時，不用另外儲值；使用中再兌換，會從原本的到期時間往後延長。兌換方案與開放時間以會員頁面為準。</p>
         <p style="margin-top:18px"><a href="/intro/">看看曜金能做什麼 ›</a></p>
@@ -562,7 +569,7 @@ const install = shell('install', {
   <section class="lw-band" aria-labelledby="dock-title">
     <div class="lw-grid is-center">
       <div>
-        <div class="aa-section-head"><h2 id="dock-title" class="aa-display">駐守小卡</h2></div>
+        <div class="aa-section-head has-q">${qv('phone')}<h2 id="dock-title" class="aa-display">駐守小卡</h2></div>
         <p class="lw-lead">App 會讀出你目前坐的機台號，小卡直接顯示這台的數據，再推薦兩台空台；點一下，App 在遊戲裡幫你切過去。</p>
         <ul class="aa-reasons aa-rule-points">
           <li>平常三行：目前機台、本場損益、兩台推薦</li>
@@ -675,7 +682,7 @@ const install = shell('install', {
 
 
   <section class="lw-band" aria-labelledby="faq-title">
-    <div class="aa-section-head"><h2 id="faq-title" class="aa-display">常見問題</h2></div>
+    <div class="aa-section-head has-q">${qv('point')}<h2 id="faq-title" class="aa-display">常見問題</h2></div>
     <div class="lw-faq">
       <details><summary>需要另外註冊或付費嗎？${ICON.plus}</summary><p>不用另外註冊，用 LINE 登入就好。數據助手用輪盤的會員積分兌換使用時間，不需要另外付費。</p></details>
       <details><summary>用了助手會比較容易中嗎？${ICON.plus}</summary><p>不會。每一轉的結果都由遊戲伺服器決定，曜金只把已發生的機台紀錄整理、排序給你參考，不改變也不預測結果。請量力而為、先設好預算。</p></details>

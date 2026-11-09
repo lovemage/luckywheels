@@ -3,7 +3,7 @@
 
 @font-face {
   font-family: 'YJ Display';
-  src: url('/assets/assistant/fonts/yj-display.woff2?v=e655da9e') format('woff2');
+  src: url('/assets/assistant/fonts/yj-display.woff2?v=f1b25852') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
@@ -1867,4 +1867,23 @@ fieldset.aa-field {
 .aa-roomsig-form .aa-button {
   flex: none;
   min-height: 56px;
+}
+
+/* 房間訊號（App 內）：已達標的符號、全部達標的提示 */
+.aa-roomsig .aa-signal-cell.is-ok .aa-signal-mult {
+  color: var(--aa-success);
+}
+
+.aa-roomsig .aa-signal-cell.is-ok .aa-signal-name {
+  color: var(--aa-success);
+}
+
+.aa-roomsig-hit {
+  margin: 8px 16px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffe3a6, #e8c274 55%, #b9852f);
+  color: #1a1206;
+  font-weight: 800;
+  text-align: center;
 }

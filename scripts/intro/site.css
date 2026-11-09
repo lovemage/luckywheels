@@ -246,3 +246,36 @@
 .lw-devpanel + .lw-devpanel { margin-top: 18px; }
 .lw-devpanel[hidden] { display: none; }
 @media (max-width: 420px) { .lw-devtabs button { font-size: 14px; gap: 6px; } .lw-devtabs button em { display: none; } }
+
+/* ── 主要角色（IP）：分頁頂部背景 ── */
+.lw-subhero.has-ip { display: grid; align-content: end; min-height: clamp(300px, 30vw, 420px); padding-top: 0; }
+.lw-subhero.has-ip::before {
+  opacity: 1;
+  background: var(--lw-art) right center / auto 100% no-repeat;
+  -webkit-mask-image: none; mask-image: none;
+}
+/* 置中文字的可讀性：電腦版由左到右漸亮（角色在右側），手機版由下往上漸亮（文字在底部） */
+.lw-subhero.has-ip::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, #050403 0%, #050403 30%, rgba(5, 4, 3, 0.72) 52%, rgba(5, 4, 3, 0.15) 70%, rgba(5, 4, 3, 0) 85%);
+}
+.lw-subhero.has-ip h1, .lw-subhero.has-ip .lw-hero-lead { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.9); }
+@media (max-width: 719px) {
+  .lw-subhero.has-ip { min-height: 340px; }
+  .lw-subhero.has-ip::before { background-position: 78% top; background-size: auto 100%; }
+  .lw-subhero.has-ip::after { background: linear-gradient(0deg, #050403 0%, rgba(5, 4, 3, 0.88) 30%, rgba(5, 4, 3, 0.35) 62%, rgba(5, 4, 3, 0.1) 100%); }
+}
+
+/* ── 首頁「三步，開啟曜金」：全身立繪 ── */
+.lw-start { display: grid; gap: 8px; align-items: end; }
+.lw-start-figure { display: block; width: min(56vw, 230px); height: auto; margin: 0 auto -8px; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.8)); order: -1; }
+@media (min-width: 900px) {
+  .lw-start { grid-template-columns: 1fr 340px; gap: 32px; }
+  .lw-start-figure { order: 0; width: 100%; margin: 0; }
+  .lw-start .lw-steps { grid-template-columns: 1fr; }
+}
+
+/* ── Q 版角色：區塊標題旁的小圖 ── */
+.aa-section-head.has-q { align-items: flex-end; gap: 6px; }
+.aa-section-head.has-q .lw-q { flex: none; width: clamp(52px, 5vw, 68px); height: auto; margin: 0 2px -4px -4px; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.7)); }
+.aa-section-head.has-q h2 { margin-right: auto; }
