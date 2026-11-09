@@ -106,8 +106,8 @@ export function AssistantHome({
         <EntryTile icon={<InkIcon name="history" />} title="兌換紀錄" sub="開通與到期" onClick={() => onNavigate('exchange', 'aa-history')} />
       </nav>
 
-      {me && active && <SignalCard onExpired={onExpired} />}
       {me && active && <RoomSignalLookup onExpired={onExpired} />}
+      {me && <SignalCard onExpired={onExpired} />}
 
       <section className="aa-top" id="aa-top" aria-labelledby="aa-top-title">
         <div className="aa-section-head">

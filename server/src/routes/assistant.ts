@@ -30,7 +30,8 @@ import { currentSignal, roomSignalFor, SIGNAL_DISCLAIMER } from '../assistant/si
 
 // 數據助手會員端 API（計劃 M1、M3）。
 // - /me、兌換、兌換紀錄、推薦設定：登入＋會員條件即可（未開通也要能兌換）
-// - 遊戲、房間、推薦、訊號：另需使用期限內（403 ASSISTANT_EXPIRED）
+// - 遊戲、房間、推薦、房間訊號：另需使用期限內（403 ASSISTANT_EXPIRED）
+// - 曜金訊號（/signal、/signal/refresh）：不需開通，綁定的機台不對會員揭露
 // - /api/public/assistant/plans：不需登入（落地頁的兌換說明），旗標關閉（或預覽模式沒有預覽 cookie）時 404
 
 export const assistantRoutes = new Hono();
@@ -248,10 +249,11 @@ async function signalFor(c: { get(k: 'user'): { id: string } }, gameCode: string
   return { game: { code: game.code, name: game.name }, ...result, serverTime: now.toISOString() };
 }
 
-assistantRoutes.get('/api/assistant/signal', paid, async (c) => c.json(await signalFor(c, c.req.query('game'), false)));
+// 曜金訊號不需開通：會員看不到綁定的是哪一台（2026-11-09）
+assistantRoutes.get('/api/assistant/signal', async (c) => c.json(await signalFor(c, c.req.query('game'), false)));
 
 // 會員按「免遊結束，換一組」
-assistantRoutes.post('/api/assistant/signal/refresh', paid, async (c) => c.json(await signalFor(c, c.req.query('game'), true)));
+assistantRoutes.post('/api/assistant/signal/refresh', async (c) => c.json(await signalFor(c, c.req.query('game'), true)));
 
 // 房間訊號（Android App 遊戲內浮窗）：會員目前坐的機台的符號門檻；App 讀盤面比對，達標時提醒
 const RoomSignalQuery = z.object({ roomNo: z.string().trim().regex(/^\d{1,6}$/), game: z.string().min(1).max(60).optional() });
