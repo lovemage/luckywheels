@@ -215,12 +215,10 @@ const home = shell('home', {
   ${pillars}
   <div class="aa-hero-copy">
     <h1 id="hero-title" class="aa-display aa-ink-title">${ink('hero', '機台數據 一眼看清', '')}</h1>
-    <p class="aa-hero-sub">ATG 房間整理 · 本金條件篩選</p>
     <div class="aa-hero-space" aria-hidden="true"></div>
   </div>
 </section>
 <div class="lw-wrap lw-hero-after">
-  <p class="lw-hero-lead">每一台機台都留下了紀錄。金光升起的地方，曜金替你把它們讀出來。</p>
   ${ctaPair}
   <p class="lw-meta">Android ${APP_VERSION} · iPhone 請先使用網頁版</p>
 </div>
@@ -342,7 +340,7 @@ const rules = shell('rules', {
   description: '曜金規則說明數據助手畫面上的每個數字：未開轉數、RTP 返還率、今日下注量代表什麼，以及綜合分數、精選空台與本金推薦如何排序。',
   ogTitle: '曜金規則｜讀懂數字背後的紀錄',
   ogDesc: '未開轉數、RTP 返還率、今日下注量，曜金怎麼把它們排成一道光。',
-  body: `${subhero('rules', `<h1 class="aa-ink-title">${ink('rules', '曜金規則', '')}</h1>`, '每個數字都是一段已經發生的紀錄。讀懂它們，才看得懂曜金替你排出的順序。')}
+  body: `${subhero('rules', `<h1 class="aa-ink-title">${ink('rules', '曜金規則', '')}</h1>`, '每個數字，都是已發生的紀錄')}
 <div class="lw-wrap">
   <section class="lw-band">
     <nav class="aa-rules-toc" aria-label="本頁內容" style="margin:0">
@@ -399,7 +397,7 @@ const signal = shell('signal', {
   description: '曜金訊號用戰神賽特 II 盤面上的符號與數量組成，和遊戲裡看到的一模一樣；每一組都對應一台發出當下符合條件、無人入座的機台，機台一有變化就自動換組。',
   ogTitle: '曜金訊號｜盤面上的符號，一組只屬於此刻',
   ogDesc: '眼睛、眼鏡蛇、寶石，和遊戲盤面一模一樣。每一組訊號，都對應著此刻某一台符合條件的空台。',
-  body: `${subhero('signal', '<h1>曜金訊號</h1>', '盤面上熟悉的符號，排成一組只屬於此刻的訊號。它背後是一台真實存在、此刻無人入座的機台。')}
+  body: `${subhero('signal', '<h1>曜金訊號</h1>', '盤面上的符號，排成此刻的訊號')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="what-title">
     <div class="lw-grid is-center">
@@ -506,7 +504,7 @@ const wheel = shell('wheel', {
   description: 'LINE 登入就能轉幸運輪盤，用積分抽彩金；同一份積分也能開通曜金數據助手。單抽 6 積分、十連抽 48 積分，結果由伺服器判定。',
   ogTitle: '幸運輪盤｜LINE 登入，轉動今天的手氣',
   ogDesc: '積分抽彩金，也能開通曜金數據助手。',
-  body: `${subhero('wheel', '<h1>幸運輪盤</h1>', '指針停下之前，誰也不知道。LINE 登入，就能轉動今天的手氣。')}
+  body: `${subhero('wheel', '<h1>幸運輪盤</h1>', 'LINE 登入，轉動今天的手氣')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="wheel-how">
     <div class="lw-grid is-center">
@@ -559,7 +557,7 @@ const install = shell('install', {
   description: '下載曜金數據助手 Android App：在 App 裡登入娛樂城、直接玩遊戲，駐守小卡隨時叫出。iPhone 版準備中，現在可先使用網頁版。',
   ogTitle: '安裝 App｜把助手帶進遊戲裡',
   ogDesc: 'Android 立即下載；iPhone 版準備中，可先使用網頁版。',
-  body: `${subhero('install', '<h1>把助手帶進遊戲裡</h1>', 'Android 安裝 App，曜金就守在遊戲畫面的一角；iPhone 用 Safari 網頁版，加入主畫面一樣隨手打開。')}
+  body: `${subhero('install', '<h1>把助手帶進遊戲裡</h1>', 'Android 裝 App，iPhone 用網頁版')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="dock-title">
     <div class="lw-grid is-center">

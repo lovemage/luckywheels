@@ -3,7 +3,7 @@
 
 @font-face {
   font-family: 'YJ Intro';
-  src: url('/intro/assets/intro-display.woff2?v=89a7d55e') format('woff2');
+  src: url('/intro/assets/intro-display.woff2?v=973052b9') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
@@ -80,7 +80,8 @@
 }
 .lw-subhero .aa-ink-title img { margin-inline: auto; }
 .lw-subhero h1 { margin: 0; color: var(--aa-gold-hi); font-family: var(--aa-display); font-size: clamp(30px, 5vw, 46px); font-weight: 600; letter-spacing: 0.08em; }
-.lw-subhero .lw-hero-lead { margin-top: 12px; }
+.lw-subhero .lw-hero-lead { max-width: none; margin: 12px auto 0; text-align: center; letter-spacing: 0.06em; }
+.lw-hero-after { padding-top: 6px; }
 
 /* ── 段落 ── */
 .lw-band { padding: clamp(40px, 6vw, 80px) 0 0; }
