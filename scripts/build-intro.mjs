@@ -29,6 +29,7 @@ const ICON = {
   android: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.6 9.48 19.44 6.3a.38.38 0 0 0-.66-.38l-1.86 3.22a11.5 11.5 0 0 0-9.84 0L5.22 5.92a.38.38 0 1 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52ZM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z"/></svg>',
   apple: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.4 12.7c0-2.5 2-3.7 2.1-3.8-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.8-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8s2.2-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9 0 0-2.8-1.1-2.9-4.2ZM13.9 5.2c.7-.8 1.2-2 1-3.2-1 0-2.2.7-3 1.5-.6.7-1.2 1.9-1 3.1 1.1.1 2.3-.6 3-1.4Z"/></svg>',
   line: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5C6.5 2.5 2 6.1 2 10.6c0 4 3.6 7.4 8.4 8 .3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.5 1.1-.5 5.9-3.5 8-6 1.5-1.6 2.2-3.2 2.2-5C22 6.1 17.5 2.5 12 2.5Zm-3.7 10.6H6.4a.5.5 0 0 1-.5-.5V8.8a.5.5 0 0 1 1 0v3.3h1.4a.5.5 0 0 1 0 1Zm2-.5a.5.5 0 0 1-1 0V8.8a.5.5 0 0 1 1 0v3.8Zm4.5 0a.5.5 0 0 1-.9.3l-1.9-2.6v2.3a.5.5 0 0 1-1 0V8.8a.5.5 0 0 1 .9-.3l1.9 2.6V8.8a.5.5 0 0 1 1 0v3.8Zm3.1-2.4a.5.5 0 0 1 0 1h-1.4v.9h1.4a.5.5 0 0 1 0 1h-1.9a.5.5 0 0 1-.5-.5V8.8c0-.3.2-.5.5-.5h1.9a.5.5 0 0 1 0 1h-1.4v.9h1.4Z"/></svg>',
+  monitor: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 20h6M12 16v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>',
   plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>',
   corner: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3.5 4.5h17v15h-17z"/><path fill="currentColor" d="M5.5 6.5h7v4.5h-7z"/></svg>',
@@ -579,8 +580,15 @@ const install = shell('install', {
     </div>
   </section>
 
-  <section class="lw-band" id="android" aria-labelledby="android-title">
-    <div class="lw-platform">
+  <!-- 安裝方式：依裝置分頁（Android／iPhone／電腦）。網址 #android、#ios、#pc 直接打開對應分頁；沒有 JS 時三塊全部顯示 -->
+  <section class="lw-band" id="platforms" aria-label="安裝方式">
+    <div class="lw-devtabs" role="tablist" aria-label="選擇裝置" hidden>
+      <button type="button" role="tab" id="tab-android" aria-controls="android" aria-selected="true">${ICON.android}<span>Android</span></button>
+      <button type="button" role="tab" id="tab-ios" aria-controls="ios" aria-selected="false" tabindex="-1">${ICON.apple}<span>iPhone</span></button>
+      <button type="button" role="tab" id="tab-pc" aria-controls="pc" aria-selected="false" tabindex="-1">${ICON.monitor}<span>電腦</span><em>尚未推出</em></button>
+    </div>
+    <div class="lw-devpanel" role="tabpanel" id="android" aria-labelledby="tab-android">
+      <div class="lw-platform">
       <div class="lw-platform-head">
         <div>
           <h2 id="android-title" class="aa-display">${ICON.android}Android App</h2>
@@ -596,11 +604,10 @@ const install = shell('install', {
       </ol>
       <p class="lw-lead" style="margin-top:18px">在 LINE 裡打開這頁的話，先點右上角選單「以預設瀏覽器開啟」再下載。<a href="/android/">完整安裝說明（含各品牌手機設定）</a></p>
     </div>
-  </section>
-
-  <!-- iOS：目前用網頁版（Safari＋加入主畫面）。iPhone App 推出後，在這一塊上方加一個與 #android 相同結構的下載區塊 -->
-  <section class="lw-band" id="ios" aria-labelledby="ios-title">
-    <div class="lw-platform">
+    </div>
+    <!-- iOS：目前用網頁版（Safari＋加入主畫面）。iPhone App 推出後，在這一塊加入與 Android 相同結構的下載區塊 -->
+    <div class="lw-devpanel" role="tabpanel" id="ios" aria-labelledby="tab-ios">
+      <div class="lw-platform">
       <div class="lw-platform-head">
         <div>
           <h2 id="ios-title" class="aa-display">${ICON.apple}iPhone 網頁版</h2>
@@ -617,7 +624,57 @@ const install = shell('install', {
       </ol>
       <p class="lw-lead" style="margin-top:18px">網頁版讀不到遊戲畫面，所以房間訊號要自己對照；遊戲內浮窗、自動比對與震動提醒目前只有 Android App。iPhone App 推出後，安裝方式會放在這裡。</p>
     </div>
+    </div>
+    <!-- 電腦版：尚未推出。推出後換成下載／安裝說明 -->
+    <div class="lw-devpanel" role="tabpanel" id="pc" aria-labelledby="tab-pc" data-status="coming-soon">
+      <div class="lw-platform is-soon">
+        <div class="lw-platform-head">
+          <h2 class="aa-display">${ICON.monitor}電腦版</h2>
+          <span class="lw-soon">尚未推出</span>
+        </div>
+        <p class="lw-lead">電腦版還在準備中，推出後安裝方式會放在這裡。</p>
+      </div>
+    </div>
   </section>
+  <script>
+  (function () {
+    var bar = document.querySelector('.lw-devtabs');
+    if (!bar) return;
+    var tabs = [].slice.call(bar.querySelectorAll('[role=tab]'));
+    var ids = tabs.map(function (t) { return t.getAttribute('aria-controls'); });
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+    }
+    bar.hidden = false;
+    var fromHash = location.hash.slice(1);
+    var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    show(ids.indexOf(fromHash) >= 0 ? fromHash : isIOS ? 'ios' : 'android');
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () {
+        show(ids[i]);
+        if (history.replaceState) history.replaceState(null, '', '#' + ids[i]);
+      });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        var n = (i + d + tabs.length) % tabs.length;
+        show(ids[n], true);
+      });
+    });
+    window.addEventListener('hashchange', function () {
+      var h = location.hash.slice(1);
+      if (ids.indexOf(h) >= 0) show(h);
+    });
+  })();
+  </script>
+
 
   <section class="lw-band" aria-labelledby="faq-title">
     <div class="aa-section-head"><h2 id="faq-title" class="aa-display">常見問題</h2></div>

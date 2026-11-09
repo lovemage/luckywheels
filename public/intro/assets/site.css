@@ -3,7 +3,7 @@
 
 @font-face {
   font-family: 'YJ Intro';
-  src: url('/intro/assets/intro-display.woff2?v=113a5c86') format('woff2');
+  src: url('/intro/assets/intro-display.woff2?v=89a7d55e') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
@@ -226,3 +226,22 @@
 /* ── 訊號頁：房間訊號浮窗截圖 ── */
 .lw-float-shot { width: min(100%, 300px); margin-inline: auto; }
 .lw-float-shot img { border-radius: 14px; }
+
+/* ── 安裝頁：裝置分頁（作用中＝直角金色色塊填滿，不用側邊框） ── */
+.lw-devtabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 18px; border: 1px solid var(--aa-line-strong); }
+.lw-devtabs[hidden] { display: none; }
+.lw-devtabs button {
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+  min-height: 52px; padding: 8px 10px; border: 0; background: transparent; color: var(--aa-muted);
+  font: 600 16px/1.2 var(--aa-display); letter-spacing: 0.06em; cursor: pointer;
+}
+.lw-devtabs button + button { border-left: 1px solid var(--aa-line); }
+.lw-devtabs button svg { width: 20px; height: 20px; flex: none; }
+.lw-devtabs button em { font: 600 11px/1 'Noto Sans TC', sans-serif; font-style: normal; letter-spacing: 0; padding: 3px 6px; background: var(--aa-surface-hi); color: var(--aa-dim); }
+.lw-devtabs button:hover { color: var(--aa-gold-hi); background: var(--aa-surface); }
+.lw-devtabs button[aria-selected='true'] { background: var(--aa-gold); color: #1a1206; }
+.lw-devtabs button[aria-selected='true'] em { background: rgba(26, 18, 6, 0.15); color: #1a1206; }
+.lw-devtabs button:focus-visible { outline: 2px solid var(--aa-gold-hi); outline-offset: -4px; }
+.lw-devpanel + .lw-devpanel { margin-top: 18px; }
+.lw-devpanel[hidden] { display: none; }
+@media (max-width: 420px) { .lw-devtabs button { font-size: 14px; gap: 6px; } .lw-devtabs button em { display: none; } }
