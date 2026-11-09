@@ -238,16 +238,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 駐守小卡點推薦機台：收合小卡，由輔助程式在遊戲裡切換到該機台 */
-    private fun switchRoom(roomNo: String) {
-        if (!Regex("^\\d{1,6}$").matches(roomNo)) return
+    /**
+     * 駐守小卡點推薦機台：收合小卡，由輔助程式在遊戲裡切換。
+     * roomNos 可為「1288,3071,526」：依序嘗試，遊戲清單上有人的跳過（1.4.1+）。
+     */
+    private fun switchRoom(roomNos: String) {
+        val rooms = roomNos.split(',').map { it.trim() }.filter { Regex("^\\d{1,6}$").matches(it) }.distinct().take(10)
+        if (rooms.isEmpty()) return
         if (!isGamePage()) {
             Toast.makeText(this, R.string.switch_need_game, Toast.LENGTH_LONG).show()
             return
         }
         collapse()
-        evalGame("window.__lwApp.switchRoom(${JSONObject.quote(roomNo)})") {}
-        val deadline = SystemClock.elapsedRealtime() + SWITCH_TIMEOUT_MS
+        evalGame("window.__lwApp.switchRoom(${JSONArray(rooms)})") {}
+        val deadline = SystemClock.elapsedRealtime() + SWITCH_TIMEOUT_MS * rooms.size.coerceAtMost(3)
         val check = object : Runnable {
             override fun run() {
                 evalGame("{s: window.__lwApp.switchState(), h: window.__lwApp.hud()}") { json ->
@@ -255,14 +259,20 @@ class MainActivity : AppCompatActivity() {
                     val st = o?.optJSONObject("s")
                     val room = o?.optJSONObject("h")?.optString("room")
                     val status = st?.optString("status")
+                    val target = st?.optString("target")
+                    val skipped = st?.optJSONArray("skipped")?.let { a -> (0 until a.length()).map { "#" + a.optString(it) } }.orEmpty()
+                    val mine = target != null && target in rooms
                     when {
-                        room == roomNo -> toast(getString(R.string.switch_done, roomNo))
-                        st?.optString("target") == roomNo && status == "error" ->
-                            toast(switchError(st.optString("error"), roomNo))
+                        room != null && room in rooms && room == target ->
+                            toast(if (skipped.isEmpty()) getString(R.string.switch_done, room) else getString(R.string.switch_skipped, skipped.joinToString("、"), room))
+                        mine && status == "error" -> toast(switchError(st!!.optString("error"), target!!))
                         // 已按下確定、遊戲重新載入中（載入後由玩家按「開始遊戲」）
-                        st?.optString("target") == roomNo && status == "switching" || (o != null && o.isNull("h")) ->
-                            toast(getString(R.string.switch_loading, roomNo))
-                        SystemClock.elapsedRealtime() > deadline -> toast(getString(R.string.switch_failed, roomNo))
+                        mine && status == "switching" || (o != null && o.isNull("h")) ->
+                            toast(
+                                if (skipped.isEmpty()) getString(R.string.switch_loading, target ?: rooms[0])
+                                else getString(R.string.switch_skipped, skipped.joinToString("、"), target ?: rooms[0]),
+                            )
+                        SystemClock.elapsedRealtime() > deadline -> toast(getString(R.string.switch_failed, rooms[0]))
                         else -> ui.postDelayed(this, 500)
                     }
                 }
@@ -273,6 +283,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun switchError(code: String, roomNo: String): String = when (code) {
         "ROOM_UNAVAILABLE" -> getString(R.string.switch_unavailable, roomNo)
+        "ALL_BUSY" -> getString(R.string.switch_all_busy)
         "NOT_READY", "NOT_IN_GAME", "LIST_NOT_OPEN" -> getString(R.string.switch_need_game)
         else -> getString(R.string.switch_failed, roomNo)
     }

@@ -90,8 +90,18 @@ export function onDockModeChange(fn: (mode: DockMode) => void): () => void {
 /** App 支援在遊戲裡自動切換機台（1.2.0+） */
 export const hasRoomSwitch = isNativeApp && typeof window !== 'undefined' && typeof window.LuckyApp?.switchRoom === 'function';
 
-export function switchGameRoom(roomNo: string): void {
-  call(() => window.LuckyApp?.switchRoom?.(roomNo), undefined);
+const hasCapability = (cap: string) =>
+  isNativeApp &&
+  typeof window !== 'undefined' &&
+  call(() => (window.LuckyApp?.capabilities?.() ?? '').split(',').includes(cap), false);
+
+/** App 1.4.1+：切換時可帶多台候選，遊戲清單上有人的自動跳過 */
+export const hasMultiSwitch = hasCapability('multiswitch');
+
+/** 切換到 roomNo；App 支援時一併帶入備選（依序嘗試，坐進第一台空台） */
+export function switchGameRoom(roomNo: string, fallbacks: string[] = []): void {
+  const rooms = hasMultiSwitch ? [roomNo, ...fallbacks.filter((r) => r !== roomNo)].slice(0, 8) : [roomNo];
+  call(() => window.LuckyApp?.switchRoom?.(rooms.join(',')), undefined);
 }
 
 /** App 支援守護提醒（1.3.0+）；舊版 App 只在小卡打開時看得到提醒 */

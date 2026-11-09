@@ -18,7 +18,7 @@ class AssistantBridge(
 ) {
     /** 1.4.0+：App 支援的功能（網頁據此決定要不要顯示房間訊號入口） */
     @JavascriptInterface
-    fun capabilities(): String = "signal"
+    fun capabilities(): String = "signal,multiswitch"
 
     /** 1.4.0+：房間訊號達標：震動、打開訊號浮窗、顯示訊息（只提醒，不操作遊戲） */
     @JavascriptInterface
@@ -28,7 +28,7 @@ class AssistantBridge(
     @JavascriptInterface
     fun alert(message: String) = onAlert(message.take(200))
 
-    /** 1.2.0+：在遊戲裡切換到指定機台（只切換、不下注） */
+    /** 1.2.0+：在遊戲裡切換到指定機台（只切換、不下注）；1.4.1+ 可傳逗號分隔的多台，依序嘗試第一台空台 */
     @JavascriptInterface
     fun switchRoom(roomNo: String) = onSwitchRoom(roomNo)
 

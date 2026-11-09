@@ -162,8 +162,15 @@
 
   var state = { target: null, status: 'idle', error: null };
 
-  async function switchRoom(roomNo) {
-    state = { target: roomNo, status: 'running', error: null };
+  function spriteName(node) {
+    var c = node && node.getComponent && node.getComponent('cc.Sprite');
+    return c && c.spriteFrame ? c.spriteFrame.name : null;
+  }
+
+  // 1.4.1+：依序嘗試多台候選機台，清單上「有人／已預約」或確定鈕不能按的就跳過，坐進第一台真正的空台。
+  // 推薦資料最多十幾分鐘前的，所以以遊戲清單當下的狀態為準（machinel_icon＝空台）。
+  async function switchRoom(rooms) {
+    state = { target: rooms[0], status: 'running', error: null, skipped: [] };
     try {
       if (!ready()) throw new Error('NOT_READY');
       // 1. 開「選擇機台」（遊戲中按機台按鈕；剛進遊戲時清單本來就開著）
@@ -176,48 +183,51 @@
       // 清單第一次打開時還在載入目前那一頁；這時候換頁會兩個請求互撞、清單停在空白，所以等載入完再動
       await until(function () { var l = byName('loadingContent', true); return !l; }, 8000);
       await sleep(1000);
-      // 2. 切到該分頁（每頁 500 台）
-      var n = Number(roomNo);
-      var page = Math.floor((n - 1) / 500) + 1;
-      var lo = (page - 1) * 500 + 1;
-      var hi = page * 500;
-      var inPage = function () {
-        var items = listItems();
-        return items.length > 0 && items.every(function (it) {
-          var no = Number(textOf(child(it, 'content/number')));
-          return no >= lo && no <= hi;
-        });
-      };
-      if (!inPage()) {
-        var pb = pageButton(page);
-        if (!pb) throw new Error('PAGE_NOT_FOUND');
-        press(pb, true);
-        if (!(await until(inPage, 15000))) throw new Error('PAGE_TIMEOUT');
+      for (var i = 0; i < rooms.length; i++) {
+        var roomNo = rooms[i];
+        state.target = roomNo;
+        // 2. 切到該分頁（每頁 500 台）
+        var n = Number(roomNo);
+        var page = Math.floor((n - 1) / 500) + 1;
+        var lo = (page - 1) * 500 + 1;
+        var hi = page * 500;
+        var inPage = function () {
+          var items = listItems();
+          return items.length > 0 && items.every(function (it) {
+            var no = Number(textOf(child(it, 'content/number')));
+            return no >= lo && no <= hi;
+          });
+        };
+        if (!inPage()) {
+          var pb = pageButton(page);
+          if (!pb) { state.skipped.push(roomNo); continue; }
+          press(pb, true);
+          if (!(await until(inPage, 15000))) { state.skipped.push(roomNo); continue; }
+        }
+        // 3. 清單上的即時狀態：不是空台就換下一台
+        var item = listItems().filter(function (it) { return textOf(child(it, 'content/number')) === roomNo; })[0];
+        if (!item || spriteName(child(item, 'content/icon')) !== 'machinel_icon') { state.skipped.push(roomNo); continue; }
+        press(item);
+        if (!(await until(function () { return detailRoom() === roomNo; }, 8000))) { state.skipped.push(roomNo); continue; }
+        // 4. 遊戲中是「確定」，剛進遊戲是「選取」＋確認視窗；按鈕不能按＝剛被坐走
+        var findConfirm = function () { return byName('confirmBtn', true) || byName('selectBtn', true); };
+        if (!(await until(findConfirm, 3000))) { state.skipped.push(roomNo); continue; }
+        var usable = await until(function () {
+          var b = findConfirm();
+          var cb = b && clickable(b);
+          return cb && cb.comp.interactable !== false ? b : null;
+        }, 2500);
+        if (!usable) { state.skipped.push(roomNo); continue; }
+        press(usable);
+        var alertBtn = await until(function () {
+          var a = byName('GameAlert', true);
+          return a && child(a, 'content/button/confirm');
+        }, 3000);
+        if (alertBtn) press(alertBtn);
+        state.status = 'switching';
+        return;
       }
-      // 3. 點機台，等細項面板換成這台
-      var item = listItems().filter(function (it) { return textOf(child(it, 'content/number')) === roomNo; })[0];
-      if (!item) throw new Error('ROOM_NOT_FOUND');
-      press(item);
-      if (!(await until(function () { return detailRoom() === roomNo; }, 8000))) throw new Error('DETAIL_TIMEOUT');
-      // 4. 遊戲中是「確定」，剛進遊戲是「選取」＋確認視窗
-      var findConfirm = function () { return byName('confirmBtn', true) || byName('selectBtn', true); };
-      var confirm = await until(findConfirm, 3000);
-      if (!confirm) throw new Error('NO_CONFIRM');
-      // 細項剛換成這台時按鈕可能還沒啟用，等一下再判斷是否被占用
-      var usable = await until(function () {
-        var b = findConfirm();
-        var cb = b && clickable(b);
-        return cb && cb.comp.interactable !== false ? b : null;
-      }, 3000);
-      if (!usable) throw new Error('ROOM_UNAVAILABLE');
-      confirm = usable;
-      press(confirm);
-      var alertBtn = await until(function () {
-        var a = byName('GameAlert', true);
-        return a && child(a, 'content/button/confirm');
-      }, 3000);
-      if (alertBtn) press(alertBtn);
-      state.status = 'switching';
+      throw new Error(rooms.length > 1 ? 'ALL_BUSY' : 'ROOM_UNAVAILABLE');
     } catch (e) {
       state.status = 'error';
       state.error = String((e && e.message) || e);
@@ -236,7 +246,8 @@
       if (!room && !bal) return null;
       return { room: room, balance: textOf(bal), win: textOf(win), stake: stake, boards: board.list };
     },
-    switchRoom: function (roomNo) { switchRoom(String(roomNo)); return true; },
+    // roomNo：單一房號，或 1.4.1+ 依序嘗試的房號陣列
+    switchRoom: function (roomNo) { switchRoom(Array.isArray(roomNo) ? roomNo.map(String) : [String(roomNo)]); return true; },
     switchState: function () { return state; },
   };
 })();

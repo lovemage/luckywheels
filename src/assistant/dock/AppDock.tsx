@@ -94,6 +94,8 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
     });
   const [now, setNow] = useState(() => Date.now());
   const seen = useRef(new Set<string>());
+  // 最近一次抓到的候選空台（依分數排序），切換時當備選：推薦的那台被坐走就自動換下一台
+  const pool = useRef<string[]>([]);
 
   useEffect(() => onGameHud(setHud), []);
 
@@ -114,11 +116,12 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
   const pickTwo = useCallback(async () => {
     const list = await fetchCandidates(board);
     setGameName(list.game.name);
-    const pool = list.items.filter((r) => r.roomNo !== roomNo);
-    let fresh = pool.filter((r) => !seen.current.has(r.roomNo));
+    const candidates = list.items.filter((r) => r.roomNo !== roomNo);
+    pool.current = candidates.map((r) => r.roomNo);
+    let fresh = candidates.filter((r) => !seen.current.has(r.roomNo));
     if (fresh.length < PICKS) {
       seen.current.clear();
-      fresh = pool;
+      fresh = candidates;
     }
     const next = fresh.slice(0, PICKS);
     next.forEach((r) => seen.current.add(r.roomNo));
@@ -277,7 +280,7 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
                   type="button"
                   className="aa-dock-chip"
                   disabled={!hasRoomSwitch}
-                  onClick={() => switchGameRoom(r.roomNo)}
+                  onClick={() => switchGameRoom(r.roomNo, [...(picks ?? []).map((p) => p.roomNo), ...pool.current])}
                   aria-label={`切換到 ${r.roomNo} 號機台`}
                 >
                   <span className="aa-dock-pick-no">#{r.roomNo}</span>
@@ -302,7 +305,7 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
                     type="button"
                     className="aa-dock-pick"
                     disabled={!hasRoomSwitch}
-                    onClick={() => switchGameRoom(r.roomNo)}
+                    onClick={() => switchGameRoom(r.roomNo, [...(picks ?? []).map((p) => p.roomNo), ...pool.current])}
                     aria-label={`切換到 ${r.roomNo} 號機台`}
                   >
                     <span className="aa-dock-pick-no">#{r.roomNo}</span>

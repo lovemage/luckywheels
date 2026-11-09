@@ -20,7 +20,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public/intro');
 const ORIGIN = 'https://luckyds.com';
 const APK = '/downloads/luckyds-assistant.apk';
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.4.1';
 
 const pillars = readFileSync(join(ROOT, 'scripts/intro/pillars.svg'), 'utf8');
 

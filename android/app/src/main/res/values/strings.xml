@@ -16,4 +16,6 @@
     <string name="switch_done">已切換到 #%1$s</string>
     <string name="switch_unavailable">#%1$s 目前無法選取，請換一台</string>
     <string name="switch_failed">無法自動切換到 #%1$s，請在遊戲裡手動選擇</string>
+    <string name="switch_skipped">%1$s 有人，已改坐 #%2$s</string>
+    <string name="switch_all_busy">推薦的機台目前都有人，請按「換一組」</string>
 </resources>
