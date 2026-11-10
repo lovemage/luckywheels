@@ -945,3 +945,16 @@ html.is-dock body {
 .aa-dock-principal-error {
   color: var(--aa-danger, #ff9b8a);
 }
+
+/* 駐守小卡標題列：剩餘時間 */
+.aa-dock-clock {
+  flex: none;
+  margin-left: auto;
+  color: var(--aa-gold-hi);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.aa-dock-clock .aa-passclock-label {
+  font-size: 10px;
+}

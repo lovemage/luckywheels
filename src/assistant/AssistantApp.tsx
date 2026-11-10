@@ -6,6 +6,7 @@ import type { MeProfile } from '../state/session.js';
 import { ASSISTANT_BRAND } from './brand.js';
 import { fmtInt } from './format.js';
 import { BrandMark } from './BrandMark.js';
+import { PassClock } from './PassClock.js';
 import { InkIcon } from './InkTitle.js';
 import { AssistantHome } from './views/AssistantHome.js';
 import { RecommendView } from './views/RecommendView.js';
@@ -89,7 +90,12 @@ export function AssistantApp({
               <Home aria-hidden="true" />
               <span>主頁</span>
             </a>
-            {me && <span className="aa-badge">積分：{fmtInt(me.points)}</span>}
+            {me && (
+              <div className="aa-badges">
+                <span className="aa-badge">積分：{fmtInt(me.points)}</span>
+                <PassClock me={me} className="aa-badge" onExpired={reload} />
+              </div>
+            )}
           </div>
         </header>
 

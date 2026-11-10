@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { ApiError, api } from '../../api/client.js';
 import { fetchAssistantMe, type AssistantMe, type RoomsResponse, type ScoredRoom } from '../../api/assistant.js';
 import { BrandMark } from '../BrandMark.js';
+import { PassClock } from '../PassClock.js';
 import { fmtAgo, fmtInt, fmtRemainingDetail, fmtRtp } from '../format.js';
 import {
   backToGame,
@@ -246,6 +247,7 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
             <span className="aa-dock-game">駐守助手</span>
           )}
         </p>
+        {me?.pass.active && <PassClock me={me} className="aa-dock-clock" onExpired={loadMe} />}
         {me && (
           <button type="button" className="aa-dock-more" aria-expanded={!compact} onClick={toggleCompact}>
             {compact ? '更多' : '精簡'}
