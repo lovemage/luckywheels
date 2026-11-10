@@ -19,6 +19,10 @@ const { values } = parseArgs({
   },
 });
 
+const MAX_CONSECUTIVE_FAILURES = 4;
+/** 連續失敗達上限後先停 30 分鐘再結束程序（讓 Railway 重啟），之後新容器再試 4 輪，依此循環 */
+const RESTART_DELAY_MS = 30 * 60_000;
+
 const log = (msg: string) => console.log(`[collector ${new Date().toISOString()}] ${msg}`);
 
 let stopping = false;
@@ -59,9 +63,24 @@ if (!dataAssistantEnabled()) {
   const outcome = await runOnce();
   process.exitCode = outcome.status === 'failed' ? 1 : 0;
 } else {
+  let consecutiveFailures = 0;
   while (!stopping) {
     const started = Date.now();
-    await runOnce().catch((err) => log(`未預期錯誤：${err instanceof Error ? err.message : String(err)}`));
+    const outcome = await runOnce().catch((err) => {
+      log(`未預期錯誤：${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    });
+    // 連續失敗達上限就結束程序（exit code 1），交給 Railway 重啟容器：
+    // 2026-11-10 多輪逾時後 Chromium 在容器內連啟動都失敗，只有重啟容器才會恢復。「略過」不算成功也不算失敗。
+    if (outcome?.status === 'succeeded') consecutiveFailures = 0;
+    else if (outcome === null || outcome.status === 'failed') consecutiveFailures++;
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      log(`連續 ${consecutiveFailures} 輪採集失敗，停止重試，${RESTART_DELAY_MS / 60_000} 分鐘後結束程序由 Railway 重啟`);
+      await sleep(RESTART_DELAY_MS); // 收到 SIGTERM 會提早喚醒
+      if (stopping) break; // 部署或手動停止：正常結束，不當成失敗
+      process.exitCode = 1;
+      break;
+    }
     if (stopping) break;
     // 間隔以「開始到開始」計算；本輪超時則至少休息 30 秒
     const { intervalMinutes } = await readCollectorSettings(prisma).catch(() => ({ intervalMinutes: 10 }));
@@ -70,3 +89,5 @@ if (!dataAssistantEnabled()) {
 }
 
 await prisma.$disconnect();
+// 逾時中止的那一輪可能還留著瀏覽器或計時器，明確結束，確保 Railway 看得到程序已退出
+if (process.exitCode === 1) process.exit(1);
