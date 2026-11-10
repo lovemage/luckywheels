@@ -155,12 +155,14 @@ export const postExchange = (plan: TimePlan, idempotencyKey: string) =>
 export const fetchExchanges = () => api<{ items: ExchangeRecord[] }>('/api/assistant/exchanges');
 
 // ── 訊號 ──
-/** 戰神賽特 II 的一般符號（server/src/assistant/signal.ts SIGNAL_SYMBOLS） */
+/** 戰神賽特 II 的盤面符號（server/src/assistant/signal.ts SIGNAL_SYMBOLS；scarab＝甲蟲、scarab_color＝彩甲） */
 export type SignalSymbol =
   | 'eye'
   | 'cobra'
   | 'bow'
   | 'sickle'
+  | 'scarab'
+  | 'scarab_color'
   | 'gem_yellow'
   | 'gem_red'
   | 'gem_purple'

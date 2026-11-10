@@ -111,6 +111,8 @@
   var SYMBOLS = {
     symbol_01: 'eye', symbol_02: 'cobra', symbol_03: 'bow', symbol_04: 'sickle',
     symbol_05: 'gem_yellow', symbol_06: 'gem_red', symbol_07: 'gem_purple', symbol_08: 'gem_blue', symbol_09: 'gem_green',
+    // 1.5.1+：Scatter（甲蟲＝金色、彩甲＝紫色）
+    symbol_15: 'scarab', symbol_16: 'scarab_color',
   };
   var BUSY = { symbolAnimation: 1, symbolOut: 1, frame: 1 };
   var board = { sid: Math.random().toString(36).slice(2, 8), seq: 0, sig: null, since: 0, last: null, list: [], first: true };
@@ -152,7 +154,8 @@
     board.last = sig;
     // 進入遊戲時原本就在盤面上的那一盤不算（還沒轉過）
     if (board.first) { board.first = false; return; }
-    var counts = {};
+    // Scatter 一律帶上（0 也帶），網頁端以此判斷這版 App 讀得到甲蟲／彩甲
+    var counts = { scarab: 0, scarab_color: 0 };
     cells.forEach(function (c) { var k = SYMBOLS[c]; if (k) counts[k] = (counts[k] || 0) + 1; });
     board.seq += 1;
     board.list.push({ sid: board.sid, seq: board.seq, counts: counts });

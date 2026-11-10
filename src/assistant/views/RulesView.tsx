@@ -54,9 +54,10 @@ const METRICS: Metric[] = [
   },
 ];
 
-/** 訊號會用到的盤面符號：高分符號 4 種、寶石 5 種 */
+/** 訊號會用到的盤面符號：高分符號 4 種、Scatter 2 種（都算大圖）、寶石 5 種 */
 const SIGNAL_SYMBOL_ROWS: { label: string; keys: (keyof typeof ATG_SYMBOLS)[] }[] = [
   { label: '高分符號', keys: ['eye', 'cobra', 'bow', 'sickle'] },
+  { label: 'Scatter', keys: ['scarab', 'scarab_color'] },
   { label: '寶石', keys: ['gem_yellow', 'gem_red', 'gem_purple', 'gem_blue', 'gem_green'] },
 ];
 
@@ -121,7 +122,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
           </ul>
         ))}
         <ul className="aa-reasons aa-rule-points">
-          <li>每組訊號由 2–3 種戰神賽特 II 的盤面符號加上數量組成，例如「眼睛 3 個、紫寶石 5 個」，至少有一種高分符號</li>
+          <li>每組訊號由大圖（高分符號或甲蟲、彩甲）加上寶石組成，例如「眼睛 = 3、紫寶石 ≥ 5」或「甲蟲 = 2、彩甲 = 1、藍寶石 ≥ 5」；大圖要剛好相等，寶石達到以上即可</li>
           <li>訊號強度由對應機台的綜合分數換算，分數越高，強度越高</li>
           <li>對應的機台有人入座、開過免費遊戲、今日 RTP 明顯變動、資料停止更新、掉出 TOP 5，或到了隔天，系統會自動換一組新的訊號，並在畫面上說明原因</li>
           <li>未開通時看不到 TOP 5 的房號，開通後才能逐台查房間訊號</li>
@@ -136,7 +137,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
         <p className="aa-rule-weight">開通後使用 · 每台每天 5 組</p>
         <p className="aa-rule-meaning">抓連續多日數據分析，每天更新前七天單一房間數據，推薦當天最適合的訊號；每台每天 5 組，所有會員看到的相同</p>
         <ul className="aa-reasons aa-rule-points">
-          <li>坐上機台後查房號（Android App 會自動帶入），每轉結束時盤面上這些符號的數量都剛好相等，就是訊號達標，可買免遊</li>
+          <li>坐上機台後查房號（Android App 會自動帶入），每轉結束時盤面上的大圖（高分符號、甲蟲、彩甲）數量剛好相等（=）、寶石數量達到以上（≥），就是訊號達標，可買免遊</li>
           <li>免遊結束後可按「免遊結束，換下一組」看同一台的下一組；按錯可以回上一組</li>
           <li>網頁版會記得上次查的房號與組數，在遊戲和助手之間切換時不用重新輸入</li>
           <li>隔天，或系統偵測到這台自然開出免遊時，整串 5 組會換新，從第 1 組開始</li>

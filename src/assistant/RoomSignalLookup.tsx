@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { api, ApiError } from '../api/client.js';
 import { currentGameHud, isNativeApp, onGameHud } from '../native.js';
-import { atgSymbol } from './atgSymbols.js';
+import { atgSymbol, symbolOp } from './atgSymbols.js';
 import { meets, roomSignalState, subscribeRoomSignal, symbolMet } from './dock/roomSignal.js';
 import { currentSetIndex, saveSetIndex, setsOf, subscribeSetIndex, type RoomSignalResponse } from './roomSignalSets.js';
 
@@ -160,13 +160,13 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
           <ul className="aa-signal-symbols" data-count={symbols.length}>
             {symbols.map((s, i) => {
               const cur = counts?.[s.symbol];
-              const ok = symbolMet(cur, s.count);
+              const ok = symbolMet(s.symbol, cur, s.count);
               return (
                 <li key={s.symbol} className={`aa-signal-cell${ok ? ' is-ok' : ''}`} style={{ '--i': i } as React.CSSProperties}>
                   <img src={atgSymbol(s.symbol).img} alt="" width="72" height="72" draggable={false} />
                   <span
                     className="aa-signal-mult aa-display"
-                    aria-label={`${atgSymbol(s.symbol).name} 需要 ${s.count} 個${counts ? `，最近一轉 ${cur ?? 0} 個${ok ? '，已達標' : ''}` : ''}`}
+                    aria-label={`${atgSymbol(s.symbol).name} 需要${symbolOp(s.symbol) === '≥' ? '至少' : '剛好'} ${s.count} 個${counts ? `，最近一轉 ${cur ?? 0} 個${ok ? '，已達標' : ''}` : ''}`}
                   >
                     <span aria-hidden="true">
                       {counts ? (
@@ -177,7 +177,7 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
                         </>
                       ) : (
                         <>
-                          <span className="aa-signal-x">=</span>
+                          <span className="aa-signal-x">{symbolOp(s.symbol)}</span>
                           {s.count}
                         </>
                       )}
@@ -197,8 +197,8 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
           ) : (
             <p className="aa-signal-summary">
               {counts
-                ? `#${state.data.roomNo}：最近一轉的數量／門檻，全部剛好相等就是訊號達標，可買免遊`
-                : `#${state.data.roomNo}：每轉結束時，盤面上以上符號的數量都剛好相等，就是訊號達標，可買免遊`}
+                ? `#${state.data.roomNo}：最近一轉的數量／門檻，大圖剛好相等、寶石達到以上，就是訊號達標，可買免遊`
+                : `#${state.data.roomNo}：每轉結束時，盤面上的大圖數量剛好相等（=）、寶石達到以上（≥），就是訊號達標，可買免遊`}
             </p>
           )}
         </div>

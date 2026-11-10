@@ -753,7 +753,39 @@ html.is-dock body {
   font-size: 13px;
 }
 
-/* 駐守小卡：一行房間訊號 */
+/* 駐守小卡：一行房間訊號＋右側「換」下一組 */
+.aa-dock-sigline {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.aa-dock-sigline .aa-dock-sig {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.aa-dock-sig-next {
+  flex-direction: column;
+  gap: 0;
+  width: 44px;
+  min-height: 38px;
+  line-height: 1.1;
+}
+
+.aa-dock-sig-next small {
+  color: var(--aa-muted);
+  font-size: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-dock-sig-next:disabled {
+  opacity: 0.4;
+}
+
 .aa-dock-sig {
   display: flex;
   align-items: center;

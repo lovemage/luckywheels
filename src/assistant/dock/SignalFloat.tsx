@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { backToGame, reportDockHeight, requestDockMode } from '../../native.js';
-import { atgSymbol } from '../atgSymbols.js';
-import { nextRoomSignalSet, roomSignalState, setRoomSignalEnabled, subscribeRoomSignal, symbolMet } from './roomSignal.js';
+import { atgSymbol, isScatterSymbol, symbolOp } from '../atgSymbols.js';
+import { needsScatterUpdate, nextRoomSignalSet, roomSignalState, setRoomSignalEnabled, subscribeRoomSignal, symbolMet } from './roomSignal.js';
 import '../assistant.css';
 import './dock.css';
 
@@ -64,14 +64,16 @@ export function SignalFloat() {
       {st.symbols && (
         <ul className="aa-sigfloat-rows" aria-label="訊號符號：最近一轉數量／門檻">
           {st.symbols.map((s) => {
-            const cur = st.counts?.[s.symbol];
-            const ok = symbolMet(cur, s.count);
+            const unknown = needsScatterUpdate(st.symbols!, st.counts) && isScatterSymbol(s.symbol);
+            const cur = unknown ? undefined : st.counts?.[s.symbol] ?? (st.counts ? 0 : undefined);
+            const ok = symbolMet(s.symbol, cur, s.count);
+            const need = symbolOp(s.symbol) === '≥' ? `≥${s.count}` : s.count;
             return (
               <li key={s.symbol} className={ok ? 'is-ok' : undefined}>
                 <img src={atgSymbol(s.symbol).img} alt="" width="34" height="34" />
                 <span className="aa-sigfloat-name">{atgSymbol(s.symbol).name}</span>
-                <span className="aa-sigfloat-count" aria-label={`${atgSymbol(s.symbol).name} 最近一轉 ${cur ?? '未讀取'} 個，門檻 ${s.count} 個${ok ? '，已達標' : ''}`}>
-                  <b>{cur ?? '–'}</b>/{s.count}
+                <span className="aa-sigfloat-count" aria-label={`${atgSymbol(s.symbol).name} 最近一轉 ${cur ?? '未讀取'} 個，需要${symbolOp(s.symbol) === '≥' ? '至少' : '剛好'} ${s.count} 個${ok ? '，已達標' : ''}`}>
+                  <b>{cur ?? '–'}</b>/{need}
                 </span>
               </li>
             );
@@ -79,6 +81,9 @@ export function SignalFloat() {
         </ul>
       )}
 
+      {st.symbols && needsScatterUpdate(st.symbols, st.counts) && (
+        <p className="aa-dock-note">這組含甲蟲／彩甲，請更新 App 至 1.5.1 才能自動比對</p>
+      )}
       <p className="aa-sigfloat-foot">今日達標 {st.today} 次 · 不代表遊戲結果</p>
       {st.symbols && st.setTotal > 1 && (
         <button

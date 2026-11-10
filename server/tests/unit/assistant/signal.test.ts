@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Prisma } from '@prisma/client';
-import { endReasonFor, HIGH_SYMBOLS, hitRate, randomSymbols, ROOM_SIGNAL_SETS, roomSignalFor, roomSignalSets, seededRand, SIGNAL_SYMBOLS, strengthFor, topIdle } from '../../../src/assistant/signal.js';
+import { endReasonFor, HIGH_SYMBOLS, hitRate, isGem, SCATTER_SYMBOLS, randomSymbols, ROOM_SIGNAL_SETS, roomSignalFor, roomSignalSets, seededRand, SIGNAL_SYMBOLS, strengthFor, topIdle } from '../../../src/assistant/signal.js';
 import type { ScoreBoard } from '../../../src/assistant/board.js';
 import type { SignalSettings } from '../../../src/assistant/settings.js';
 import { planLabel } from '../../../src/assistant/pass.js';
@@ -20,25 +20,44 @@ const room = (o: Record<string, unknown> = {}) => ({
 });
 
 describe('randomSymbols', () => {
-  it('picks 2–3 distinct game symbols with thresholds 3–6, at least one high symbol, hit rate 4–15%', () => {
-    const high = HIGH_SYMBOLS as readonly string[];
-    for (let i = 0; i < 300; i++) {
+  const high = HIGH_SYMBOLS as readonly string[];
+  const scatter = SCATTER_SYMBOLS as readonly string[];
+  it('normal sets: 1 high symbol (= 3–6) plus 1–2 gems (≥ 3–6), hit rate 4–15%; scatter sets follow the scarab rules', () => {
+    let scatterSets = 0;
+    for (let i = 0; i < 600; i++) {
       const s = randomSymbols();
-      expect(s.length).toBeGreaterThanOrEqual(2);
-      expect(s.length).toBeLessThanOrEqual(3);
       expect(new Set(s.map((x) => x.symbol)).size).toBe(s.length);
-      expect(s.some((x) => high.includes(x.symbol))).toBe(true);
-      expect(hitRate(s)).toBeGreaterThanOrEqual(0.04);
-      expect(hitRate(s)).toBeLessThanOrEqual(0.15);
-      for (const x of s) {
-        expect(SIGNAL_SYMBOLS).toContain(x.symbol);
-        expect(x.count).toBeGreaterThanOrEqual(3);
-        expect(x.count).toBeLessThanOrEqual(6);
-      }
-      // 依固定順序（高分符號在前）
+      for (const x of s) expect(SIGNAL_SYMBOLS).toContain(x.symbol);
+      // 依固定順序（大圖在前、寶石在後）
       const order = s.map((x) => SIGNAL_SYMBOLS.indexOf(x.symbol));
       expect([...order].sort((a, b) => a - b)).toEqual(order);
+      const gems = s.filter((x) => isGem(x.symbol));
+      const sc = s.filter((x) => scatter.includes(x.symbol));
+      if (sc.length) {
+        scatterSets++;
+        expect(s.filter((x) => high.includes(x.symbol))).toHaveLength(0);
+        expect(gems).toHaveLength(1);
+        expect(gems[0]!.count).toBeGreaterThanOrEqual(3);
+        expect(gems[0]!.count).toBeLessThanOrEqual(5);
+        const scarab = sc.find((x) => x.symbol === 'scarab')?.count ?? 0;
+        const color = sc.find((x) => x.symbol === 'scarab_color')?.count ?? 0;
+        expect(scarab).toBeLessThanOrEqual(3);
+        expect(color).toBeLessThanOrEqual(1);
+        if (color) expect(scarab).toBeLessThanOrEqual(2);
+      } else {
+        expect(s.filter((x) => high.includes(x.symbol))).toHaveLength(1);
+        expect(gems.length).toBeGreaterThanOrEqual(1);
+        expect(gems.length).toBeLessThanOrEqual(2);
+        expect(hitRate(s)).toBeGreaterThanOrEqual(0.04);
+        expect(hitRate(s)).toBeLessThanOrEqual(0.15);
+        for (const x of s) {
+          expect(x.count).toBeGreaterThanOrEqual(3);
+          expect(x.count).toBeLessThanOrEqual(6);
+        }
+      }
     }
+    expect(scatterSets).toBeGreaterThan(60);
+    expect(scatterSets).toBeLessThan(250);
   });
 });
 

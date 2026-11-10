@@ -14,25 +14,54 @@ import type { FreshnessSettings, RecommendSettings, SignalSettings } from './set
 //   房間變成有人／被預約／停用、資料逾時、掉出 TOP5、台北時間換日（房間訊號每天換）
 // - 每位會員同時只有一則有效訊號；在讀取時檢查換組條件（之後的推播 worker 沿用 endReasonFor）
 
-/** 戰神賽特 II 的一般符號（圖片 public/assets/assistant/atg/symbol_01–09.webp；Scatter 與倍數球不列入） */
+/** 戰神賽特 II 的盤面符號（圖片 public/assets/assistant/atg/symbol_01–09、15、16.webp；倍數球不列入） */
+// 大圖：一般高分符號＋兩種 Scatter（甲蟲、彩甲），門檻是「剛好等於」；寶石門檻是「大於等於」（2026-11-10 業主）
 export const HIGH_SYMBOLS = ['eye', 'cobra', 'bow', 'sickle'] as const;
 export const GEM_SYMBOLS = ['gem_yellow', 'gem_red', 'gem_purple', 'gem_blue', 'gem_green'] as const;
-export const SIGNAL_SYMBOLS = [...HIGH_SYMBOLS, ...GEM_SYMBOLS] as const;
+/** scarab＝甲蟲（金色 Scatter，symbol_15，盤面最多 3 個，4 個就進免遊）；scarab_color＝彩甲（symbol_16，最多 1 個） */
+export const SCATTER_SYMBOLS = ['scarab', 'scarab_color'] as const;
+export const SIGNAL_SYMBOLS = [...HIGH_SYMBOLS, ...SCATTER_SYMBOLS, ...GEM_SYMBOLS] as const;
 export type SignalSymbol = (typeof SIGNAL_SYMBOLS)[number];
 export interface SignalSymbolPick {
   symbol: SignalSymbol;
-  /** 盤面數量門檻（一轉結束時至少要有幾個），3–6 */
+  /** 一轉結束時的盤面數量門檻：大圖要剛好等於、寶石要大於等於 */
   count: number;
 }
 
-// 一轉結束時「某一種符號至少 k 個」的大約機率。2026-11-09 實測 30 個穩定盤面，九種符號的分布相近，
-// 取平均（docs/plans/2026-11-09-board-signal-recon.md）。用來讓整組訊號的達標機率落在合理範圍。
+export const isGem = (s: string) => (GEM_SYMBOLS as readonly string[]).includes(s);
+
+// 一轉結束時的大約機率。2026-11-09 實測盤面（docs/plans/2026-11-09-board-signal-recon.md），九種一般符號分布相近，取平均；
+// Scatter 樣本很少，只是粗估。用來讓一般訊號的整組達標機率落在合理範圍。
+/** 寶石：至少 k 個 */
 const P_AT_LEAST: Record<number, number> = { 3: 0.62, 4: 0.45, 5: 0.27, 6: 0.14 };
+/** 高分符號：剛好 k 個 */
+const P_EXACT_HIGH: Record<number, number> = { 3: 0.15, 4: 0.14, 5: 0.11, 6: 0.09 };
+/** Scatter：剛好 k 個 */
+const P_EXACT_SCATTER: Record<string, Record<number, number>> = {
+  scarab: { 1: 0.08, 2: 0.03, 3: 0.02 },
+  scarab_color: { 1: 0.04 },
+};
 const COUNT_MIN = 3;
 const COUNT_MAX = 6;
-/** 整組（各符號都達標）的大約機率：每轉 4%–15%，平均 7–25 轉碰到一次 */
+/** 一般訊號整組（各符號都達標）的大約機率：每轉 4%–15%，平均 7–25 轉碰到一次 */
 const HIT_RATE: [number, number] = [0.04, 0.15];
-export const hitRate = (picks: SignalSymbolPick[]) => picks.reduce((p, x) => p * (P_AT_LEAST[x.count] ?? 0), 1);
+const pOf = (x: SignalSymbolPick) =>
+  isGem(x.symbol)
+    ? (P_AT_LEAST[x.count] ?? 0)
+    : (P_EXACT_SCATTER[x.symbol]?.[x.count] ?? P_EXACT_HIGH[x.count] ?? 0);
+export const hitRate = (picks: SignalSymbolPick[]) => picks.reduce((p, x) => p * pOf(x), 1);
+
+/** 含 Scatter 的訊號比例（每組獨立抽） */
+const SCATTER_SET_RATE = 0.25;
+/** Scatter 組合（甲蟲最多 3 個、彩甲最多 1 個；彩甲只搭 1–2 個甲蟲，避免 3 甲蟲＋彩甲直接觸發），權重越大越常出現 */
+const SCATTER_COMBOS: { weight: number; picks: SignalSymbolPick[] }[] = [
+  { weight: 30, picks: [{ symbol: 'scarab', count: 1 }] },
+  { weight: 25, picks: [{ symbol: 'scarab', count: 2 }] },
+  { weight: 5, picks: [{ symbol: 'scarab', count: 3 }] },
+  { weight: 20, picks: [{ symbol: 'scarab_color', count: 1 }] },
+  { weight: 10, picks: [{ symbol: 'scarab', count: 1 }, { symbol: 'scarab_color', count: 1 }] },
+  { weight: 10, picks: [{ symbol: 'scarab', count: 2 }, { symbol: 'scarab_color', count: 1 }] },
+];
 
 export const SIGNAL_DISCLAIMER = '數據攻略僅供參考';
 
@@ -66,25 +95,32 @@ const sameSymbols = (a: unknown, b: SignalSymbolPick[]) =>
 
 type Rand = (min: number, maxExclusive: number) => number;
 
-/** 隨機 2–3 種不重複符號（至少一種高分符號），各配數量門檻 3–6，整組達標機率落在 HIT_RATE；高分符號排前面 */
+const bySymbolOrder = (a: SignalSymbolPick, b: SignalSymbolPick) => SIGNAL_SYMBOLS.indexOf(a.symbol) - SIGNAL_SYMBOLS.indexOf(b.symbol);
+
+/**
+ * 一組訊號（2026-11-10 業主：大圖＝、寶石≥）：
+ * - 一般（約 75%）：1 種高分符號（剛好 3–6 個）＋1–2 種寶石（至少 3–6 個），整組達標機率落在 HIT_RATE
+ * - Scatter（約 25%）：甲蟲／彩甲組合（見 SCATTER_COMBOS）＋1 種寶石（至少 3–5 個），較少見
+ * 大圖排前面、寶石在後。
+ */
 export function randomSymbols(rand: Rand = randomInt): SignalSymbolPick[] {
-  const n = rand(2, 4);
-  const high = [...HIGH_SYMBOLS];
-  const pool: SignalSymbol[] = [...SIGNAL_SYMBOLS];
-  const first = high[rand(0, high.length)]!;
-  pool.splice(pool.indexOf(first), 1);
-  const picked: SignalSymbol[] = [first];
-  while (picked.length < n) picked.push(pool.splice(rand(0, pool.length), 1)[0]!);
-  picked.sort((a, b) => SIGNAL_SYMBOLS.indexOf(a) - SIGNAL_SYMBOLS.indexOf(b));
-  // 重抽數量直到整組機率落在範圍內（2 種符號需要較高門檻、3 種較低）
-  let best: SignalSymbolPick[] = [];
-  for (let attempt = 0; attempt < 60; attempt++) {
-    const picks = picked.map((symbol) => ({ symbol, count: rand(COUNT_MIN, COUNT_MAX + 1) }));
+  const gems = [...GEM_SYMBOLS];
+  const pickGem = () => gems.splice(rand(0, gems.length), 1)[0]!;
+  if (rand(0, 1000) < SCATTER_SET_RATE * 1000) {
+    let roll = rand(0, SCATTER_COMBOS.reduce((n, c) => n + c.weight, 0));
+    const combo = SCATTER_COMBOS.find((c) => (roll -= c.weight) < 0)!;
+    return [...combo.picks.map((x) => ({ ...x })), { symbol: pickGem(), count: rand(3, 6) }].sort(bySymbolOrder);
+  }
+  const high = HIGH_SYMBOLS[rand(0, HIGH_SYMBOLS.length)]!;
+  const symbols: SignalSymbol[] = [high, pickGem()];
+  if (rand(0, 2) === 1) symbols.push(pickGem());
+  // 重抽數量直到整組機率落在範圍內；抽不到就用最低門檻（大圖 =3、寶石 ≥3，一定落在範圍內）
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const picks = symbols.map((symbol) => ({ symbol, count: rand(COUNT_MIN, COUNT_MAX + 1) })).sort(bySymbolOrder);
     const p = hitRate(picks);
     if (p >= HIT_RATE[0] && p <= HIT_RATE[1]) return picks;
-    if (!best.length || Math.abs(p - 0.08) < Math.abs(hitRate(best) - 0.08)) best = picks;
   }
-  return best;
+  return symbols.map((symbol) => ({ symbol, count: COUNT_MIN })).sort(bySymbolOrder);
 }
 
 /** 由字串產生固定的亂數序列（同一個種子永遠得到同一組訊號） */

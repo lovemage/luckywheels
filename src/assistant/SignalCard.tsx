@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/client.js';
 import { fetchSignal, type SignalResponse } from '../api/assistant.js';
-import { atgSymbol } from './atgSymbols.js';
+import { atgSymbol, symbolOp } from './atgSymbols.js';
 import { fmtClock } from './format.js';
 
 // 曜金訊號：首頁「精選空台 TOP 5」其中一台的房間訊號（2026-11-09 起；不公開是哪一台）。
@@ -11,7 +11,7 @@ import { fmtClock } from './format.js';
 // 首頁停留時每分鐘重抓一次，讓自動換組能及時反映。
 
 const symbolList = (symbols: { symbol: string; count: number }[]) =>
-  symbols.map((x) => `${atgSymbol(x.symbol).name} ${x.count} 個`).join('、');
+  symbols.map((x) => `${atgSymbol(x.symbol).name} ${symbolOp(x.symbol)} ${x.count}`).join('、');
 
 type State = { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; data: SignalResponse };
 
@@ -100,8 +100,8 @@ export function SignalCard({ onExpired, locked = false }: { onExpired?: () => vo
             {signal.symbols.map((s, i) => (
               <li key={s.symbol} className="aa-signal-cell" style={{ '--i': i } as React.CSSProperties}>
                 <img src={atgSymbol(s.symbol).img} alt="" width="72" height="72" draggable={false} />
-                <span className="aa-signal-mult aa-display" aria-label={`${atgSymbol(s.symbol).name} ${s.count} 個`}>
-                  <span aria-hidden="true"><span className="aa-signal-x">×</span>{s.count}</span>
+                <span className="aa-signal-mult aa-display" aria-label={`${atgSymbol(s.symbol).name} ${symbolOp(s.symbol) === '≥' ? '至少' : '剛好'} ${s.count} 個`}>
+                  <span aria-hidden="true"><span className="aa-signal-x">{symbolOp(s.symbol)}</span>{s.count}</span>
                 </span>
                 <span className="aa-signal-name" aria-hidden="true">{atgSymbol(s.symbol).name}</span>
               </li>

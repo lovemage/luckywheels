@@ -45,6 +45,8 @@ const SYMBOL_LABELS: Record<string, string> = {
   gem_purple: '紫寶石',
   gem_blue: '藍寶石',
   gem_green: '綠寶石',
+  scarab: '甲蟲',
+  scarab_color: '彩甲',
   // 2026-11-05～11-09 的舊訊號
   silver: '銀',
   gold: '黃金',
@@ -56,7 +58,6 @@ const SYMBOL_LABELS: Record<string, string> = {
   blue_gem: '藍寶石',
   green_gem: '綠寶石',
   purple_gem: '紫寶石',
-  scarab: '聖甲蟲',
 };
 
 const TIME_FORMAT = new Intl.DateTimeFormat('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
