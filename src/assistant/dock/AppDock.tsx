@@ -19,19 +19,22 @@ import './dock.css';
 import { exchangeClosedMessage, exchangeOpen } from '../OpenPassButton.js';
 import { GuardBar } from './GuardBar.js';
 import { DockSignalRow } from './DockSignalRow.js';
+import { fetchPrincipalRooms, PrincipalForm, type PrincipalPlan } from './PrincipalForm.js';
 
 // App 駐守小卡：疊在遊戲上方。助手只是輔助，只放三件事：
 //   1. 守護（止盈止損）：本場損益與兩條線，撞線提醒（見 guard.ts）
 //   2. 會員目前所在機台的數據（App 從遊戲畫面讀出機台號）
 //   3. 兩台推薦空台（綜合榜／精品榜），點一下由 App 在遊戲裡切換過去（只切換、不下注）；「換一組」換下兩台
+//      另有「本金」入口：輸入本金與目標倍數推薦，並自動設定守護（PrincipalForm.tsx）
 
-type Board = 'score' | 'premium';
+type Board = 'score' | 'premium' | 'principal';
 const BOARDS: { id: Board; label: string }[] = [
   { id: 'score', label: '綜合' },
   { id: 'premium', label: '精品' },
+  { id: 'principal', label: '本金' },
 ];
 /** 綜合榜從分數前 20 台輪流挑；精品榜（分數前 5%）從前 100 台裡篩 */
-const CANDIDATES: Record<Board, number> = { score: 20, premium: 100 };
+const CANDIDATES: Record<Exclude<Board, 'principal'>, number> = { score: 20, premium: 100 };
 const PICKS = 2;
 const REFRESH_MS = 60_000;
 
@@ -52,7 +55,7 @@ function saveCompact(v: boolean) {
   }
 }
 
-async function fetchCandidates(board: Board) {
+async function fetchCandidates(board: Exclude<Board, 'principal'>) {
   const r = await api<RoomsResponse>(`/api/assistant/rooms?sort=score&status=idle&pageSize=${CANDIDATES[board]}`);
   return board === 'premium' ? { ...r, items: r.items.filter((i) => i.premium) } : r;
 }
@@ -87,6 +90,8 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
   const [picksError, setPicksError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [board, setBoard] = useState<Board>('score');
+  const [plan, setPlan] = useState<PrincipalPlan | null>(null);
+  const [principalOpen, setPrincipalOpen] = useState(false);
   const [compact, setCompact] = useState(readCompact);
   const toggleCompact = () =>
     setCompact((v) => {
@@ -114,20 +119,28 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
   const roomNo = hud?.room ?? null;
 
   // 挑兩台：排除目前所在機台，先挑這次還沒看過的，看完一輪再重來
+  const choose = useCallback(
+    (items: ScoredRoom[]) => {
+      const candidates = items.filter((r) => r.roomNo !== roomNo);
+      pool.current = candidates.map((r) => r.roomNo);
+      let fresh = candidates.filter((r) => !seen.current.has(r.roomNo));
+      if (fresh.length < PICKS) {
+        seen.current.clear();
+        fresh = candidates;
+      }
+      const next = fresh.slice(0, PICKS);
+      next.forEach((r) => seen.current.add(r.roomNo));
+      return next;
+    },
+    [roomNo],
+  );
+
   const pickTwo = useCallback(async () => {
+    if (board === 'principal') return plan ? choose(await fetchPrincipalRooms(plan)) : [];
     const list = await fetchCandidates(board);
     setGameName(list.game.name);
-    const candidates = list.items.filter((r) => r.roomNo !== roomNo);
-    pool.current = candidates.map((r) => r.roomNo);
-    let fresh = candidates.filter((r) => !seen.current.has(r.roomNo));
-    if (fresh.length < PICKS) {
-      seen.current.clear();
-      fresh = candidates;
-    }
-    const next = fresh.slice(0, PICKS);
-    next.forEach((r) => seen.current.add(r.roomNo));
-    return next;
-  }, [roomNo, board]);
+    return choose(list.items);
+  }, [board, plan, choose]);
 
   const refreshPicks = useCallback(async () => {
     try {
@@ -172,7 +185,15 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
   }, []);
 
   async function changeBoard(next: Board) {
-    if (busy || next === board) return;
+    if (busy) return;
+    // 「本金」：打開輸入表單；已經推薦過就同時切到本金推薦的結果
+    if (next === 'principal') {
+      setPrincipalOpen((v) => (board === 'principal' ? !v : true));
+      if (!plan || board === 'principal') return;
+    } else {
+      setPrincipalOpen(false);
+    }
+    if (next === board) return;
     seen.current.clear();
     setPicks(null);
     setBoard(next);
@@ -185,6 +206,16 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
     lastBoard.current = board;
     void refreshPicks();
   }, [board, refreshPicks]);
+
+  function applyPrincipal(next: PrincipalPlan, rooms: ScoredRoom[]) {
+    setPlan(next);
+    seen.current.clear();
+    lastBoard.current = 'principal'; // 已經拿到結果，不必因切換榜單再抓一次
+    setBoard('principal');
+    setPicks(choose(rooms));
+    setPicksError(false);
+    setPrincipalOpen(false);
+  }
 
   async function nextPair() {
     if (busy) return;
@@ -259,6 +290,7 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
                   type="button"
                   role="tab"
                   aria-selected={board === b.id}
+                  aria-expanded={b.id === 'principal' ? principalOpen : undefined}
                   className={`aa-dock-tab${board === b.id ? ' is-on' : ''}`}
                   onClick={() => changeBoard(b.id)}
                 >
@@ -274,7 +306,7 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
           )}
           {compact && picks && picks.length > 0 && (
             <div className="aa-dock-chips">
-              <span className="aa-dock-chips-label">推薦</span>
+              <span className="aa-dock-chips-label">{board === 'principal' ? '本金' : '推薦'}</span>
               {picks.map((r) => (
                 <button
                   key={r.roomNo}
@@ -291,7 +323,24 @@ export function AppDock({ onOpenFull }: { onOpenFull: (view?: 'exchange') => voi
               <button type="button" className="aa-dock-chip aa-dock-chip--ghost" onClick={nextPair} disabled={busy} aria-busy={busy} aria-label="換一組推薦">
                 {busy ? '…' : '換'}
               </button>
+              <button
+                type="button"
+                className={`aa-dock-chip aa-dock-chip--ghost aa-dock-chip--principal${principalOpen ? ' is-on' : ''}`}
+                onClick={() => setPrincipalOpen((v) => !v)}
+                aria-expanded={principalOpen}
+                aria-label="依本金推薦"
+              >
+                本金
+              </button>
             </div>
+          )}
+          {compact && picks?.length === 0 && (
+            <button type="button" className="aa-dock-btn aa-dock-signal" onClick={() => setPrincipalOpen((v) => !v)} aria-expanded={principalOpen}>
+              依本金推薦
+            </button>
+          )}
+          {principalOpen && (
+            <PrincipalForm onApply={applyPrincipal} onCancel={() => setPrincipalOpen(false)} onExpired={loadMe} />
           )}
           {roomNo && <DockSignalRow roomNo={roomNo} onOpen={hasSignalFloat ? () => requestDockMode('signal') : undefined} />}
           {!compact && picks && picks.length > 0 && (
