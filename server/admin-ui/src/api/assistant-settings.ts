@@ -23,6 +23,7 @@ export interface AssistantSettings {
   };
   freshness: { listMaxAgeSeconds: number; detailMaxAgeSeconds: number };
   display: { brandName: string; topTitle: string };
+  casino: { testCasinoUrl: string };
   signal: {
     minScore: number;
     rtpChangePoints: number;

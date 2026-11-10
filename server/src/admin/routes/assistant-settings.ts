@@ -6,9 +6,11 @@ import { requireAdminNav } from '../auth/middleware.js';
 import { audit } from '../audit/helper.js';
 import { dataAssistantEnabled } from '../../assistant/feature.js';
 import {
+  CasinoSettingsSchema,
   DisplaySettingsSchema,
   ExchangeAccessSchema,
   FreshnessSettingsSchema,
+  readCasinoSettings,
   readDisplaySettings,
   readExchangeAccess,
   readFreshnessSettings,
@@ -18,6 +20,7 @@ import {
   RecommendSettingsSchema,
   SignalSettingsSchema,
   TimePlansSchema,
+  writeCasinoSettings,
   writeDisplaySettings,
   writeExchangeAccess,
   writeFreshnessSettings,
@@ -61,16 +64,18 @@ const AllSettings = z.object({
   freshness: FreshnessSettingsSchema,
   signal: SignalSettingsSchema,
   display: DisplaySettingsSchema,
+  casino: CasinoSettingsSchema,
 });
 
 async function readAll() {
-  const [recommend, freshness, signal, display] = await Promise.all([
+  const [recommend, freshness, signal, display, casino] = await Promise.all([
     readRecommendSettings(prisma),
     readFreshnessSettings(prisma),
     readSignalSettings(prisma),
     readDisplaySettings(prisma),
+    readCasinoSettings(prisma),
   ]);
-  return { recommend, freshness, signal, display };
+  return { recommend, freshness, signal, display, casino };
 }
 
 adminAssistantSettingsRoutes.get(SETTINGS, async (c) => c.json(await readAll()));
@@ -83,6 +88,7 @@ adminAssistantSettingsRoutes.put(SETTINGS, async (c) => {
     await writeFreshnessSettings(tx, body.freshness);
     await writeSignalSettings(tx, body.signal);
     await writeDisplaySettings(tx, body.display);
+    await writeCasinoSettings(tx, body.casino);
     await audit(c, tx, {
       event: 'assistant.settings_updated',
       targetType: 'app_setting',

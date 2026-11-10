@@ -54,6 +54,8 @@ export const SETTINGS_KEYS = {
   // 文字與預設相同時前端顯示金色墨水字圖；改成其他文字則以文字呈現。
   assistantBrandName: 'assistantBrandName',
   assistantTopTitle: 'assistantTopTitle',
+  // 數據助手 App 的「進入遊戲」：測試會員（accountType=test）改開這個娛樂城網址（後台可改；一般會員仍用 APP_CASINO_URL）。
+  assistantTestCasinoUrl: 'assistantTestCasinoUrl',
   // 數據助手訊號：綁定房間最低分數、今日 RTP 變動換組門檻（百分點）、每間房同時有效訊號上限、
   // 會員手動換組冷卻（秒）、訊號強度 % 的上下限（由綁定房間分數換算）。
   assistantSignalMinScore: 'assistantSignalMinScore',
@@ -162,6 +164,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   [SETTINGS_KEYS.assistantRecommendAvoidMinutes]: '15',
   [SETTINGS_KEYS.assistantBrandName]: '曜金數據助手',
   [SETTINGS_KEYS.assistantTopTitle]: '精選空台 TOP 5',
+  [SETTINGS_KEYS.assistantTestCasinoUrl]: 'https://ck-3.hau888.net/mobile/sty4_home.php',
   [SETTINGS_KEYS.assistantSignalMinScore]: '70',
   [SETTINGS_KEYS.assistantSignalRtpChangePoints]: '5',
   [SETTINGS_KEYS.assistantSignalMaxPerRoom]: '2',

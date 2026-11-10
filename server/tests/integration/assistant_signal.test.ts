@@ -192,6 +192,10 @@ describe('assistant signals', { timeout: 120_000 }, () => {
     expect(cur.signal).toMatchObject({ minScore: 70, rtpChangePoints: 5, strengthMin: 30, strengthMax: 90 });
     expect(cur.freshness).toEqual({ listMaxAgeSeconds: 1800, detailMaxAgeSeconds: 10800 });
 
+    expect(cur.casino).toEqual({ testCasinoUrl: 'https://ck-3.hau888.net/mobile/sty4_home.php' });
+    const badCasino = await req('/api/admin/assistant/settings', ah, 'PUT', { ...cur, casino: { testCasinoUrl: 'http://ck-3.hau888.net/' } });
+    expect(badCasino.body.error.code).toBe('ASSISTANT_SETTINGS_INVALID');
+
     const bad = await req('/api/admin/assistant/settings', ah, 'PUT', { ...cur, signal: { ...cur.signal, strengthMin: 95 } });
     expect(bad.body.error.code).toBe('ASSISTANT_SETTINGS_INVALID');
     const badTiers = await req('/api/admin/assistant/settings', ah, 'PUT', {
@@ -204,9 +208,13 @@ describe('assistant signals', { timeout: 120_000 }, () => {
     const saved = await req('/api/admin/assistant/settings', ah, 'PUT', next);
     expect(saved.body.recommend).toMatchObject({ multiplierStepScore: 4, count: 3 });
     expect(saved.body.freshness.listMaxAgeSeconds).toBe(900);
+    const casinoSaved = await req('/api/admin/assistant/settings', ah, 'PUT', { ...saved.body, casino: { testCasinoUrl: 'https://ck-9.example.net/mobile/sty4_home.php' } });
+    expect(casinoSaved.body.casino.testCasinoUrl).toBe('https://ck-9.example.net/mobile/sty4_home.php');
+    // 會員端不會拿到測試網址
+    expect(JSON.stringify((await req('/api/assistant/me', headers)).body)).not.toContain('ck-9');
     // 會員端立即套用
     expect((await req('/api/assistant/recommend/config', headers)).body).toMatchObject({ multiplierStepScore: 4, count: 3 });
-    expect(await prisma.adminActionLog.count({ where: { event: 'assistant.settings_updated' } })).toBe(1);
+    expect(await prisma.adminActionLog.count({ where: { event: 'assistant.settings_updated' } })).toBe(2);
 
     const signals = (await req('/api/admin/assistant/signals', ah)).body.items;
     expect(signals[0]).toMatchObject({ userId: user.id, userName: user.nickname, roomNo: '001', scoreAtIssue: 75, endedAt: null });

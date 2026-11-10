@@ -199,7 +199,15 @@ class MainActivity : AppCompatActivity() {
     private fun loadGame() {
         if (gameLoaded) return
         gameLoaded = true
-        gameWeb.loadUrl(casinoUrl)
+        // 啟動時讀的設定可能是登入前的（測試會員要開不同網址）：進入遊戲前再用目前的登入狀態讀一次，讀不到就用手上的網址
+        thread(name = "app-config-game") {
+            val url = AppConfig.fetch(this).casinoUrl
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                casinoUrl = url
+                gameWeb.loadUrl(casinoUrl)
+            }
+        }
     }
 
     // ── 遊戲頁：讀目前機台、切換機台 ─────────────────

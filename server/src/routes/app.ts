@@ -4,6 +4,10 @@ import { prisma } from '../db.js';
 import { signSession } from '../auth/jwt.js';
 import { setSessionCookie } from '../auth/cookies.js';
 import { redeemHandoffCode } from '../app/handoff.js';
+import { getCookie } from 'hono/cookie';
+import { verifySession } from '../auth/jwt.js';
+import { SESSION_COOKIE } from '../auth/cookies.js';
+import { readCasinoSettings } from '../assistant/settings.js';
 
 // Android App（android/）專用的端點。
 // - GET /api/public/app-config  App 啟動時讀取：娛樂城網址、最新版本（提示更新用）
@@ -22,10 +26,25 @@ const optionalInt = (v: string | undefined) => {
 
 export const appRoutes = new Hono();
 
-appRoutes.get('/api/public/app-config', (c) => {
+/** 帶著會員 session cookie 呼叫時（App 1.5.0+）判斷是否為測試會員；沒登入或 session 無效一律當一般會員 */
+async function isTestMember(token: string | undefined): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const { userId } = await verifySession(token);
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { accountType: true } });
+    return user?.accountType === 'test';
+  } catch {
+    return false;
+  }
+}
+
+appRoutes.get('/api/public/app-config', async (c) => {
   c.header('cache-control', 'no-store');
+  const casinoUrl = (await isTestMember(getCookie(c, SESSION_COOKIE)))
+    ? (await readCasinoSettings(prisma)).testCasinoUrl
+    : process.env.APP_CASINO_URL?.trim() || DEFAULT_CASINO_URL;
   return c.json({
-    casinoUrl: process.env.APP_CASINO_URL?.trim() || DEFAULT_CASINO_URL,
+    casinoUrl,
     latestVersionCode: optionalInt(process.env.APP_LATEST_VERSION_CODE),
     downloadUrl: process.env.APP_DOWNLOAD_URL?.trim() || null,
   });

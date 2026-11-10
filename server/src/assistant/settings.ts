@@ -82,6 +82,28 @@ export const DisplaySettingsSchema = z.object({
 });
 export type DisplaySettings = z.infer<typeof DisplaySettingsSchema>;
 
+// ── 娛樂城網址（不回傳給會員端，只給 App 的 app-config 使用）──────────
+
+/** App 的 WebView 只接受 https；不可夾帶帳號密碼 */
+export const CasinoUrlSchema = z
+  .string()
+  .trim()
+  .max(500, '網址最多 500 字')
+  .refine((raw) => {
+    try {
+      const u = new URL(raw);
+      return u.protocol === 'https:' && !u.username && !u.password;
+    } catch {
+      return false;
+    }
+  }, '網址必須是 https，且不可包含帳號密碼');
+
+export const CasinoSettingsSchema = z.object({
+  /** 測試會員按「進入遊戲」開啟的娛樂城網址 */
+  testCasinoUrl: CasinoUrlSchema,
+});
+export type CasinoSettings = z.infer<typeof CasinoSettingsSchema>;
+
 // ── 使用期限兌換方案（積分 → 時長）──────────────────
 
 export const TimePlanSchema = z.object({
@@ -125,6 +147,7 @@ const ALL_KEYS = [
   K.assistantTimePlans,
   K.assistantBrandName,
   K.assistantTopTitle,
+  K.assistantTestCasinoUrl,
 ];
 
 async function readRaw(prisma: Client, keys: string[]): Promise<(key: string) => string> {
@@ -197,6 +220,14 @@ export async function readDisplaySettings(prisma: Client): Promise<DisplaySettin
   return perField(DisplaySettingsSchema, buildDisplay, await readRaw(prisma, ALL_KEYS));
 }
 
+const buildCasino = (get: (k: string) => string) => ({
+  testCasinoUrl: get(K.assistantTestCasinoUrl),
+});
+
+export async function readCasinoSettings(prisma: Client): Promise<CasinoSettings> {
+  return perField(CasinoSettingsSchema, buildCasino, await readRaw(prisma, [K.assistantTestCasinoUrl]));
+}
+
 const buildExchangeAccess = (get: (k: string) => string) => ({
   enabled: get(K.assistantExchangeEnabled) === 'true',
   closedMessage: get(K.assistantExchangeClosedMessage),
@@ -261,6 +292,10 @@ export async function writeDisplaySettings(prisma: Client, s: DisplaySettings): 
     [K.assistantBrandName, s.brandName],
     [K.assistantTopTitle, s.topTitle],
   ]);
+}
+
+export async function writeCasinoSettings(prisma: Client, s: CasinoSettings): Promise<void> {
+  await writeAll(prisma, [[K.assistantTestCasinoUrl, s.testCasinoUrl]]);
 }
 
 export async function writeExchangeAccess(prisma: Client, s: ExchangeAccess): Promise<void> {

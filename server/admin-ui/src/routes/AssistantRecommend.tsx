@@ -79,6 +79,7 @@ interface Form {
   detailMaxAgeMinutes: string;
   signal: Str<AssistantSettings['signal']>;
   display: AssistantSettings['display'];
+  casino: AssistantSettings['casino'];
 }
 
 function toForm(s: AssistantSettings): Form {
@@ -95,6 +96,7 @@ function toForm(s: AssistantSettings): Form {
     listMaxAgeMinutes: str(Math.round(s.freshness.listMaxAgeSeconds / 60)),
     detailMaxAgeMinutes: str(Math.round(s.freshness.detailMaxAgeSeconds / 60)),
     display: { ...s.display },
+    casino: { ...s.casino },
     signal: {
       minScore: str(s.signal.minScore),
       rtpChangePoints: str(s.signal.rtpChangePoints),
@@ -104,6 +106,15 @@ function toForm(s: AssistantSettings): Form {
       strengthMax: str(s.signal.strengthMax),
     },
   };
+}
+
+function isHttpsUrl(raw: string): boolean {
+  try {
+    const u = new URL(raw);
+    return u.protocol === 'https:' && !u.username && !u.password;
+  } catch {
+    return false;
+  }
 }
 
 function fromForm(f: Form): AssistantSettings {
@@ -123,6 +134,7 @@ function fromForm(f: Form): AssistantSettings {
     },
     freshness: { listMaxAgeSeconds: n(f.listMaxAgeMinutes) * 60, detailMaxAgeSeconds: n(f.detailMaxAgeMinutes) * 60 },
     display: { brandName: f.display.brandName.trim(), topTitle: f.display.topTitle.trim() },
+    casino: { testCasinoUrl: f.casino.testCasinoUrl.trim() },
     signal: {
       minScore: n(f.signal.minScore),
       rtpChangePoints: n(f.signal.rtpChangePoints),
@@ -160,6 +172,7 @@ function validate(s: AssistantSettings): string | null {
   if (!isInt(s.freshness.detailMaxAgeSeconds / 60, 1, 4320)) return '細項逾時需為 1–4320 分鐘';
   if (!s.display.brandName || s.display.brandName.length > 20) return 'Logo 名稱需為 1–20 字';
   if (!s.display.topTitle || s.display.topTitle.length > 30) return '精選空台標題需為 1–30 字';
+  if (!isHttpsUrl(s.casino.testCasinoUrl) || s.casino.testCasinoUrl.length > 500) return '測試會員娛樂城網址必須是 https 網址，且不可包含帳號密碼';
   const g = s.signal;
   if (!isInt(g.minScore, 0, 100)) return '訊號最低分數需為 0–100';
   if (!Number.isFinite(g.rtpChangePoints) || g.rtpChangePoints < 0.5 || g.rtpChangePoints > 100) return 'RTP 變動門檻需為 0.5–100';
@@ -339,6 +352,18 @@ function SettingsForm({ initial }: { initial: AssistantSettings }) {
             <span>精選空台標題</span>
             <input type="text" maxLength={30} value={form.display.topTitle} onChange={(e) => setForm({ ...form, display: { ...form.display, topTitle: e.target.value } })} />
             <small>首頁排行區塊的標題（預設：精選空台 TOP 5）</small>
+          </label>
+        </div>
+      </section>
+
+      <section className="member-detail-card">
+        <h2>測試會員娛樂城</h2>
+        <p className="admin-muted-text">測試會員在數據助手 App 按「進入遊戲」時改開這個網址；一般會員不受影響。需 App 1.5.0 以上版本。</p>
+        <div className="admin-form-grid assistant-settings-grid">
+          <label>
+            <span>娛樂城網址</span>
+            <input type="url" maxLength={500} value={form.casino.testCasinoUrl} onChange={(e) => setForm({ ...form, casino: { testCasinoUrl: e.target.value } })} />
+            <small>預設：https://ck-3.hau888.net/mobile/sty4_home.php</small>
           </label>
         </div>
       </section>

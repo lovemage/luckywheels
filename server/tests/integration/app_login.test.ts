@@ -6,6 +6,8 @@ import { startMockLine, stopMockLine, MOCK_NONCE } from '../helpers/mock-line.js
 import { SESSION_COOKIE, STATE_COOKIE, NONCE_COOKIE, RETRY_COOKIE, APP_LOGIN_COOKIE } from '../../src/auth/cookies.js';
 import { issueHandoffCode, redeemHandoffCode, resetHandoffCodes, HANDOFF_TTL_MS } from '../../src/app/handoff.js';
 import { appIntentUrl } from '../../src/routes/app.js';
+import { createUser } from '../helpers/factories.js';
+import { signSession } from '../../src/auth/jwt.js';
 
 // Android App 的 LINE 登入：Custom Tab 走 OAuth → 交接碼 → App 的 WebView 換 session
 
@@ -98,5 +100,25 @@ describe('App LINE login handoff', () => {
     expect(r.status).toBe(200);
     const body = (await r.json()) as { casinoUrl: string };
     expect(body.casinoUrl).toMatch(/^https:\/\//);
+  });
+
+  it('app-config gives test members the test casino url (admin-configurable)', async () => {
+    const config = async (cookie?: string) =>
+      ((await (await app.request('/api/public/app-config', cookie ? { headers: { cookie } } : {})).json()) as { casinoUrl: string }).casinoUrl;
+    const asUser = async (accountType: 'test' | 'verified') =>
+      `${SESSION_COOKIE}=${await signSession({ userId: (await createUser({ accountType })).id })}`;
+
+    const normal = await config();
+    expect(await config(await asUser('verified'))).toBe(normal);
+    expect(await config(`${SESSION_COOKIE}=not-a-jwt`)).toBe(normal);
+    const tester = await asUser('test');
+    expect(await config(tester)).toBe('https://ck-3.hau888.net/mobile/sty4_home.php');
+
+    await prisma.appSetting.upsert({
+      where: { key: 'assistantTestCasinoUrl' },
+      update: { value: 'https://test.example.com/home.php?c=1' },
+      create: { key: 'assistantTestCasinoUrl', value: 'https://test.example.com/home.php?c=1' },
+    });
+    expect(await config(tester)).toBe('https://test.example.com/home.php?c=1');
   });
 });

@@ -1,6 +1,7 @@
 package com.luckyds.assistant
 
 import android.content.Context
+import android.webkit.CookieManager
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -8,6 +9,7 @@ import java.net.URL
 /**
  * App 啟動設定，來自 GET {ASSISTANT_ORIGIN}/api/public/app-config。
  * 讀不到（離線、逾時）時沿用上次成功的值，再沒有就用 BuildConfig 預設值。
+ * 1.5.0+：帶上面板 WebView 的登入 cookie，伺服器據此讓測試會員開測試用的娛樂城網址。
  */
 data class AppConfig(
     val casinoUrl: String,
@@ -33,6 +35,7 @@ data class AppConfig(
                 conn.connectTimeout = TIMEOUT_MS
                 conn.readTimeout = TIMEOUT_MS
                 conn.setRequestProperty("accept", "application/json")
+                CookieManager.getInstance().getCookie(BuildConfig.ASSISTANT_ORIGIN)?.let { conn.setRequestProperty("cookie", it) }
                 try {
                     if (conn.responseCode != 200) return fallback
                     val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
