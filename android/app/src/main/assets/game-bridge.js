@@ -1,5 +1,5 @@
 // 注入 ATG 遊戲頁（play.godeebxp.com，Cocos Creator 3.7）的輔助程式，掛在 window.__lwApp。
-// 只做三件事：讀畫面上的文字（目前機台、點數、贏分、押注）、讀每一轉結束時的盤面符號（1.4.0+）、
+// 只做三件事：讀畫面上的文字（目前機台、點數、贏分、押注）、讀每一轉結束時的盤面符號（1.4.0+）與是否在免遊中（1.5.2+）、
 // 替會員切換到指定機台。不按 Spin、不下注、不鎖定機台、不碰網路請求。
 // 節點路徑見 docs/plans/2026-11-05-app-in-game-recon.md、docs/plans/2026-11-09-board-signal-recon.md。
 (function () {
@@ -115,7 +115,18 @@
     symbol_15: 'scarab', symbol_16: 'scarab_color',
   };
   var BUSY = { symbolAnimation: 1, symbolOut: 1, frame: 1 };
-  var board = { sid: Math.random().toString(36).slice(2, 8), seq: 0, sig: null, since: 0, last: null, list: [], first: true };
+  // fg：上一次讀到時是否在免遊中；skip：下一個靜止盤面不算（剛進遊戲、免遊剛結束切回主遊戲時還原的盤面）
+  var board = { sid: Math.random().toString(36).slice(2, 8), seq: 0, sig: null, since: 0, last: null, list: [], skip: true, fg: false };
+
+  // ── 免遊（1.5.2+）──────────────────────────
+  // ReelView 底下的 fgRemaining（免遊剩餘次數）平常隱藏，免遊期間顯示（場景樹見 2026-11-09 偵察）。
+  var fgCache = null;
+  function inFreeGame() {
+    if (!(fgCache && fgCache.isValid && fgCache.parent && fgCache.parent.name === 'ReelView')) {
+      fgCache = find(function (n) { return n.name === 'fgRemaining' && n.parent && n.parent.name === 'ReelView'; })[0] || null;
+    }
+    return !!(fgCache && fgCache.activeInHierarchy);
+  }
 
   var svCache = null;
   function symbolView() {
@@ -137,13 +148,18 @@
       var sp = cell && cell.getChildByName('symbolSprite');
       var comp = sp && sp.activeInHierarchy && sp.getComponent('cc.Sprite');
       var name = comp && comp.spriteFrame && comp.spriteFrame.name;
-      if (!name || /_blur$/.test(name)) return null;
+      if (!name) return null;
+      // 轉動中：之後出現的靜止盤面是真的一轉，不再略過
+      if (/_blur$/.test(name)) { board.skip = false; return null; }
       cells.push(name);
     }
     return cells;
   }
   function tickBoard() {
     if (!ready()) return;
+    var fg = inFreeGame();
+    if (board.fg && !fg) board.skip = true;
+    board.fg = fg;
     var sv = symbolView();
     var cells = sv && readCells(sv);
     var now = Date.now();
@@ -152,13 +168,14 @@
     if (sig !== board.sig) { board.sig = sig; board.since = now; return; }
     if (now - board.since < 500 || sig === board.last) return;
     board.last = sig;
-    // 進入遊戲時原本就在盤面上的那一盤不算（還沒轉過）
-    if (board.first) { board.first = false; return; }
+    // 進入遊戲時原本就在盤面上的那一盤、免遊結束後切回主遊戲還原的那一盤不算（沒有轉）
+    if (board.skip) { board.skip = false; return; }
     // Scatter 一律帶上（0 也帶），網頁端以此判斷這版 App 讀得到甲蟲／彩甲
     var counts = { scarab: 0, scarab_color: 0 };
     cells.forEach(function (c) { var k = SYMBOLS[c]; if (k) counts[k] = (counts[k] || 0) + 1; });
     board.seq += 1;
-    board.list.push({ sid: board.sid, seq: board.seq, counts: counts });
+    // fg：免遊中的盤面（網頁端不拿來比對訊號）
+    board.list.push({ sid: board.sid, seq: board.seq, counts: counts, fg: fg });
     if (board.list.length > 6) board.list.shift();
   }
   setInterval(function () { try { tickBoard(); } catch (e) { board.sig = null; } }, 150);
@@ -247,7 +264,9 @@
       var stakeNode = find(function (n) { return n.name === 'stake' && n.activeInHierarchy && n.parent && n.parent.name === 'stakeContent'; })[0];
       var stake = stakeNode ? textOf(stakeNode) : textUnder(byName('betAmount', true), /^[\d.,]+$/);
       if (!room && !bal) return null;
-      return { room: room, balance: textOf(bal), win: textOf(win), stake: stake, boards: board.list };
+      var fg = false;
+      try { fg = inFreeGame(); } catch (e) { /* 場景切換中 */ }
+      return { room: room, balance: textOf(bal), win: textOf(win), stake: stake, boards: board.list, fg: fg };
     },
     // roomNo：單一房號，或 1.4.1+ 依序嘗試的房號陣列
     switchRoom: function (roomNo) { switchRoom(Array.isArray(roomNo) ? roomNo.map(String) : [String(roomNo)]); return true; },

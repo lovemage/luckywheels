@@ -3,6 +3,7 @@
 // 全部成立就提醒可買免遊（2026-11-10 業主）。
 // 只提醒，不替會員按任何按鈕。狀態放在模組層級：浮窗收起來時照樣比對。
 // 每台每天依序 5 組訊號；目前第幾組記在 roomSignalSets（與網頁版查房號共用），會員買完免遊按「換一組」往下。
+// 免遊中轉出來的盤面不比對、不提醒（App 1.5.2+ 讀得到免遊狀態；2026-11-10 業主）。
 
 import { api, ApiError } from '../../api/client.js';
 import type { SignalSymbol } from '../../api/assistant.js';
@@ -31,6 +32,8 @@ export interface RoomSignalState {
   hit: boolean;
   /** 今天（本機日期）達標次數 */
   today: number;
+  /** 遊戲正在免遊中（暫停比對） */
+  freeGame: boolean;
 }
 
 const KEY_ON = 'lw.roomSignal.on';
@@ -75,6 +78,7 @@ let state: RoomSignalState = {
   counts: null,
   hit: false,
   today: readToday(),
+  freeGame: false,
 };
 let lastResponse: RoomSignalResponse | null = null;
 const listeners = new Set<() => void>();
@@ -164,12 +168,16 @@ function onHud(hud: GameHud | null) {
     set({ roomNo, symbols: null, setIndex: 0, setTotal: 0, counts: null, hit: false, status: state.enabled ? (roomNo ? 'loading' : 'no-room') : 'off' });
     if (state.enabled && roomNo) void load(roomNo);
   }
+  const freeGame = hud?.fg === true;
+  // 進入免遊：清掉免遊前那一盤的數量，免遊結束後等下一轉再比對
+  if (freeGame !== state.freeGame) set({ freeGame, ...(freeGame ? { counts: null, hit: false } : {}) });
   const boards = (hud?.boards ?? []) as (BoardResult & { sid?: string })[];
   for (const b of boards) {
     const id = boardId(b);
     if (seen.has(id)) continue;
     seen.add(id);
     if (seen.size > 200) seen.delete(seen.values().next().value!);
+    if (b.fg) continue;
     const hit = !!state.symbols && meets(state.symbols, b.counts);
     set({ counts: b.counts, hit });
     if (hit && state.enabled && state.symbols) {

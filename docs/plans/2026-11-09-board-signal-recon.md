@@ -46,4 +46,6 @@
 ## 尚未驗證
 
 - 免費遊戲期間的盤面（本次沒有觸發）：是否沿用同一個 `SymbolView`、倍數球是否改用 `fg_multiple`。
+  - 2026-11-10：場景樹裡 `gameLayer/ReelView/fgRemaining`（子節點 `remaining` 數字 Label、`font` 圖 `fg_font`）主遊戲時隱藏，
+    App 1.5.2 以它是否顯示判斷免遊中。**尚未在實際免遊中確認**，若判斷失準需再偵察一次免遊場景。
 - 直式版面的節點路徑。

@@ -14,6 +14,9 @@
   後把各符號數量放進 HUD 的 `boards`。網頁（`src/assistant/dock/roomSignal.ts`）比對目前房間的訊號門檻
   （`GET /api/assistant/room-signal`），全部達標時呼叫 `window.LuckyApp.signalHit(message)`：震動並打開訊號浮窗（模式 `signal`）。
   網頁以 `LuckyApp.capabilities()` 含 `signal` 判斷 App 是否支援。
+- 免遊偵測（1.5.2+）：`game-bridge.js` 以 `ReelView/fgRemaining`（免遊剩餘次數，平常隱藏）是否顯示判斷免遊中，
+  HUD 帶 `fg`、每筆盤面帶 `fg`。房間訊號不比對免遊盤面；守護從買免遊扣款（一次掉超過 10 倍押注）或進入免遊起暫停判斷，
+  到免遊結束、贏分入帳或下一轉結束後才恢復（舊版 App 讀不到 `fg`，扣款後最多暫停 3 分鐘）。
 
 ## LINE 登入
 

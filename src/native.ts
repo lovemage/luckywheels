@@ -31,6 +31,8 @@ interface LuckyAppBridge {
 export interface BoardResult {
   seq: number;
   counts: Record<string, number>;
+  /** 1.5.2+：這一盤是免遊中轉出來的 */
+  fg?: boolean;
 }
 
 /** 遊戲畫面上讀到的資訊（App 1.2.0+ 每 2 秒更新；不在遊戲頁時為 null） */
@@ -41,6 +43,8 @@ export interface GameHud {
   stake: string | null;
   /** 1.4.0+：最近幾轉的最終盤面（由舊到新） */
   boards?: BoardResult[];
+  /** 1.5.2+：目前是否在免遊中（舊版 App 沒有這個欄位） */
+  fg?: boolean;
 }
 
 declare global {

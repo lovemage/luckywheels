@@ -56,6 +56,7 @@ export function SignalFloat() {
         </p>
       )}
 
+      {st.freeGame && st.symbols && <p className="aa-dock-note">免遊中，暫停比對；免遊結束後從下一轉開始</p>}
       {st.status === 'no-room' && <p className="aa-dock-note">進入遊戲、坐上機台後顯示訊號</p>}
       {st.status === 'loading' && <p className="aa-dock-note">讀取訊號中…</p>}
       {st.status === 'expired' && <p className="aa-dock-note">使用期限已到期，請先用積分開通</p>}

@@ -41,6 +41,7 @@ export function DockSignalRow({ roomNo, onOpen }: { roomNo: string; onOpen?: () 
         })}
       </span>
       {hit && <span className="aa-dock-sig-hit">可買免遊</span>}
+      {st.freeGame && <span className="aa-dock-sig-free">免遊中</span>}
     </>
   );
   const label = `房間訊號 #${roomNo} 第 ${st.setIndex + 1} 組：${symbols
@@ -48,7 +49,7 @@ export function DockSignalRow({ roomNo, onOpen }: { roomNo: string; onOpen?: () 
       const cur = curOf(s.symbol);
       return `${atgSymbol(s.symbol).name} ${cur !== undefined ? `${cur}／` : ''}${symbolOp(s.symbol) === '≥' ? '至少' : '剛好'} ${s.count}`;
     })
-    .join('、')}${hit ? '，訊號達標，可買免遊' : ''}`;
+    .join('、')}${hit ? '，訊號達標，可買免遊' : ''}${st.freeGame ? '，免遊中暫停比對' : ''}`;
 
   const last = st.setIndex + 1 >= st.setTotal;
   return (

@@ -19,7 +19,7 @@ const PRESETS = [1000, 3000, 5000, 10000, 15000, 20000];
 
 /** compact：精簡小卡只顯示損益、兩條線與開始／結束（設定在展開後才有） */
 export function GuardBar({ compact = false }: { compact?: boolean }) {
-  const { settings, session, balance } = useSyncExternalStore(subscribeGuard, guardState);
+  const { settings, session, balance, freeGame } = useSyncExternalStore(subscribeGuard, guardState);
   const [editing, setEditing] = useState(false);
   const [needGame, setNeedGame] = useState(false);
   const pnl = session && balance !== null ? sessionPnl(session, balance) : null;
@@ -69,6 +69,7 @@ export function GuardBar({ compact = false }: { compact?: boolean }) {
         )}
       </div>
       {needGame && !session && <p className="aa-dock-note">請先進入遊戲，讀到點數後再開始守護</p>}
+      {session && freeGame && <p className="aa-dock-note">免遊中：免遊結束、贏分入帳後再判斷停利／停損</p>}
 
       {editing && !compact && (
         <GuardForm

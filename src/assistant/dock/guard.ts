@@ -1,6 +1,8 @@
 // 守護（止盈止損）：會員設定「贏到 +X」「輸到 −Y」兩條線，App 從遊戲畫面讀到的點數變化撞到任一條線就提醒。
 // 只提醒、不操作遊戲（不停止自動轉、不下注），停不停手由會員自己決定。
 // 狀態放在模組層級：面板收合、小卡卸載時照樣跟著遊戲點數計算；設定與本場起點存在 localStorage，重新載入不會遺失。
+// 免遊暫停（2026-11-10 業主）：買免遊會先一次扣掉購買金額，贏分要等免遊結束才入帳，
+// 所以從扣款（或遊戲進入免遊）到免遊結束、贏分入帳前都不判斷，避免一買就跳停損。
 
 import { alertNative, currentGameHud, isNativeApp, onGameHud, type GameHud } from '../../native.js';
 
@@ -28,6 +30,8 @@ export interface GuardState {
   session: GuardSession | null;
   /** 目前讀到的點數；不在遊戲畫面時為 null */
   balance: number | null;
+  /** 免遊中（含買免遊扣款後、贏分入帳前）：暫停判斷停利停損 */
+  freeGame: boolean;
 }
 
 export const GUARD_MAX = 100_000_000;
@@ -89,7 +93,7 @@ function save() {
   }
 }
 
-let state: GuardState = { ...load(), balance: null };
+let state: GuardState = { ...load(), balance: null, freeGame: false };
 const listeners = new Set<() => void>();
 
 function set(next: Partial<GuardState>, persist = true) {
@@ -120,18 +124,103 @@ const readBalance = (hud: GameHud | null) => {
   return v !== null && v > 0 ? v : null;
 };
 
+// ── 免遊暫停 ──────────────────────────
+/** 點數一次掉超過押注的這麼多倍＝買免遊（一般一轉只扣 1 倍押注；App 每 2 秒讀一次，連轉也到不了） */
+export const BUY_DROP_STAKES = 10;
+/** 扣款後多久還沒進免遊就恢復判斷（新版 App 讀得到免遊狀態，沒進＝其實是轉出點數等） */
+const WAIT_FG_MS = 30_000;
+/** 舊版 App（1.5.1 以前）讀不到免遊狀態：扣款後最多暫停這麼久 */
+const WAIT_FG_LEGACY_MS = 180_000;
+/** 免遊結束後：贏分入帳、下一轉結束，或最多等這麼久就恢復判斷 */
+const AFTER_FG_MS = 60_000;
+
+interface FreeHold {
+  since: number;
+  /** 已讀到遊戲進入免遊 */
+  fgSeen: boolean;
+  /** 讀到免遊結束的時間、當下點數與最後一盤 */
+  endedAt: number | null;
+  endBalance: number | null;
+  endBoard: string | null;
+}
+
+let hold: FreeHold | null = null;
+let holdTimer: ReturnType<typeof setTimeout> | null = null;
+
+const lastBoardKey = (hud: GameHud | null) => {
+  const b = hud?.boards?.[hud.boards.length - 1] as ({ sid?: string; seq: number; fg?: boolean } | undefined);
+  return b ? `${b.sid ?? ''}:${b.seq}:${b.fg ? 'fg' : ''}` : null;
+};
+
+/** 期限到了即使遊戲畫面沒變化也重新判斷一次（會員停手不轉時照樣能提醒） */
+function recheckIn(ms: number) {
+  if (holdTimer !== null) clearTimeout(holdTimer);
+  holdTimer = setTimeout(() => {
+    holdTimer = null;
+    onHud(currentGameHud());
+  }, ms + 50);
+}
+
+function clearHold() {
+  hold = null;
+  if (holdTimer !== null) clearTimeout(holdTimer);
+  holdTimer = null;
+}
+
+/** 更新免遊暫停狀態；回傳目前是否暫停判斷 */
+export function updateFreeHold(hud: GameHud | null, balance: number | null, prevBalance: number | null, now = Date.now()): boolean {
+  if (!state.session) {
+    clearHold();
+    return false;
+  }
+  const knowsFg = typeof hud?.fg === 'boolean';
+  const board = lastBoardKey(hud);
+  if (hud?.fg === true) {
+    if (!hold?.fgSeen || hold.endedAt !== null) {
+      hold = { since: hold?.since ?? now, fgSeen: true, endedAt: null, endBalance: null, endBoard: null };
+      if (holdTimer !== null) clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    return true;
+  }
+  if (!hold) {
+    const stake = parseBalance(hud?.stake);
+    if (prevBalance !== null && balance !== null && stake !== null && stake > 0 && prevBalance - balance >= stake * BUY_DROP_STAKES) {
+      hold = { since: now, fgSeen: false, endedAt: null, endBalance: null, endBoard: null };
+      recheckIn(knowsFg ? WAIT_FG_MS : WAIT_FG_LEGACY_MS);
+      return true;
+    }
+    return false;
+  }
+  if (!hold.fgSeen) {
+    if (now - hold.since >= (knowsFg ? WAIT_FG_MS : WAIT_FG_LEGACY_MS)) clearHold();
+    return hold !== null;
+  }
+  // 免遊剛結束：記下當時的點數與最後一盤，等贏分入帳
+  if (hold.endedAt === null) {
+    hold = { ...hold, endedAt: now, endBalance: balance, endBoard: board };
+    recheckIn(AFTER_FG_MS);
+    return true;
+  }
+  const credited = balance !== null && hold.endBalance !== null && balance > hold.endBalance;
+  const nextSpin = board !== null && board !== hold.endBoard && !board.endsWith(':fg');
+  if (credited || nextSpin || now - hold.endedAt >= AFTER_FG_MS) clearHold();
+  return hold !== null;
+}
+
 function onHud(hud: GameHud | null) {
   const balance = readBalance(hud);
+  const freeGame = updateFreeHold(hud, balance, state.balance);
   const { session, settings } = state;
-  if (session && balance !== null) {
+  if (session && balance !== null && !freeGame) {
     const line = crossedLine(settings, session, balance);
     if (line) {
-      set({ balance, session: { ...session, alerted: [...session.alerted, line], pending: line } });
+      set({ balance, freeGame, session: { ...session, alerted: [...session.alerted, line], pending: line } });
       alertNative(guardMessage(line, settings, sessionPnl(session, balance)));
       return;
     }
   }
-  if (balance !== state.balance) set({ balance }, false);
+  if (balance !== state.balance || freeGame !== state.freeGame) set({ balance, freeGame }, false);
 }
 
 if (isNativeApp && typeof window !== 'undefined') onGameHud(onHud);
@@ -140,11 +229,15 @@ if (isNativeApp && typeof window !== 'undefined') onGameHud(onHud);
 export function startGuard(): boolean {
   const balance = readBalance(currentGameHud()) ?? state.balance;
   if (balance === null) return false;
-  set({ balance, session: { start: balance, startedAt: Date.now(), alerted: [], pending: null } });
+  clearHold();
+  set({ balance, freeGame: false, session: { start: balance, startedAt: Date.now(), alerted: [], pending: null } });
   return true;
 }
 
-export const stopGuard = () => set({ session: null });
+export function stopGuard() {
+  clearHold();
+  set({ session: null, freeGame: false });
+}
 
 export function ackGuard() {
   if (state.session?.pending) set({ session: { ...state.session, pending: null } });
