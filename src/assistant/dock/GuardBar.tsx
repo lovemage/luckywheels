@@ -15,7 +15,7 @@ import {
 // 駐守小卡的「守護」區塊：本場損益、停損／停利兩條線常駐顯示，撞線時顯示提醒。
 // 只提醒，不替會員停止遊戲。
 
-const PRESETS = [500, 1000, 3000, 5000];
+const PRESETS = [1000, 3000, 5000, 10000, 15000, 20000];
 
 /** compact：精簡小卡只顯示損益、兩條線與開始／結束（設定在展開後才有） */
 export function GuardBar({ compact = false }: { compact?: boolean }) {
