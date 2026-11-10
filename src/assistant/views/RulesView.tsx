@@ -134,10 +134,10 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
           <h2 id="aa-rule-roomsig-title" className="aa-display">房間訊號</h2>
         </div>
         <p className="aa-rule-weight">開通後使用 · 每台每天 5 組</p>
-        <p className="aa-rule-meaning">每台機台每天依序有 5 組訊號，所有會員看到的相同</p>
+        <p className="aa-rule-meaning">抓連續多日數據分析，每天更新前七天單一房間數據，推薦當天最適合的訊號；每台每天 5 組，所有會員看到的相同</p>
         <ul className="aa-reasons aa-rule-points">
-          <li>坐上機台後查房號（Android App 會自動帶入），每轉結束時盤面上這些符號都達到數量，就是訊號達標，可買免遊</li>
-          <li>買完免遊後按「免遊結束，換下一組」，接著看同一台的下一組；按錯可以回上一組</li>
+          <li>坐上機台後查房號（Android App 會自動帶入），每轉結束時盤面上這些符號的數量都剛好相等，就是訊號達標，可買免遊</li>
+          <li>免遊結束後可按「免遊結束，換下一組」看同一台的下一組；按錯可以回上一組</li>
           <li>網頁版會記得上次查的房號與組數，在遊戲和助手之間切換時不用重新輸入</li>
           <li>隔天，或系統偵測到這台自然開出免遊時，整串 5 組會換新，從第 1 組開始</li>
         </ul>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { api, ApiError } from '../api/client.js';
 import { currentGameHud, isNativeApp, onGameHud } from '../native.js';
 import { atgSymbol } from './atgSymbols.js';
-import { roomSignalState, subscribeRoomSignal } from './dock/roomSignal.js';
+import { meets, roomSignalState, subscribeRoomSignal, symbolMet } from './dock/roomSignal.js';
 import { currentSetIndex, saveSetIndex, setsOf, subscribeSetIndex, type RoomSignalResponse } from './roomSignalSets.js';
 
 // 房間訊號（完整助手首頁）：
@@ -160,7 +160,7 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
           <ul className="aa-signal-symbols" data-count={symbols.length}>
             {symbols.map((s, i) => {
               const cur = counts?.[s.symbol];
-              const ok = cur !== undefined && cur >= s.count;
+              const ok = symbolMet(cur, s.count);
               return (
                 <li key={s.symbol} className={`aa-signal-cell${ok ? ' is-ok' : ''}`} style={{ '--i': i } as React.CSSProperties}>
                   <img src={atgSymbol(s.symbol).img} alt="" width="72" height="72" draggable={false} />
@@ -177,7 +177,7 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
                         </>
                       ) : (
                         <>
-                          <span className="aa-signal-x">≥</span>
+                          <span className="aa-signal-x">=</span>
                           {s.count}
                         </>
                       )}
@@ -190,15 +190,15 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
               );
             })}
           </ul>
-          {counts && symbols.every((s) => (counts[s.symbol] ?? 0) >= s.count) ? (
+          {counts && meets(symbols, counts) ? (
             <p className="aa-roomsig-hit" role="status">
               訊號達標！可買免遊
             </p>
           ) : (
             <p className="aa-signal-summary">
               {counts
-                ? `#${state.data.roomNo}：最近一轉的數量／門檻，全部達到就是訊號達標，可買免遊`
-                : `#${state.data.roomNo}：每轉結束時，盤面上以上符號都達到數量，就是訊號達標，可買免遊`}
+                ? `#${state.data.roomNo}：最近一轉的數量／門檻，全部剛好相等就是訊號達標，可買免遊`
+                : `#${state.data.roomNo}：每轉結束時，盤面上以上符號的數量都剛好相等，就是訊號達標，可買免遊`}
             </p>
           )}
         </div>
@@ -235,7 +235,7 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
           {note}
         </p>
       )}
-      <p className="aa-disclaimer">每台每天依序 {sets.length || 5} 組，買完免遊換下一組；隔天整串換新 · 不代表遊戲結果</p>
+      <p className="aa-disclaimer">連續多日分析，每天更新前七天單一房間數據 · 每台每天 {sets.length || 5} 組 · 不代表遊戲結果</p>
     </section>
   );
 }

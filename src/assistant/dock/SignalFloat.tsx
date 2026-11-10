@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { backToGame, reportDockHeight, requestDockMode } from '../../native.js';
 import { atgSymbol } from '../atgSymbols.js';
-import { nextRoomSignalSet, roomSignalState, setRoomSignalEnabled, subscribeRoomSignal } from './roomSignal.js';
+import { nextRoomSignalSet, roomSignalState, setRoomSignalEnabled, subscribeRoomSignal, symbolMet } from './roomSignal.js';
 import '../assistant.css';
 import './dock.css';
 
@@ -65,7 +65,7 @@ export function SignalFloat() {
         <ul className="aa-sigfloat-rows" aria-label="訊號符號：最近一轉數量／門檻">
           {st.symbols.map((s) => {
             const cur = st.counts?.[s.symbol];
-            const ok = cur !== undefined && cur >= s.count;
+            const ok = symbolMet(cur, s.count);
             return (
               <li key={s.symbol} className={ok ? 'is-ok' : undefined}>
                 <img src={atgSymbol(s.symbol).img} alt="" width="34" height="34" />

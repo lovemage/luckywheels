@@ -1,5 +1,5 @@
 // 房間訊號（App 1.4.0+ 遊戲內浮窗）：會員目前坐的機台有一組符號門檻（GET /api/assistant/room-signal），
-// App 從遊戲頁讀出每一轉結束時的盤面，這裡比對「各符號數量都達到門檻」就提醒可買免遊。
+// App 從遊戲頁讀出每一轉結束時的盤面，這裡比對「各符號數量都剛好等於門檻」就提醒可買免遊（2026-11-10 業主：由 ≥ 改為 =）。
 // 只提醒，不替會員按任何按鈕。狀態放在模組層級：浮窗收起來時照樣比對。
 // 每台每天依序 5 組訊號；目前第幾組記在 roomSignalSets（與網頁版查房號共用），會員買完免遊按「換一組」往下。
 
@@ -88,9 +88,12 @@ export function subscribeRoomSignal(fn: () => void): () => void {
   return () => listeners.delete(fn);
 }
 
-/** 各符號都達到門檻 */
+/** 單一符號達標：最近一轉的數量「剛好等於」門檻（2026-11-10 業主：由 ≥ 改為 =，判定仍看每轉結束當下的盤面） */
+export const symbolMet = (cur: number | undefined, need: number) => cur === need;
+
+/** 各符號都剛好等於門檻 */
 export const meets = (symbols: RoomSignalSymbol[], counts: Record<string, number>) =>
-  symbols.length > 0 && symbols.every((s) => (counts[s.symbol] ?? 0) >= s.count);
+  symbols.length > 0 && symbols.every((s) => symbolMet(counts[s.symbol] ?? 0, s.count));
 
 /** 「訊號達標！眼睛 4/3、鐮刀 2/2 可買免遊」（現有／門檻） */
 export const hitMessage = (symbols: RoomSignalSymbol[], counts: Record<string, number>) =>
