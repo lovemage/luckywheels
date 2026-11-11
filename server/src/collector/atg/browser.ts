@@ -51,6 +51,16 @@ export interface RoundResult {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// 降低 CPU：容器沒有 GPU，Chromium 以軟體算繪 WebGL，遊戲預設 60fps 持續重繪是主要的 CPU 消耗。
+// 採集只讀場景樹上的文字、用按鈕的 clickEvents 點擊，不需要高畫面更新率與大畫面。
+// COLLECTOR_FRAME_RATE 可覆寫（0 = 不調整，維持遊戲預設）。
+const VIEWPORT = { width: 960, height: 540 };
+const DEFAULT_FRAME_RATE = 5;
+function targetFrameRate(): number {
+  const n = Number(process.env.COLLECTOR_FRAME_RATE);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : DEFAULT_FRAME_RATE;
+}
+
 async function waitFor<T>(fn: () => Promise<T | null | undefined | false>, timeoutMs: number, intervalMs = 250): Promise<T | null> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -95,7 +105,7 @@ export async function runRound(creds: Credentials, game: AtgGame, opts: RoundOpt
 async function runRoundIn(browser: Browser, creds: Credentials, game: AtgGame, opts: RoundOptions): Promise<RoundResult> {
   const log = opts.log ?? (() => {});
   try {
-    const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'zh-TW' });
+    const context = await browser.newContext({ viewport: VIEWPORT, locale: 'zh-TW' });
     const t0 = Date.now();
     await login(context, creds);
     const loginMs = Date.now() - t0;
@@ -162,28 +172,38 @@ async function runRoundIn(browser: Browser, creds: Credentials, game: AtgGame, o
     const detailFailures: string[] = [];
     let sampleDetailLabels: RawLabel[] | null = null;
     let currentPage = PAGE_COUNT;
-    for (const roomNo of targets) {
-      if (opts.detailBudgetMs && Date.now() - t3 > opts.detailBudgetMs) break;
+    const overBudget = () => !!opts.detailBudgetMs && Date.now() - t3 > opts.detailBudgetMs;
+    const readRoom = async (roomNo: string): Promise<RoomDetail | null> => {
       const page_ = Math.floor((Number(roomNo) - 1) / 500) + 1;
       if (page_ !== currentPage) {
         await openPage(page_);
         currentPage = page_;
       }
-      if (!(await press(`window.__lw.pressRoom(${JSON.stringify(roomNo)})`))) {
-        detailFailures.push(roomNo);
-        continue;
+      // 低畫面更新率下，遊戲偶爾會吃掉點擊（面板停在上一台），4 秒沒換到目標就重按一次，總共最多等 8 秒
+      let labels: RawLabel[] | null = null;
+      for (let attempt = 0; attempt < 2 && !labels; attempt++) {
+        if (!(await press(`window.__lw.pressRoom(${JSON.stringify(roomNo)})`))) return null;
+        labels = await waitFor(async () => {
+          const l = (await page.evaluate('window.__lw.readDetail()')) as RawLabel[] | null;
+          return l && parseDetail(l)?.roomNo === roomNo ? l : null;
+        }, 4_000, 150);
       }
-      const labels = await waitFor(async () => {
-        const l = (await page.evaluate('window.__lw.readDetail()')) as RawLabel[] | null;
-        return l && parseDetail(l)?.roomNo === roomNo ? l : null;
-      }, 8_000, 150);
       const detail = labels && parseDetail(labels);
-      if (!detail) {
-        detailFailures.push(roomNo);
-        continue;
-      }
-      sampleDetailLabels ??= labels;
-      details.push(detail);
+      if (detail) sampleDetailLabels ??= labels;
+      return detail;
+    };
+    const failed: string[] = [];
+    for (const roomNo of targets) {
+      if (overBudget()) break;
+      const detail = await readRoom(roomNo);
+      if (detail) details.push(detail);
+      else failed.push(roomNo);
+    }
+    // 失敗的機台（多半是剛切頁、列表重繪時點到舊節點）在時間預算內再試一次
+    for (const roomNo of failed) {
+      const detail = overBudget() ? null : await readRoom(roomNo);
+      if (detail) details.push(detail);
+      else detailFailures.push(roomNo);
     }
     const detailMs = Date.now() - t3;
 
@@ -275,6 +295,9 @@ async function enterGame(context: BrowserContext, creds: Credentials, game: AtgG
     await saveDebug(gamePage, 'select-room-missing');
     throw new CollectorError('SCENE_NOT_READY', '選擇機台未出現');
   }
+  // 進到選擇機台後才降畫面更新率（開始畫面的動畫在低 fps 下可能出不來）
+  const fps = targetFrameRate();
+  if (fps > 0) await gamePage.evaluate(`window.cc.game.frameRate = ${fps}`).catch(() => {});
   return gamePage;
 }
 

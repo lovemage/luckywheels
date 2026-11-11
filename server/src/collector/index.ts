@@ -11,6 +11,7 @@ import { prisma } from '../db.js';
 import { collectOnce } from './collect.js';
 import { readCollectorSettings } from './settings.js';
 import { dataAssistantEnabled } from '../assistant/feature.js';
+import { lastSuccess, parseStandbyMinutes, shouldStandBy, STANDBY_POLL_MS } from './standby.js';
 
 const { values } = parseArgs({
   options: {
@@ -64,7 +65,27 @@ if (!dataAssistantEnabled()) {
   process.exitCode = outcome.status === 'failed' ? 1 : 0;
 } else {
   let consecutiveFailures = 0;
+  const standbyMinutes = parseStandbyMinutes(process.env.COLLECTOR_STANDBY_MINUTES);
+  let standing = false;
+  const ownRunIds = new Set<string>();
+  if (standbyMinutes) log(`備援模式：最近 ${standbyMinutes} 分鐘內沒有其他 collector 成功採集才接手`);
   while (!stopping) {
+    if (standbyMinutes) {
+      // DB 查不到（連線失敗）時當成主要的停擺，照常接手；這一輪若同樣連不上 DB 會記為失敗
+      const last = await lastSuccess(prisma).catch(() => null);
+      if (shouldStandBy(last, ownRunIds, standbyMinutes, new Date())) {
+        if (!standing) log(`待命中：其他 collector 最近一次成功 ${last?.at.toISOString()}`);
+        standing = true;
+        ownRunIds.clear();
+        consecutiveFailures = 0;
+        await sleep(STANDBY_POLL_MS);
+        continue;
+      }
+      if (standing || ownRunIds.size === 0) {
+        log(`超過 ${standbyMinutes} 分鐘沒有其他 collector 成功採集（最近 ${last?.at.toISOString() ?? '無'}），接手採集`);
+      }
+      standing = false;
+    }
     const started = Date.now();
     const outcome = await runOnce().catch((err) => {
       log(`未預期錯誤：${err instanceof Error ? err.message : String(err)}`);
@@ -72,8 +93,10 @@ if (!dataAssistantEnabled()) {
     });
     // 連續失敗達上限就結束程序（exit code 1），交給 Railway 重啟容器：
     // 2026-11-10 多輪逾時後 Chromium 在容器內連啟動都失敗，只有重啟容器才會恢復。「略過」不算成功也不算失敗。
-    if (outcome?.status === 'succeeded') consecutiveFailures = 0;
-    else if (outcome === null || outcome.status === 'failed') consecutiveFailures++;
+    if (outcome?.status === 'succeeded') {
+      consecutiveFailures = 0;
+      ownRunIds.add(outcome.runId);
+    } else if (outcome === null || outcome.status === 'failed') consecutiveFailures++;
     if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
       log(`連續 ${consecutiveFailures} 輪採集失敗，停止重試，${RESTART_DELAY_MS / 60_000} 分鐘後結束程序由 Railway 重啟`);
       await sleep(RESTART_DELAY_MS); // 收到 SIGTERM 會提早喚醒
