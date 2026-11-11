@@ -4,17 +4,27 @@
 // 只提醒，不替會員按任何按鈕。狀態放在模組層級：浮窗收起來時照樣比對。
 // 每台每天依序 5 組訊號；目前第幾組記在 roomSignalSets（與網頁版查房號共用），會員買完免遊按「換一組」往下。
 // 免遊中轉出來的盤面不比對、不提醒（App 1.5.2+ 讀得到免遊狀態；2026-11-10 業主）。
+// 自訂訊號（2026-11-11 業主）：會員自己設定各符號目標（0＝不看），一律「大於等於」目標；存在本機，不分機台。
+// 兩種模式共用盤面、提醒與今日次數，同時只比對其中一種。
 
 import { api, ApiError } from '../../api/client.js';
 import type { SignalSymbol } from '../../api/assistant.js';
 import { currentGameHud, isNativeApp, onGameHud, signalHitNative, type BoardResult, type GameHud } from '../../native.js';
-import { atgSymbol, isGemSymbol, isScatterSymbol } from '../atgSymbols.js';
+import { ATG_SYMBOLS, atgSymbol, isGemSymbol, isScatterSymbol } from '../atgSymbols.js';
 import { currentSetIndex, saveSetIndex, setsOf, subscribeSetIndex, type RoomSignalResponse } from '../roomSignalSets.js';
 
 export interface RoomSignalSymbol {
   symbol: SignalSymbol;
   count: number;
 }
+
+export type SignalMode = 'room' | 'custom';
+export type CustomTargets = Partial<Record<SignalSymbol, number>>;
+
+/** 自訂訊號每個符號的目標上限（盤面 30 格） */
+export const CUSTOM_MAX = 30;
+/** 自訂訊號可設定的符號（照 ATG_SYMBOLS 的順序：大圖、甲蟲／彩甲、寶石） */
+export const CUSTOM_SYMBOLS = Object.keys(ATG_SYMBOLS) as SignalSymbol[];
 
 export type RoomSignalStatus = 'off' | 'no-room' | 'loading' | 'ready' | 'expired' | 'error';
 
@@ -34,10 +44,16 @@ export interface RoomSignalState {
   today: number;
   /** 遊戲正在免遊中（暫停比對） */
   freeGame: boolean;
+  /** 目前比對房間訊號或自訂訊號 */
+  mode: SignalMode;
+  /** 自訂訊號各符號目標（0 或沒有＝不看） */
+  custom: CustomTargets;
 }
 
 const KEY_ON = 'lw.roomSignal.on';
 const KEY_TODAY = 'lw.roomSignal.today';
+const KEY_MODE = 'lw.roomSignal.mode';
+const KEY_CUSTOM = 'lw.roomSignal.custom';
 const REFRESH_MS = 60_000;
 
 const localDate = () => new Date().toLocaleDateString('en-CA');
@@ -67,6 +83,28 @@ function readOn(): boolean {
   }
 }
 
+function readMode(): SignalMode {
+  try {
+    return localStorage.getItem(KEY_MODE) === 'custom' ? 'custom' : 'room';
+  } catch {
+    return 'room';
+  }
+}
+
+function readCustom(): CustomTargets {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY_CUSTOM) ?? 'null');
+    const out: CustomTargets = {};
+    for (const k of CUSTOM_SYMBOLS) {
+      const v = raw?.[k];
+      if (Number.isInteger(v) && v > 0 && v <= CUSTOM_MAX) out[k] = v;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 const initiallyOn = readOn();
 let state: RoomSignalState = {
   enabled: initiallyOn,
@@ -79,6 +117,8 @@ let state: RoomSignalState = {
   hit: false,
   today: readToday(),
   freeGame: false,
+  mode: readMode(),
+  custom: readCustom(),
 };
 let lastResponse: RoomSignalResponse | null = null;
 const listeners = new Set<() => void>();
@@ -93,21 +133,33 @@ export function subscribeRoomSignal(fn: () => void): () => void {
   return () => listeners.delete(fn);
 }
 
-/** 單一符號達標（看每轉結束當下的盤面）：寶石大於等於門檻、大圖剛好等於門檻 */
-export const symbolMet = (symbol: string, cur: number | undefined, need: number) =>
-  cur !== undefined && (isGemSymbol(symbol) ? cur >= need : cur === need);
+/** 自訂訊號已設定（目標大於 0）的符號 */
+export const customSymbols = (custom: CustomTargets): RoomSignalSymbol[] =>
+  CUSTOM_SYMBOLS.filter((k) => (custom[k] ?? 0) > 0).map((k) => ({ symbol: k, count: custom[k]! }));
+
+/** 目前模式要比對的符號：房間訊號（還沒載入時 null）或自訂訊號 */
+export const activeSymbols = (st: RoomSignalState): RoomSignalSymbol[] | null =>
+  st.mode === 'custom' ? customSymbols(st.custom) : st.symbols;
+
+/** 門檻比較方式：自訂訊號一律大於等於；房間訊號寶石大於等於、大圖剛好等於 */
+export const opOf = (symbol: string, mode: SignalMode = 'room'): '≥' | '=' =>
+  mode === 'custom' || isGemSymbol(symbol) ? '≥' : '=';
+
+/** 單一符號達標（看每轉結束當下的盤面） */
+export const symbolMet = (symbol: string, cur: number | undefined, need: number, mode: SignalMode = 'room') =>
+  cur !== undefined && (opOf(symbol, mode) === '≥' ? cur >= need : cur === need);
 
 /** 各符號都達標 */
-export const meets = (symbols: RoomSignalSymbol[], counts: Record<string, number>) =>
-  symbols.length > 0 && symbols.every((s) => symbolMet(s.symbol, counts[s.symbol] ?? 0, s.count));
+export const meets = (symbols: RoomSignalSymbol[], counts: Record<string, number>, mode: SignalMode = 'room') =>
+  symbols.length > 0 && symbols.every((s) => symbolMet(s.symbol, counts[s.symbol] ?? 0, s.count, mode));
 
 /** 舊版 App（1.5.0 以前）的盤面沒有 Scatter 數量：這組含甲蟲／彩甲時無法自動比對 */
 export const needsScatterUpdate = (symbols: RoomSignalSymbol[], counts: Record<string, number> | null) =>
   !!counts && !('scarab' in counts) && symbols.some((s) => isScatterSymbol(s.symbol));
 
 /** 「訊號達標！眼睛 4/3、鐮刀 2/2 可買免遊」（現有／門檻） */
-export const hitMessage = (symbols: RoomSignalSymbol[], counts: Record<string, number>) =>
-  `訊號達標！${symbols.map((s) => `${atgSymbol(s.symbol).name} ${counts[s.symbol] ?? 0}/${s.count}`).join('、')} 可買免遊`;
+export const hitMessage = (symbols: RoomSignalSymbol[], counts: Record<string, number>, mode: SignalMode = 'room') =>
+  `${mode === 'custom' ? '自訂訊號' : '訊號'}達標！${symbols.map((s) => `${atgSymbol(s.symbol).name} ${counts[s.symbol] ?? 0}/${mode === 'custom' ? '≥' : ''}${s.count}`).join('、')} 可買免遊`;
 
 let fetchSeq = 0;
 let timer: number | null = null;
@@ -133,7 +185,51 @@ function applySet(r: RoomSignalResponse) {
   const setIndex = currentSetIndex(r);
   const symbols = sets[setIndex]!.symbols;
   const changed = setIndex !== state.setIndex || JSON.stringify(symbols) !== JSON.stringify(state.symbols);
-  set({ symbols, setIndex, setTotal: sets.length, ...(changed ? { hit: !!state.counts && meets(symbols, state.counts) } : {}) });
+  set({ symbols, setIndex, setTotal: sets.length });
+  if (changed) recheck();
+}
+
+/** 換了模式、組數或自訂目標：用最近一轉重新判斷達標（不再發提醒） */
+function recheck() {
+  const syms = activeSymbols(state);
+  set({ hit: !!syms && !!state.counts && meets(syms, state.counts, state.mode) });
+}
+
+/** 切換房間訊號／自訂訊號 */
+export function setSignalMode(mode: SignalMode) {
+  try {
+    localStorage.setItem(KEY_MODE, mode);
+  } catch {
+    /* 不保存 */
+  }
+  set({ mode });
+  recheck();
+}
+
+/** 設定自訂訊號某個符號的目標（0＝不看） */
+export function setCustomTarget(symbol: SignalSymbol, count: number) {
+  const n = Math.max(0, Math.min(CUSTOM_MAX, Math.round(count)));
+  const custom = { ...state.custom };
+  if (n > 0) custom[symbol] = n;
+  else delete custom[symbol];
+  try {
+    localStorage.setItem(KEY_CUSTOM, JSON.stringify(custom));
+  } catch {
+    /* 不保存 */
+  }
+  set({ custom });
+  recheck();
+}
+
+/** 清除全部自訂目標 */
+export function clearCustomTargets() {
+  try {
+    localStorage.removeItem(KEY_CUSTOM);
+  } catch {
+    /* 不保存 */
+  }
+  set({ custom: {} });
+  recheck();
 }
 
 subscribeSetIndex(() => {
@@ -178,13 +274,14 @@ function onHud(hud: GameHud | null) {
     seen.add(id);
     if (seen.size > 200) seen.delete(seen.values().next().value!);
     if (b.fg) continue;
-    const hit = !!state.symbols && meets(state.symbols, b.counts);
+    const syms = activeSymbols(state);
+    const hit = !!syms && meets(syms, b.counts, state.mode);
     set({ counts: b.counts, hit });
-    if (hit && state.enabled && state.symbols) {
+    if (hit && state.enabled && syms) {
       const today = readToday() + 1;
       saveToday(today);
       set({ today });
-      signalHitNative(hitMessage(state.symbols, b.counts));
+      signalHitNative(hitMessage(syms, b.counts, state.mode));
     }
   }
 }

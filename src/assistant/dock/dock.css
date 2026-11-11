@@ -967,3 +967,124 @@ html.is-dock body {
 .aa-dock-clock .aa-passclock-label {
   font-size: 10px;
 }
+
+/* 訊號浮窗：房間訊號／自訂訊號切換（2026-11-11）。作用中＝直角金色色塊填滿 */
+.aa-sigfloat-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 8px;
+  border: 1px solid var(--aa-line);
+}
+
+.aa-sigfloat-modes button {
+  min-height: 32px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--aa-muted);
+  font: inherit;
+  font-size: 13px;
+}
+
+.aa-sigfloat-modes button[aria-pressed='true'] {
+  background: var(--aa-gold);
+  color: #1a1206;
+  font-weight: 700;
+}
+
+.aa-sigfloat-modes button:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: -2px;
+}
+
+/* 自訂訊號設定：符號｜名稱＋目前｜目標 −/＋ */
+.aa-sigfloat-edit li {
+  grid-template-columns: 30px 1fr auto;
+  gap: 6px;
+  padding: 3px 4px;
+}
+
+.aa-sigfloat-edit li.is-set {
+  background: rgba(232, 194, 116, 0.12);
+}
+
+.aa-sigfloat-edit img {
+  width: 30px;
+  height: 30px;
+}
+
+.aa-sigfloat-edit-info {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.aa-sigfloat-edit-info small {
+  color: var(--aa-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-sigfloat-step {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.aa-sigfloat-step button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--aa-line);
+  border-radius: 8px;
+  background: var(--aa-surface-hi);
+  color: var(--aa-gold-hi);
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.aa-sigfloat-step button:disabled {
+  opacity: 0.35;
+}
+
+.aa-sigfloat-step button:active:not(:disabled) {
+  background: #241b10;
+}
+
+.aa-sigfloat-step button:focus-visible {
+  outline: 2px solid var(--aa-gold-hi);
+  outline-offset: 1px;
+}
+
+.aa-sigfloat-step output {
+  min-width: 34px;
+  color: var(--aa-dim);
+  font-size: 12px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-sigfloat-edit li.is-set .aa-sigfloat-step output {
+  color: var(--aa-gold-hi);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.aa-dock-sig-empty {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.aa-sigfloat-hint {
+  font-size: 12px;
+}
