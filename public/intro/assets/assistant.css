@@ -1981,3 +1981,34 @@ fieldset.aa-field {
   color: var(--aa-gold-hi);
   background: var(--aa-surface);
 }
+
+/* 頂部：積分＋剩餘時間（時:分:秒） */
+.aa-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.aa-badges .aa-badge {
+  text-align: center;
+}
+
+.aa-passclock {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.aa-passclock-label {
+  color: var(--aa-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.aa-passclock.is-low .aa-passclock-time {
+  color: var(--aa-danger);
+}

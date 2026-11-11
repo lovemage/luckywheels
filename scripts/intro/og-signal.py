@@ -80,7 +80,7 @@ x = 72
 d.text((x, 170), '曜金訊號', font=ImageFont.truetype(F, 88, index=3), fill=(255, 227, 166))
 d.text((x, 296), '盤面上的符號，一組只屬於此刻', font=ImageFont.truetype(F, 34, index=3), fill=(232, 194, 116))
 d.line((x, 366, x + 300, 366), fill=(232, 194, 116), width=2)
-d.text((x, 390), '眼睛 · 眼鏡蛇 · 弓 · 鐮刀 · 寶石', font=ImageFont.truetype(S, 24, index=3), fill=(220, 208, 184))
+d.text((x, 390), 'TOP 5 房間訊號 · 達標可買免遊', font=ImageFont.truetype(S, 24, index=3), fill=(220, 208, 184))
 d.text((x, 530), 'luckyds.com', font=ImageFont.truetype(S, 22, index=3), fill=(170, 156, 128))
 img.convert('RGB').save('public/intro/assets/og/signal.jpg', quality=86)
 print('signal OG ok')

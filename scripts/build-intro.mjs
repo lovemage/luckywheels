@@ -20,7 +20,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public/intro');
 const ORIGIN = 'https://luckyds.com';
 const APK = '/downloads/luckyds-assistant.apk';
-const APP_VERSION = '1.5.1';
+const APP_VERSION = '1.5.2';
 
 const pillars = readFileSync(join(ROOT, 'scripts/intro/pillars.svg'), 'utf8');
 
@@ -102,6 +102,7 @@ function shell(page, { title, description, ogTitle, ogDesc, body }) {
 <meta property="og:locale" content="zh_TW">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${ogTitle}">
+<meta name="twitter:description" content="${ogDesc}">
 <meta name="twitter:image" content="${ORIGIN}/intro/assets/og/${page}.jpg">
 <link rel="preload" href="/intro/assets/intro-display.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/intro/assets/assistant.css">
@@ -270,9 +271,9 @@ const introOverlay = `<div class="lw-intro" id="lw-intro" aria-hidden="true" hid
 // ════════════════ 首頁 ════════════════
 const home = shell('home', {
   title: '曜金數據助手｜金光之下，每台機台都有紀錄',
-  description: '曜金數據助手把 ATG 數千台機台的紀錄排成一道看得見的光：精選空台、本金推薦、曜金訊號，遊戲中也能隨時叫出。LINE 登入，用幸運輪盤的積分開通。',
+  description: '曜金數據助手把 ATG 戰神賽特 II 數千台機台的紀錄排成一道看得見的光：精選空台、房間訊號、本金推薦，Android App 在遊戲中隨時叫出。LINE 登入，用幸運輪盤的積分開通。',
   ogTitle: '曜金數據助手',
-  ogDesc: '金光之下，每台機台都有紀錄。LINE 登入轉輪盤，積分開通數據助手。',
+  ogDesc: '精選空台、房間訊號、本金推薦，遊戲中隨時叫出。LINE 登入，用輪盤積分開通。',
   body: `${introOverlay}
 <section class="aa-hero" aria-labelledby="hero-title">
   <img class="aa-tiger" alt="" aria-hidden="true" draggable="false" src="/assets/assistant/tiger.webp">
@@ -406,7 +407,7 @@ const rules = shell('rules', {
   title: '曜金規則｜讀懂數字背後的紀錄｜曜金數據助手',
   description: '曜金規則說明數據助手畫面上的每個數字：未開轉數、RTP 返還率、今日下注量代表什麼，以及綜合分數、精選空台與本金推薦如何排序。',
   ogTitle: '曜金規則｜讀懂數字背後的紀錄',
-  ogDesc: '未開轉數、RTP 返還率、今日下注量，曜金怎麼把它們排成一道光。',
+  ogDesc: '未開轉數、RTP 返還率、今日下注量代表什麼，精選空台與本金推薦怎麼排序。',
   body: `${subhero('rules', `<h1 class="aa-ink-title">${ink('rules', '曜金規則', '')}</h1>`, '每個數字，都是已發生的紀錄')}
 <div class="lw-wrap">
   <section class="lw-band">
@@ -461,9 +462,9 @@ const rules = shell('rules', {
 // ════════════════ 曜金訊號 ════════════════
 const signal = shell('signal', {
   title: '曜金訊號｜盤面上的符號，一組只屬於此刻｜曜金數據助手',
-  description: '曜金訊號用戰神賽特 II 盤面上的符號與數量組成，和遊戲裡看到的一模一樣；每一組都是精選空台 TOP 5 其中一台的房間訊號，機台一有變化就自動換組。',
+  description: '曜金訊號是精選空台 TOP 5 其中一台的房間訊號，用戰神賽特 II 盤面上的符號與數量組成。坐上機台後，大圖數量剛好相等、寶石達到以上就是訊號達標，可買免遊；每台每天 5 組，免遊結束換下一組。',
   ogTitle: '曜金訊號｜盤面上的符號，一組只屬於此刻',
-  ogDesc: '眼睛、眼鏡蛇、寶石，和遊戲盤面一模一樣。每一組訊號，都是此刻 TOP 5 其中一台的房間訊號。',
+  ogDesc: '每一組都是此刻 TOP 5 其中一台的房間訊號。大圖剛好相等、寶石達到以上，就是達標。',
   body: `${subhero('signal', '<h1 class="aa-ink-title"><img src="/intro/assets/ink/title-signal.webp" alt="曜金訊號" draggable="false"></h1>', '盤面上的符號，排成此刻的訊號')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="what-title">
@@ -572,7 +573,7 @@ const wheel = shell('wheel', {
   title: '幸運輪盤｜LINE 登入，轉動今天的手氣｜曜金數據助手',
   description: 'LINE 登入就能轉幸運輪盤，用積分抽彩金；同一份積分也能開通曜金數據助手。單抽 6 積分、十連抽 48 積分，結果由伺服器判定。',
   ogTitle: '幸運輪盤｜LINE 登入，轉動今天的手氣',
-  ogDesc: '積分抽彩金，也能開通曜金數據助手。',
+  ogDesc: 'LINE 登入轉輪盤：單抽 6 積分、十連抽 48 積分，頭獎 20,000 彩金。同一份積分也能開通曜金數據助手。',
   body: `${subhero('wheel', '<h1 class="aa-ink-title"><img src="/intro/assets/ink/title-wheel.webp" alt="幸運輪盤" draggable="false"></h1>', 'LINE 登入，轉動今天的手氣')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="wheel-how">
@@ -623,9 +624,9 @@ const wheel = shell('wheel', {
 // ════════════════ 安裝 ════════════════
 const install = shell('install', {
   title: '安裝 App｜把助手帶進遊戲裡｜曜金數據助手',
-  description: '下載曜金數據助手 Android App：在 App 裡登入娛樂城、直接玩遊戲，駐守小卡隨時叫出。iPhone 版準備中，現在可先使用網頁版。',
+  description: '下載曜金數據助手 Android App：在 App 裡登入娛樂城直接玩，駐守小卡顯示機台數據、自動比對房間訊號，依本金設定停利停損並震動提醒。iPhone 版準備中，現在可先使用網頁版。',
   ogTitle: '安裝 App｜把助手帶進遊戲裡',
-  ogDesc: 'Android 立即下載；iPhone 版準備中，可先使用網頁版。',
+  ogDesc: `Android ${APP_VERSION} 立即下載：駐守小卡、房間訊號自動比對、停利停損提醒。iPhone 先用網頁版。`,
   body: `${subhero('install', '<h1 class="aa-ink-title"><img src="/intro/assets/ink/title-install.webp" alt="把助手帶進遊戲裡" draggable="false"></h1>', 'Android 裝 App，iPhone 用網頁版')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="dock-title">
