@@ -75,6 +75,7 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
         <a href="#aa-rule-score">怎麼排序</a>
         <a href="#aa-rule-signal">曜金訊號</a>
         <a href="#aa-rule-roomsig">房間訊號</a>
+        <a href="#aa-rule-customsig">自訂訊號</a>
       </nav>
 
       {METRICS.map((m) => (
@@ -141,6 +142,22 @@ export function RulesView({ me, onNavigate }: { me: AssistantMe | null; onNaviga
           <li>免遊結束後可按「免遊結束，換下一組」看同一台的下一組；按錯可以回上一組</li>
           <li>網頁版會記得上次查的房號與組數，在遊戲和助手之間切換時不用重新輸入</li>
           <li>隔天，或系統偵測到這台自然開出免遊時，整串 5 組會換新，從第 1 組開始</li>
+        </ul>
+      </section>
+
+      <section id="aa-rule-customsig" className="aa-rule" aria-labelledby="aa-rule-customsig-title">
+        <div className="aa-section-head">
+          <h2 id="aa-rule-customsig-title" className="aa-display">自訂訊號</h2>
+        </div>
+        <p className="aa-rule-weight">Android App 訊號浮窗 · 自己設定目標</p>
+        <p className="aa-rule-meaning">依自己的經驗設定想看的符號與數量，每轉結束時自動比對盤面，全部達到就提醒</p>
+        <ul className="aa-reasons aa-rule-points">
+          <li>在訊號浮窗上方切換到「自訂訊號」，用 −／＋ 設定每個符號的目標數量；0 為不看</li>
+          <li>可設定眼睛、眼鏡蛇、弓、鐮刀、甲蟲、彩甲及 5 色寶石</li>
+          <li>自訂訊號一律以「達到以上（≥）」比對；設定的符號全部達到目標，就是訊號達標，跳出提醒並發出通知</li>
+          <li>自訂訊號與房間訊號同一時間只比對其中一種，可隨時切換</li>
+          <li>目標保存在這支手機上，換機台也照樣沿用；可隨時修改或全部清除</li>
+          <li>免遊中暫停比對，免遊結束後從下一轉開始</li>
         </ul>
       </section>
 

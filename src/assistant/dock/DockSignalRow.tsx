@@ -8,6 +8,7 @@ import {
   nextRoomSignalSet,
   opOf,
   roomSignalState,
+  setSignalMode,
   subscribeRoomSignal,
   symbolMet,
 } from './roomSignal.js';
@@ -16,6 +17,29 @@ import {
 // 點一下打開完整的訊號浮窗（App 1.4.0+）。舊版 App 讀不到盤面，只顯示門檻（大圖「=」、寶石「≥」）。
 // 右側「換」＝免遊結束換下一組（每台每天 5 組，與網頁版查房號共用組數；2026-11-10 業主）。
 // 自訂訊號模式（2026-11-11）：改顯示會員自己設定的目標（一律 ≥），沒有「換」。
+// 「換」右邊的切換鈕：房間模式顯示「自訂」（切到自訂訊號並打開浮窗設定），自訂模式顯示「房間」（切回房間訊號）。
+// 只在有訊號浮窗的 App（1.4.0+）出現：自訂目標要在浮窗裡設定。
+
+function ModeChip({ custom, onOpen }: { custom: boolean; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      className="aa-dock-chip aa-dock-chip--ghost aa-dock-sig-next"
+      onClick={() => {
+        if (custom) {
+          setSignalMode('room');
+        } else {
+          setSignalMode('custom');
+          onOpen();
+        }
+      }}
+      aria-label={custom ? '切回房間訊號' : '改用自訂訊號（打開訊號浮窗設定目標）'}
+    >
+      <span>{custom ? '房間' : '自訂'}</span>
+      <small>訊號</small>
+    </button>
+  );
+}
 
 export function DockSignalRow({ roomNo, onOpen }: { roomNo: string; onOpen?: () => void }) {
   const st = useSyncExternalStore(subscribeRoomSignal, roomSignalState);
@@ -28,9 +52,12 @@ export function DockSignalRow({ roomNo, onOpen }: { roomNo: string; onOpen?: () 
 
   if (custom && activeSymbols(st)!.length === 0) {
     return onOpen ? (
-      <button type="button" className="aa-dock-note aa-dock-sig-note aa-dock-sig-empty" onClick={onOpen}>
-        自訂訊號尚未設定目標，點這裡設定
-      </button>
+      <div className="aa-dock-sigline">
+        <button type="button" className="aa-dock-note aa-dock-sig-note aa-dock-sig-empty" onClick={onOpen}>
+          自訂訊號尚未設定目標，點這裡設定
+        </button>
+        <ModeChip custom onOpen={onOpen} />
+      </div>
     ) : (
       <p className="aa-dock-note aa-dock-sig-note">自訂訊號尚未設定目標</p>
     );
@@ -99,6 +126,7 @@ export function DockSignalRow({ roomNo, onOpen }: { roomNo: string; onOpen?: () 
           </small>
         </button>
       )}
+      {onOpen && <ModeChip custom={custom} onOpen={onOpen} />}
     </div>
   );
 }

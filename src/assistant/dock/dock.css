@@ -1074,7 +1074,10 @@ html.is-dock body {
 
 .aa-dock-sig-empty {
   display: block;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  align-self: center;
   padding: 0;
   border: 0;
   background: none;
