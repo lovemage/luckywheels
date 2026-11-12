@@ -60,6 +60,20 @@ export async function pickDetailTargets(
  * 單一 transaction：更新 Room（細項只在本輪有抓時覆寫）→ 寫 RoomSnapshot
  * → CollectorRun 標為 succeeded 並設 evalStatus = pending（計劃 1.3）。任一步失敗整批 rollback。
  */
+/** RTP 欄位是 Decimal(7,2)，上限 99999.99 */
+const RTP_MAX = 99999.99;
+
+/**
+ * 超出 Decimal(7,2) 的 RTP 夾到 ±99999.99。午夜「今日」數據剛歸零時，押注很少就中獎的機台
+ * RTP 可能破 100000%，寫入會 numeric overflow（22003）讓整輪 rollback（2026-11-12 00:06 發生）。
+ */
+export function clampRtp(v: string | null): string | null {
+  if (v === null) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || Math.abs(n) <= RTP_MAX) return v;
+  return n > 0 ? RTP_MAX.toFixed(2) : (-RTP_MAX).toFixed(2);
+}
+
 export async function saveRound(prisma: PrismaClient, input: SaveRoundInput): Promise<void> {
   const detailByNo = new Map(input.details.map((d) => [d.roomNo, d]));
   // 同一機台號在一輪內出現兩次時保留最後一筆；否則 ON CONFLICT 會因同一列被更新兩次而讓整輪 rollback
@@ -73,14 +87,14 @@ export async function saveRound(prisma: PrismaClient, input: SaveRoundInput): Pr
   const roomNos = rows.map((r) => r.room.roomNo);
   const sourceIds = rows.map((r) => r.room.sourceRoomId);
   const statuses = rows.map((r) => r.room.status);
-  const rtps = rows.map((r) => r.room.todayRtp);
+  const rtps = rows.map((r) => clampRtp(r.room.todayRtp));
   const hasDetail = rows.map((r) => r.detail !== null);
   const unopened = rows.map((r) => r.detail?.unopenedSpins ?? null);
   const prev1 = rows.map((r) => r.detail?.prev1Spins ?? null);
   const prev2 = rows.map((r) => r.detail?.prev2Spins ?? null);
   const todayBets = rows.map((r) => r.detail?.todayBet ?? null);
   const thirtyBets = rows.map((r) => r.detail?.thirtyDayBet ?? null);
-  const thirtyRtps = rows.map((r) => r.detail?.thirtyDayRtp ?? null);
+  const thirtyRtps = rows.map((r) => clampRtp(r.detail?.thirtyDayRtp ?? null));
 
   await prisma.$transaction(
     async (tx) => {

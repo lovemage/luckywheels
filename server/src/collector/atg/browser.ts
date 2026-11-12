@@ -173,10 +173,23 @@ async function runRoundIn(browser: Browser, creds: Credentials, game: AtgGame, o
     let sampleDetailLabels: RawLabel[] | null = null;
     let currentPage = PAGE_COUNT;
     const overBudget = () => !!opts.detailBudgetMs && Date.now() - t3 > opts.detailBudgetMs;
+    // 遊戲偶爾整頁不回應切頁（Railway 上每天數次）。細項階段遇到時只跳過該頁，列表與已抓到的細項照常寫入，
+    // 不讓整輪失敗；連續兩頁都切不過去就提早結束細項階段。
+    const failedPages = new Set<number>();
+    const MAX_FAILED_PAGES = 2;
     const readRoom = async (roomNo: string): Promise<RoomDetail | null> => {
       const page_ = Math.floor((Number(roomNo) - 1) / 500) + 1;
+      if (failedPages.has(page_) || failedPages.size >= MAX_FAILED_PAGES) return null;
       if (page_ !== currentPage) {
-        await openPage(page_);
+        try {
+          await openPage(page_);
+        } catch (err) {
+          if (!(err instanceof CollectorError) || err.code !== 'ROOM_LIST_FAILED') throw err;
+          failedPages.add(page_);
+          currentPage = -1; // 不確定停在哪一頁，下一台一律重新切頁
+          log(`細項階段切到分頁 ${page_} 失敗，略過該頁剩下的機台`);
+          return null;
+        }
         currentPage = page_;
       }
       // 低畫面更新率下，遊戲偶爾會吃掉點擊（面板停在上一台），4 秒沒換到目標就重按一次，總共最多等 8 秒
@@ -205,6 +218,7 @@ async function runRoundIn(browser: Browser, creds: Credentials, game: AtgGame, o
       if (detail) details.push(detail);
       else detailFailures.push(roomNo);
     }
+    if (failedPages.size >= MAX_FAILED_PAGES) log(`細項階段有 ${failedPages.size} 頁切換失敗，提早結束細項`);
     const detailMs = Date.now() - t3;
 
     return {
