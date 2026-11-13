@@ -14,6 +14,7 @@ import { InkTitle } from '../InkTitle.js';
 import { COLLECT_INTRO_MS, CollectingLoader, RECOMMEND_STEPS } from '../CollectingLoader.js';
 import type { AssistantView } from '../AssistantApp.js';
 import { OpenPassButton } from '../OpenPassButton.js';
+import { RoomSignalLookup } from '../RoomSignalLookup.js';
 
 // 本金推薦：輸入本金與目標倍數 → 伺服器依級距門檻篩出符合條件的空台（前端只顯示）
 
@@ -207,6 +208,9 @@ export function RecommendView({ me, onNavigate }: { me: AssistantMe | null; onNa
         )}
         {config && <p className="aa-footnote">{config.minBetAdvice}</p>}
       </form>
+
+      {/* 首頁輸入過房號（或 App 內已坐上機台）才顯示，結果與首頁同步 */}
+      <RoomSignalLookup onlyIfRoom />
 
       {busy && (
         <section className="aa-results" ref={resultRef} aria-labelledby="aa-results-title">

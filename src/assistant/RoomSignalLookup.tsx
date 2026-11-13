@@ -31,8 +31,17 @@ const readLast = () => {
 
 type State = { kind: 'idle' } | { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; data: RoomSignalResponse };
 
-export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
+export function RoomSignalLookup({
+  onExpired,
+  onlyIfRoom = false,
+}: {
+  onExpired?: () => void;
+  /** 本金推薦頁用：會員還沒輸入過房號（App 內也還沒坐上機台）時整塊不顯示 */
+  onlyIfRoom?: boolean;
+}) {
   const gameRoom = useGameRoom();
+  // 首頁輸入過的房號記在本機，推薦頁打開時直接沿用、自動查詢（與首頁同步）
+  const [hasRoom] = useState(() => readLast() !== '');
   const [roomNo, setRoomNo] = useState(() => gameRoom ?? readLast());
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [note, setNote] = useState<string | null>(null);
@@ -125,6 +134,8 @@ export function RoomSignalLookup({ onExpired }: { onExpired?: () => void }) {
       return null;
     }
   }
+
+  if (onlyIfRoom && !hasRoom && !gameRoom) return null;
 
   return (
     <section className="aa-signal aa-roomsig" aria-labelledby="aa-roomsig-title">
