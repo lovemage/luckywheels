@@ -1199,7 +1199,9 @@ body:has(.aa-stage) {
 
 .aa-field {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -1219,6 +1221,8 @@ fieldset.aa-field {
 .aa-money {
   display: flex;
   align-items: center;
+  gap: 8px;
+  min-width: 0;
   min-height: 56px;
   padding: 0 14px;
   border: 1px solid var(--aa-line-strong);
@@ -1233,6 +1237,7 @@ fieldset.aa-field {
 
 .aa-money input {
   flex: 1;
+  width: 0;
   min-width: 0;
   border: 0;
   background: none;
