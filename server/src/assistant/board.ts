@@ -19,6 +19,23 @@ export interface ScoreBoard {
 
 const num = (v: string | number | null) => (v === null ? null : Number(v));
 
+// 換日處理（2026-11-20 業主同意）：ATG 的「今日」數據在台北時間 24 點歸零。
+// - 今日下注是細項層、輪流抓取，換日後一段時間內有些機台仍是昨天整天的累積值
+//   → 細項在今天 00:00 前抓到的今日下注視同缺值（不比熱度、不產生理由），直到重新抓到
+// - 開盤保護時段：00:00 起 MIDNIGHT_GUARD_MINUTES 分鐘內下注量少、今日 RTP 忽高忽低
+//   → 今日 RTP、今日下注權重歸零，改以未開轉數、近 30 天 RTP 排序，也不產生這兩項理由
+const TAIPEI_OFFSET_MS = 8 * 3_600_000;
+const DAY_MS = 86_400_000;
+export const MIDNIGHT_GUARD_MINUTES = 30;
+
+/** 台北時間當天 00:00（台灣無日光節約時間，固定 UTC+8） */
+export function taipeiDayStart(now: Date): Date {
+  return new Date(Math.floor((now.getTime() + TAIPEI_OFFSET_MS) / DAY_MS) * DAY_MS - TAIPEI_OFFSET_MS);
+}
+
+export const inMidnightGuard = (now: Date) =>
+  now.getTime() - taipeiDayStart(now).getTime() < MIDNIGHT_GUARD_MINUTES * 60_000;
+
 export async function loadScoreBoard(
   prisma: PrismaClient | Prisma.TransactionClient,
   gameId: string,
@@ -32,18 +49,24 @@ export async function loadScoreBoard(
     SELECT ${ROOM_COLUMNS} FROM "Room" r
     WHERE r."gameId" = ${gameId} AND r.enabled AND r."listCapturedAt" >= ${freshSince}`;
   const views = rows.map((r) => toRoomView(r, now, f));
+  const dayStart = taipeiDayStart(now).getTime();
+  const guard = inMidnightGuard(now);
   const scores = scoreRooms(
     views.map((r) => ({
       id: r.id,
       values: {
-        todayRtp: num(r.todayRtp),
+        todayRtp: guard ? null : num(r.todayRtp),
         // 細項層逾時的值視同缺值（以 0.5 計，不產生理由）
         unopened: r.detailStale ? null : num(r.unopenedSpins),
         thirtyDayRtp: r.detailStale ? null : num(r.thirtyDayRtp),
-        todayBet: r.detailStale ? null : num(r.todayBet),
+        // 今天 00:00 前抓到的今日下注是昨天的數字
+        todayBet:
+          guard || r.detailStale || !r.detailCapturedAt || Date.parse(r.detailCapturedAt) < dayStart
+            ? null
+            : num(r.todayBet),
       },
     })),
-    weights,
+    guard ? { ...weights, todayRtp: 0, todayBet: 0 } : weights,
   );
 
   const rooms = views
