@@ -70,7 +70,7 @@ const ink = (key, alt, cls = 'lw-ink-h') => `<img class="${cls}" src="/assets/as
 const demo = '<span class="lw-demo">示意數據</span>';
 
 // 客服懸浮按鈕：開關、圖片、連結由後台「客服按鈕」設定（/api/settings/public 的 supportFab*）。
-// 預設隱藏，讀到設定且開啟才顯示；讀取失敗就不顯示。未上傳圖片＝網站 logo。
+// 預設隱藏，讀到設定且開啟才顯示；讀取失敗就不顯示。未上傳圖片＝首頁設定的 logo（homeLogoUrl），再沒有才用內建 logo。
 const SUPPORT_FAB = `<a class="lw-fab" id="lw-fab" href="https://lin.ee/Tgi96WV" target="_blank" rel="noopener" aria-label="聯絡客服（另開視窗）" data-pos="bottom-right" hidden>
   <span class="lw-fab-img"><img src="/assets/logo.webp" alt="" width="64" height="64"></span>
   <span class="lw-fab-label">客服</span>
@@ -85,7 +85,7 @@ const SUPPORT_FAB = `<a class="lw-fab" id="lw-fab" href="https://lin.ee/Tgi96WV"
       if (!s || !s.supportFabEnabled) return;
       var link = String(s.supportFabLinkUrl || '');
       if (/^https?:\\/\\/\\S+$/i.test(link)) fab.href = link;
-      var img = String(s.supportFabImageUrl || '');
+      var img = String(s.supportFabImageUrl || s.homeLogoUrl || '');
       if (img) {
         if (img.indexOf('/prize-images/') !== -1 && /^https?:/i.test(img)) img = '/api/media-proxy?url=' + encodeURIComponent(img);
         if (img.charAt(0) === '/') fab.querySelector('img').src = img;

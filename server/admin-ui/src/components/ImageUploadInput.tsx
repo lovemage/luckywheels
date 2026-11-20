@@ -9,7 +9,7 @@ interface Props {
   convertToWebp?: boolean;
 }
 
-function proxiedImageUrl(url: string | null): string {
+export function proxiedImageUrl(url: string | null): string {
   if (!url) return '';
   try {
     const parsed = new URL(url);

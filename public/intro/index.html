@@ -21,9 +21,9 @@
 <meta name="twitter:title" content="曜金數據助手">
 <meta name="twitter:description" content="精選空台、房間訊號、本金推薦，遊戲中隨時叫出。LINE 登入，用輪盤積分開通。">
 <meta name="twitter:image" content="https://luckyds.com/intro/assets/og/home.jpg?v=d4c6813c">
-<link rel="preload" href="/intro/assets/intro-display.woff2?v=964b389f" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/intro/assets/intro-display.woff2?v=af452669" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/intro/assets/assistant.css?v=b59b199e">
-<link rel="stylesheet" href="/intro/assets/site.css?v=a005dba9">
+<link rel="stylesheet" href="/intro/assets/site.css?v=6409dabb">
 </head>
 <body>
 <div class="aa-stage lw-site">
@@ -247,7 +247,7 @@
       if (!s || !s.supportFabEnabled) return;
       var link = String(s.supportFabLinkUrl || '');
       if (/^https?:\/\/\S+$/i.test(link)) fab.href = link;
-      var img = String(s.supportFabImageUrl || '');
+      var img = String(s.supportFabImageUrl || s.homeLogoUrl || '');
       if (img) {
         if (img.indexOf('/prize-images/') !== -1 && /^https?:/i.test(img)) img = '/api/media-proxy?url=' + encodeURIComponent(img);
         if (img.charAt(0) === '/') fab.querySelector('img').src = img;

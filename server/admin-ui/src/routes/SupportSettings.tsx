@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchSettings, updateSettings, type SupportFabPosition } from '../api/settings.js';
-import { ImageUploadInput } from '../components/ImageUploadInput.js';
+import { ImageUploadInput, proxiedImageUrl } from '../components/ImageUploadInput.js';
 import { PageSkeleton } from '../components/Skeleton.js';
 
 function Hint({ children }: { children: ReactNode }) {
@@ -94,12 +94,12 @@ export function SupportSettings() {
         <ImageUploadInput value={imageUrl} onChange={setImageUrl} convertToWebp />
         <Hint>
           建議<strong>正方形 256 × 256</strong>、去背 PNG，按鈕會裁成圓形顯示。
-          <strong>未上傳＝使用網站 logo</strong>（下方預覽）。
+          <strong>未上傳＝使用「首頁設定」的 logo</strong>（下方預覽；首頁也沒設定時用系統內建 logo）。
         </Hint>
         {!imageUrl && (
           <img
-            src="/assets/logo.webp"
-            alt="預設按鈕圖（網站 logo）"
+            src={proxiedImageUrl(data.homeLogoUrl || null) || '/assets/logo.webp'}
+            alt="預設按鈕圖（首頁 logo）"
             style={{ display: 'block', width: 96, height: 96, objectFit: 'contain', marginTop: 12, borderRadius: '50%', background: '#120c05' }}
           />
         )}
