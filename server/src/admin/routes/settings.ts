@@ -44,6 +44,15 @@ const Body = z.object({
     .optional(),
   winTickerEnabled: z.boolean().optional(),
   bottomNavCollapsible: z.boolean().optional(),
+  supportFabEnabled: z.boolean().optional(),
+  supportFabImageUrl: z.string().max(2000).optional(),
+  supportFabLinkUrl: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine((v) => /^https?:\/\/\S+$/i.test(v))
+    .optional(),
+  supportFabPosition: z.enum(['bottom-right', 'middle-right', 'bottom-left', 'middle-left']).optional(),
   winTickerDemoEnabled: z.boolean().optional(),
   winTickerDemoEntries: z
     .array(z.object({ memberId: z.string().trim().min(1).max(40), rankLabel: z.string().trim().min(1).max(20) }))
@@ -122,6 +131,11 @@ adminSettingsRoutes.get('/api/admin/settings', ...requireSystemNav, async (c) =>
     adPopupLinkUrl: m[SETTINGS_KEYS.adPopupLinkUrl] ?? '',
     winTickerEnabled: m[SETTINGS_KEYS.winTickerEnabled] === 'true',
     bottomNavCollapsible: m[SETTINGS_KEYS.bottomNavCollapsible] === 'true',
+    supportFabEnabled:
+      (m[SETTINGS_KEYS.supportFabEnabled] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.supportFabEnabled]) === 'true',
+    supportFabImageUrl: m[SETTINGS_KEYS.supportFabImageUrl] ?? '',
+    supportFabLinkUrl: m[SETTINGS_KEYS.supportFabLinkUrl] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.supportFabLinkUrl],
+    supportFabPosition: m[SETTINGS_KEYS.supportFabPosition] ?? DEFAULT_SETTINGS[SETTINGS_KEYS.supportFabPosition],
     winTickerDemoEnabled: m[SETTINGS_KEYS.winTickerDemoEnabled] === 'true',
     winTickerDemoEntries: parseDemoEntries(m[SETTINGS_KEYS.winTickerDemoEntries]),
     totals: {
@@ -186,6 +200,14 @@ adminSettingsRoutes.patch('/api/admin/settings', ...requireSystemNav, async (c) 
     updates.push({ key: SETTINGS_KEYS.winTickerEnabled, value: serialize(body.winTickerEnabled) });
   if (body.bottomNavCollapsible !== undefined)
     updates.push({ key: SETTINGS_KEYS.bottomNavCollapsible, value: serialize(body.bottomNavCollapsible) });
+  if (body.supportFabEnabled !== undefined)
+    updates.push({ key: SETTINGS_KEYS.supportFabEnabled, value: serialize(body.supportFabEnabled) });
+  if (body.supportFabImageUrl !== undefined)
+    updates.push({ key: SETTINGS_KEYS.supportFabImageUrl, value: serialize(body.supportFabImageUrl) });
+  if (body.supportFabLinkUrl !== undefined)
+    updates.push({ key: SETTINGS_KEYS.supportFabLinkUrl, value: serialize(body.supportFabLinkUrl) });
+  if (body.supportFabPosition !== undefined)
+    updates.push({ key: SETTINGS_KEYS.supportFabPosition, value: serialize(body.supportFabPosition) });
   if (body.winTickerDemoEnabled !== undefined)
     updates.push({ key: SETTINGS_KEYS.winTickerDemoEnabled, value: serialize(body.winTickerDemoEnabled) });
   if (body.winTickerDemoEntries !== undefined)

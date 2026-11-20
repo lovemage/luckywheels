@@ -26,6 +26,12 @@ export const SETTINGS_KEYS = {
   adPopupLinkUrl: 'adPopupLinkUrl',
   winTickerEnabled: 'winTickerEnabled',
   bottomNavCollapsible: 'bottomNavCollapsible',
+  // 介紹網站（/intro/）右下角客服懸浮按鈕：開關、圖片（空字串＝預設 logo）、點擊連結（預設官方 LINE）
+  supportFabEnabled: 'supportFabEnabled',
+  supportFabImageUrl: 'supportFabImageUrl',
+  supportFabLinkUrl: 'supportFabLinkUrl',
+  // 位置：bottom-right（右下）／middle-right（右中）／bottom-left（左下）／middle-left（左中）
+  supportFabPosition: 'supportFabPosition',
   // 跑馬燈展示名單（暖場用）：開關 + JSON [{ memberId, rankLabel }]；
   // 金額依同名獎項的 cashAmount 即時帶入，找不到獎項或金額為 0 的會略過。
   winTickerDemoEnabled: 'winTickerDemoEnabled',
@@ -143,6 +149,10 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   [SETTINGS_KEYS.adPopupLinkUrl]: '',
   [SETTINGS_KEYS.winTickerEnabled]: 'true',
   [SETTINGS_KEYS.bottomNavCollapsible]: 'true',
+  [SETTINGS_KEYS.supportFabEnabled]: 'true',
+  [SETTINGS_KEYS.supportFabImageUrl]: '',
+  [SETTINGS_KEYS.supportFabLinkUrl]: 'https://lin.ee/Tgi96WV',
+  [SETTINGS_KEYS.supportFabPosition]: 'bottom-right',
   // 此站已正式營運：展示名單預設關閉，由後台自行開啟。
   [SETTINGS_KEYS.winTickerDemoEnabled]: 'false',
   [SETTINGS_KEYS.winTickerDemoEntries]: JSON.stringify(DEFAULT_WIN_TICKER_DEMO_ENTRIES),

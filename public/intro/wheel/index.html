@@ -21,9 +21,9 @@
 <meta name="twitter:title" content="幸運輪盤｜LINE 登入，轉動今天的手氣">
 <meta name="twitter:description" content="LINE 登入轉輪盤：單抽 6 積分、十連抽 48 積分，頭獎 20,000 彩金。同一份積分也能開通曜金數據助手。">
 <meta name="twitter:image" content="https://luckyds.com/intro/assets/og/wheel.jpg?v=488fa345">
-<link rel="preload" href="/intro/assets/intro-display.woff2?v=b2c20824" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/intro/assets/assistant.css?v=41cb3696">
-<link rel="stylesheet" href="/intro/assets/site.css?v=cfbc9358">
+<link rel="preload" href="/intro/assets/intro-display.woff2?v=964b389f" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/intro/assets/assistant.css?v=b59b199e">
+<link rel="stylesheet" href="/intro/assets/site.css?v=a005dba9">
 </head>
 <body>
 <div class="aa-stage lw-site">
@@ -114,6 +114,32 @@
   <a class="aa-tab is-active" href="/intro/wheel/" aria-current="page"><span class="aa-tab-icon" aria-hidden="true"><img src="/assets/assistant/ink/icon-wheel.webp?v=5435dbfd" alt=""></span><span>輪盤</span></a>
   <a class="aa-tab" href="/intro/install/"><span class="aa-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.6 9.48 19.44 6.3a.38.38 0 0 0-.66-.38l-1.86 3.22a11.5 11.5 0 0 0-9.84 0L5.22 5.92a.38.38 0 1 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52ZM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z"/></svg></span><span>安裝</span></a>
 </nav>
+<a class="lw-fab" id="lw-fab" href="https://lin.ee/Tgi96WV" target="_blank" rel="noopener" aria-label="聯絡客服（另開視窗）" data-pos="bottom-right" hidden>
+  <span class="lw-fab-img"><img src="/assets/logo.webp?v=d3afa733" alt="" width="64" height="64"></span>
+  <span class="lw-fab-label">客服</span>
+</a>
+<script>
+(function () {
+  var fab = document.getElementById('lw-fab');
+  if (!fab || !window.fetch) return;
+  fetch('/api/settings/public', { credentials: 'omit' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (s) {
+      if (!s || !s.supportFabEnabled) return;
+      var link = String(s.supportFabLinkUrl || '');
+      if (/^https?:\/\/\S+$/i.test(link)) fab.href = link;
+      var img = String(s.supportFabImageUrl || '');
+      if (img) {
+        if (img.indexOf('/prize-images/') !== -1 && /^https?:/i.test(img)) img = '/api/media-proxy?url=' + encodeURIComponent(img);
+        if (img.charAt(0) === '/') fab.querySelector('img').src = img;
+      }
+      var pos = String(s.supportFabPosition || '');
+      if (/^(bottom|middle)-(left|right)$/.test(pos)) fab.setAttribute('data-pos', pos);
+      fab.hidden = false;
+    })
+    .catch(function () {});
+})();
+</script>
 </div>
 </body>
 </html>

@@ -19,6 +19,10 @@ publicRoutes.get('/api/settings/public', async (c) => {
       SETTINGS_KEYS.adPopupLinkUrl,
       SETTINGS_KEYS.winTickerEnabled,
       SETTINGS_KEYS.bottomNavCollapsible,
+      SETTINGS_KEYS.supportFabEnabled,
+      SETTINGS_KEYS.supportFabImageUrl,
+      SETTINGS_KEYS.supportFabLinkUrl,
+      SETTINGS_KEYS.supportFabPosition,
     ] } },
   });
   const m = new Map(rows.map((r) => [r.key, r.value]));
@@ -37,6 +41,11 @@ publicRoutes.get('/api/settings/public', async (c) => {
       (m.get(SETTINGS_KEYS.winTickerEnabled) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.winTickerEnabled]) === 'true',
     bottomNavCollapsible:
       (m.get(SETTINGS_KEYS.bottomNavCollapsible) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.bottomNavCollapsible]) === 'true',
+    supportFabEnabled:
+      (m.get(SETTINGS_KEYS.supportFabEnabled) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.supportFabEnabled]) === 'true',
+    supportFabImageUrl: m.get(SETTINGS_KEYS.supportFabImageUrl) ?? '',
+    supportFabLinkUrl: m.get(SETTINGS_KEYS.supportFabLinkUrl) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.supportFabLinkUrl],
+    supportFabPosition: m.get(SETTINGS_KEYS.supportFabPosition) ?? DEFAULT_SETTINGS[SETTINGS_KEYS.supportFabPosition],
   });
 });
 

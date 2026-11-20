@@ -1,5 +1,7 @@
 import { api } from './client.js';
 
+export type SupportFabPosition = 'bottom-right' | 'middle-right' | 'bottom-left' | 'middle-left';
+
 export interface AdminSettings {
   pointThresholds: { points: number; draws: number }[];
   spinDurationMs: number;
@@ -18,6 +20,10 @@ export interface AdminSettings {
   adPopupLinkUrl: string;
   winTickerEnabled: boolean;
   bottomNavCollapsible: boolean;
+  supportFabEnabled: boolean;
+  supportFabImageUrl: string;
+  supportFabLinkUrl: string;
+  supportFabPosition: SupportFabPosition;
   winTickerDemoEnabled: boolean;
   winTickerDemoEntries: { memberId: string; rankLabel: string }[];
   totals: { drawCount: number; payoutAmount: number; pointsBurned: number };
@@ -45,6 +51,10 @@ export type SettingsUpdate = Partial<
     | 'adPopupLinkUrl'
     | 'winTickerEnabled'
     | 'bottomNavCollapsible'
+    | 'supportFabEnabled'
+    | 'supportFabImageUrl'
+    | 'supportFabLinkUrl'
+    | 'supportFabPosition'
     | 'winTickerDemoEnabled'
     | 'winTickerDemoEntries'
   >

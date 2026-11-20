@@ -21,6 +21,7 @@ import { Prizes } from './routes/Prizes.js';
 import { Settings } from './routes/Settings.js';
 import { HomeSettings } from './routes/HomeSettings.js';
 import { AdSettings } from './routes/AdSettings.js';
+import { SupportSettings } from './routes/SupportSettings.js';
 import { SystemSettings } from './routes/SystemSettings.js';
 import { AssistantCollector } from './routes/AssistantCollector.js';
 import { AssistantRecommend } from './routes/AssistantRecommend.js';
@@ -74,6 +75,7 @@ export function App() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="home" element={<HomeSettings />} />
                 <Route path="ads" element={<AdSettings />} />
+                <Route path="support" element={<SupportSettings />} />
                 <Route path="system" element={<SystemSettings />} />
               </Route>
               <Route element={<AdminNavGate nav="assistant" />}>

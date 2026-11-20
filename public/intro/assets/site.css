@@ -3,7 +3,7 @@
 
 @font-face {
   font-family: 'YJ Intro';
-  src: url('/intro/assets/intro-display.woff2?v=b2c20824') format('woff2');
+  src: url('/intro/assets/intro-display.woff2?v=964b389f') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
@@ -353,3 +353,42 @@ html.lw-intro-on, html.lw-intro-on body { overflow: hidden; }
 
 /* 頁首品牌「曜金分析助手 × 輪盤」：手機縮小避免擠到登入按鈕 */
 @media (max-width: 420px) { .lw-top .aa-brand { font-size: 16px; gap: 6px; letter-spacing: 0.02em; } .lw-top .aa-mark { width: 22px; height: 22px; } }
+
+/* ── 客服懸浮按鈕（位置由後台設定：data-pos） ── */
+.lw-fab {
+  --lw-fab-gap: 16px;
+  --lw-fab-bottom: calc(88px + env(safe-area-inset-bottom));
+  position: fixed; z-index: 20;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.lw-fab[hidden] { display: none; }
+.lw-fab[data-pos='bottom-right'] { right: calc(var(--lw-fab-gap) + env(safe-area-inset-right)); bottom: var(--lw-fab-bottom); }
+.lw-fab[data-pos='bottom-left'] { left: calc(var(--lw-fab-gap) + env(safe-area-inset-left)); bottom: var(--lw-fab-bottom); }
+.lw-fab[data-pos='middle-right'] { right: calc(var(--lw-fab-gap) + env(safe-area-inset-right)); top: 50%; transform: translateY(-50%); }
+.lw-fab[data-pos='middle-left'] { left: calc(var(--lw-fab-gap) + env(safe-area-inset-left)); top: 50%; transform: translateY(-50%); }
+.lw-fab-img {
+  display: grid; place-items: center;
+  width: 60px; height: 60px; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #2a1d0c, #0d0904 72%);
+  border: 1.5px solid var(--aa-gold);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(231, 181, 82, 0.12);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.lw-fab-img img { width: 84%; height: 84%; object-fit: contain; }
+.lw-fab-label {
+  padding: 1px 10px; border-radius: 999px;
+  background: var(--aa-gold); color: #1a1206;
+  font-size: 12px; font-weight: 700; line-height: 1.6; letter-spacing: 0.08em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.lw-site a.lw-fab:hover { color: inherit; }
+.lw-fab:hover .lw-fab-img { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0, 0, 0, 0.6), 0 0 0 5px rgba(231, 181, 82, 0.2); }
+.lw-fab:focus-visible { outline: none; }
+.lw-fab:focus-visible .lw-fab-img { outline: 2px solid var(--aa-gold-hi); outline-offset: 3px; }
+@media (min-width: 900px) {
+  .lw-fab { --lw-fab-gap: 28px; --lw-fab-bottom: 28px; }
+  .lw-fab-img { width: 68px; height: 68px; }
+}
+@media (prefers-reduced-motion: reduce) { .lw-fab-img { transition: none; } }

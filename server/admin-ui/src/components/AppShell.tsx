@@ -19,6 +19,7 @@ const L = {
   prizes: { to: '/prizes', label: '獎品設定', shortLabel: '獎品', nav: 'prizes' },
   home: { to: '/home', label: '首頁設定', shortLabel: '首頁', nav: 'system' },
   ads: { to: '/ads', label: '廣告設定', shortLabel: '廣告', nav: 'system' },
+  support: { to: '/support', label: '客服按鈕', shortLabel: '客服', nav: 'system' },
   system: { to: '/system', label: '系統設定', shortLabel: '設定', nav: 'system' },
   collector: { to: '/assistant/collector', label: '數據採集', shortLabel: '採集', nav: 'assistant' },
   recommend: { to: '/assistant/recommend', label: '推薦與訊號', shortLabel: '推薦', nav: 'assistant' },
@@ -27,7 +28,7 @@ const L = {
 
 /** 桌機側欄：輪盤與數據助手分成兩區 */
 const SECTIONS: { title: string; links: SidebarLink[] }[] = [
-  { title: '輪盤', links: [L.users, L.redemptions, L.prizes, L.home, L.ads, L.system] },
+  { title: '輪盤', links: [L.users, L.redemptions, L.prizes, L.home, L.ads, L.support, L.system] },
   { title: '數據助手', links: [L.collector, L.recommend, L.exchange] },
 ];
 
@@ -40,7 +41,7 @@ const MOBILE: MobileItem[] = [
   { kind: 'link', link: L.users },
   { kind: 'link', link: L.redemptions },
   { kind: 'link', link: L.prizes },
-  { kind: 'group', key: 'wheel', label: '設定', links: [L.home, L.ads, L.system] },
+  { kind: 'group', key: 'wheel', label: '設定', links: [L.home, L.ads, L.support, L.system] },
   { kind: 'group', key: 'assistant', label: '助手', links: [L.collector, L.recommend, L.exchange] },
 ];
 
