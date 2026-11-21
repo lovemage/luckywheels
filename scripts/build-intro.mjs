@@ -21,6 +21,9 @@ const OUT = join(ROOT, 'public/intro');
 const ORIGIN = 'https://luckyds.com';
 const APK = '/downloads/luckyds-assistant.apk';
 const APP_VERSION = '1.5.2';
+// 電腦版 Chrome 擴充功能（版本與 chrome-extension/build.mjs 的 VERSION 一致）
+const PC_ZIP = '/downloads/luckyds-assistant-chrome.zip';
+const PC_VERSION = '1.0.0';
 
 const pillars = readFileSync(join(ROOT, 'scripts/intro/pillars.svg'), 'utf8');
 
@@ -525,7 +528,7 @@ const signal = shell('signal', {
         <figcaption>iPhone／網頁版：輸入房號查詢，自己對照盤面 · 示意數據</figcaption>
       </figure>
     </div>
-    <p style="margin-top:16px"><a href="/intro/install/">Android 安裝與 iPhone 使用方式 ›</a></p>
+    <p style="margin-top:16px"><a href="/intro/install/">Android、電腦安裝與 iPhone 使用方式 ›</a></p>
   </section>
 
   <section class="lw-band" aria-labelledby="metal-title">
@@ -657,7 +660,7 @@ const install = shell('install', {
   description: '下載曜金數據助手 Android App：在 App 裡登入娛樂城直接玩，駐守小卡顯示機台數據、自動比對房間訊號，依本金設定停利停損並震動提醒。iPhone 版準備中，現在可先使用網頁版。',
   ogTitle: '安裝 App｜把助手帶進遊戲裡',
   ogDesc: `Android ${APP_VERSION} 立即下載：駐守小卡、房間訊號自動比對、停利停損提醒。iPhone 先用網頁版。`,
-  body: `${subhero('install', '<h1 class="aa-ink-title"><img src="/intro/assets/ink/title-install.webp" alt="把助手帶進遊戲裡" draggable="false"></h1>', 'Android 裝 App，iPhone 用網頁版')}
+  body: `${subhero('install', '<h1 class="aa-ink-title"><img src="/intro/assets/ink/title-install.webp" alt="把助手帶進遊戲裡" draggable="false"></h1>', 'Android 裝 App，電腦裝 Chrome 擴充功能，iPhone 用網頁版')}
 <div class="lw-wrap">
   <section class="lw-band" aria-labelledby="dock-title">
     <div class="lw-grid is-center">
@@ -683,7 +686,7 @@ const install = shell('install', {
     <div class="lw-devtabs" role="tablist" aria-label="選擇裝置" hidden>
       <button type="button" role="tab" id="tab-android" aria-controls="android" aria-selected="true">${ICON.android}<span>Android</span></button>
       <button type="button" role="tab" id="tab-ios" aria-controls="ios" aria-selected="false" tabindex="-1">${ICON.apple}<span>iPhone</span></button>
-      <button type="button" role="tab" id="tab-pc" aria-controls="pc" aria-selected="false" tabindex="-1">${ICON.monitor}<span>電腦</span><em>尚未推出</em></button>
+      <button type="button" role="tab" id="tab-pc" aria-controls="pc" aria-selected="false" tabindex="-1">${ICON.monitor}<span>電腦</span></button>
     </div>
     <div class="lw-devpanel" role="tabpanel" id="android" aria-labelledby="tab-android">
       <div class="lw-platform">
@@ -723,15 +726,25 @@ const install = shell('install', {
       <p class="lw-lead" style="margin-top:18px">網頁版讀不到遊戲畫面，所以房間訊號要自己對照；遊戲內浮窗、自動比對與震動提醒目前只有 Android App。iPhone App 推出後，安裝方式會放在這裡。</p>
     </div>
     </div>
-    <!-- 電腦版：尚未推出。推出後換成下載／安裝說明 -->
-    <div class="lw-devpanel" role="tabpanel" id="pc" aria-labelledby="tab-pc" data-status="coming-soon">
-      <div class="lw-platform is-soon">
-        <div class="lw-platform-head">
-          <h2 class="aa-display">${ICON.monitor}電腦版</h2>
-          <span class="lw-soon">尚未推出</span>
+    <!-- 電腦版：Chrome 擴充功能（chrome-extension/，node chrome-extension/build.mjs 打包成 ${PC_ZIP}）。完整說明在 /chrome/ -->
+    <div class="lw-devpanel" role="tabpanel" id="pc" aria-labelledby="tab-pc">
+      <div class="lw-platform">
+      <div class="lw-platform-head">
+        <div>
+          <h2 id="pc-title" class="aa-display">${ICON.monitor}電腦版（Chrome）</h2>
+          <p class="lw-meta" style="margin-top:4px">版本 ${PC_VERSION} · 約 25 KB · Google Chrome 116 以上（Windows／Mac）</p>
         </div>
-        <p class="lw-lead">電腦版還在準備中，推出後安裝方式會放在這裡。</p>
+        <a class="aa-cta" style="margin:0;text-decoration:none" href="${PC_ZIP}" download>${ICON.download}下載擴充功能</a>
       </div>
+      <p class="lw-lead" style="margin-bottom:18px">遊戲開在左邊、助手開在右邊的側邊欄。助手讀得到遊戲畫面上的機台與點數，駐守小卡、守護與房間訊號自動比對都和 Android App 一樣；這台電腦的 Chrome 登入過 luckyds.com 就直接沿用同一個帳號與積分。</p>
+      <ol class="lw-steps is-cols2 lw-pc-steps">
+        <li><div><b>下載、解壓縮</b><p>用電腦的 Chrome 按上方下載，把 zip 解壓縮成 <em>luckyds-assistant-chrome</em> 資料夾，放在不會刪掉的地方。</p></div></li>
+        <li><div><b>打開開發人員模式</b><p>網址列輸入 <em>chrome://extensions</em>，打開右上角的「開發人員模式」。</p></div><img class="lw-step-wide" src="/assets/pc-install/01-devmode.webp" width="1200" height="750" loading="lazy" alt="擴充功能頁面右上角的開發人員模式開關"></li>
+        <li><div><b>載入未封裝項目</b><p>按<em>載入未封裝項目</em>，選擇解壓縮出來的資料夾，出現「曜金數據助手」就完成了。</p></div><img class="lw-step-wide" src="/assets/pc-install/03-loaded.webp" width="1200" height="750" loading="lazy" alt="擴充功能清單出現曜金數據助手"></li>
+        <li><div><b>打開助手、進入遊戲</b><p>按拼圖圖示把曜金數據助手<em>固定</em>到工具列，點金色星星打開側邊欄，再按<em>開啟娛樂城</em>進遊戲。</p></div><img class="lw-step-wide" src="/assets/pc-install/05-panel.webp" width="1200" height="750" loading="lazy" alt="娛樂城右側打開曜金數據助手側邊欄"></li>
+      </ol>
+      <p class="lw-lead" style="margin-top:18px"><a href="/chrome/">完整安裝說明（每一步的實際畫面）</a></p>
+    </div>
     </div>
   </section>
   <script>
@@ -751,8 +764,10 @@ const install = shell('install', {
     }
     bar.hidden = false;
     var fromHash = location.hash.slice(1);
-    var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    show(ids.indexOf(fromHash) >= 0 ? fromHash : isIOS ? 'ios' : 'android');
+    var ua = navigator.userAgent;
+    var isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var isPC = !isIOS && !/Android|Mobile/i.test(ua);
+    show(ids.indexOf(fromHash) >= 0 ? fromHash : isIOS ? 'ios' : isPC ? 'pc' : 'android');
     tabs.forEach(function (t, i) {
       t.addEventListener('click', function () {
         show(ids[i]);

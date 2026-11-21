@@ -115,10 +115,14 @@ app.use('/assets/*', async (c, next) => {
   c.header('cache-control', 'public, max-age=31536000, immutable');
 });
 // Android App 安裝檔（public/downloads/*.apk）：指定 APK 型別，手機才會交給套件安裝程式開啟
+// 電腦版擴充功能（public/downloads/*.zip）：版本更新後網址不變，所以同樣不快取
 app.use('/downloads/*', async (c, next) => {
   await next();
   if (c.req.path.endsWith('.apk') && c.res.status === 200) {
     c.res.headers.set('content-type', 'application/vnd.android.package-archive');
+    c.res.headers.set('cache-control', 'no-cache');
+  } else if (c.req.path.endsWith('.zip') && c.res.status === 200) {
+    c.res.headers.set('content-type', 'application/zip');
     c.res.headers.set('cache-control', 'no-cache');
   }
 });

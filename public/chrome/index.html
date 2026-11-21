@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090705">
+<title>安裝電腦版曜金數據助手</title>
+<meta name="description" content="電腦版 Chrome 安裝曜金數據助手擴充功能的步驟，含實際操作畫面">
+<style>
+@font-face {
+  font-family: 'YJ Display';
+  src: url('/assets/assistant/fonts/yj-display.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+:root {
+  --bg: #090705;
+  --surface: #120e09;
+  --surface-hi: #1a140c;
+  --line: rgba(226, 182, 98, 0.26);
+  --gold: #e8c274;
+  --gold-hi: #ffe3a6;
+  --gold-deep: #b9852f;
+  --ink: #f2e9d6;
+  --muted: #b4a68a;
+  --display: 'YJ Display', 'Noto Serif TC', 'Noto Serif CJK TC', 'Songti TC', serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(232, 194, 116, 0.14), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  font: 16px/1.7 system-ui, 'Noto Sans TC', 'PingFang TC', sans-serif;
+  min-height: 100vh;
+}
+::selection { background: rgba(232, 194, 116, 0.35); color: var(--gold-hi); }
+a { color: var(--gold); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; }
+
+.page { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
+.narrow { max-width: 600px; }
+
+.brand { display: flex; align-items: center; gap: 10px; color: var(--gold-hi); font-weight: 700; letter-spacing: 0.04em; }
+.brand svg { width: 28px; height: 28px; }
+
+h1 {
+  margin: 28px 0 12px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(30px, 8vw, 40px);
+  line-height: 1.25;
+  color: var(--gold-hi);
+  text-wrap: balance;
+}
+.lede { margin: 0 0 24px; color: var(--muted); }
+
+.download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 24px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold) 55%, var(--gold-deep));
+  color: #1a1206;
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 10px 28px -10px rgba(232, 194, 116, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.download:active { transform: translateY(1px) scale(0.99); }
+.download svg { width: 22px; height: 22px; }
+.meta { margin: 10px 0 0; font-size: 14px; color: var(--muted); text-align: center; }
+
+.notice {
+  margin: 28px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 15px;
+  color: var(--muted);
+}
+.notice strong { color: var(--ink); }
+
+.steps { list-style: none; margin: 48px 0 0; padding: 0; counter-reset: step; }
+.step { counter-increment: step; padding: 32px 0; border-top: 1px solid var(--line); }
+.step-head { display: flex; align-items: baseline; gap: 12px; }
+.step-head::before {
+  content: counter(step);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  transform: translateY(6px);
+}
+h2 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 24px; line-height: 1.35; color: var(--gold-hi); }
+.step p { margin: 10px 0 0 44px; }
+.step p + p { margin-top: 6px; }
+.hint { color: var(--muted); font-size: 15px; }
+.step b { color: var(--gold-hi); font-weight: 700; }
+
+.shots { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 20px 0 0 44px; }
+.shots.single { grid-template-columns: minmax(0, 260px); justify-content: center; }
+figure { margin: 0; }
+figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+figcaption { margin-top: 8px; font-size: 14px; line-height: 1.5; color: var(--muted); }
+
+.faq { margin: 16px 0 0; padding: 32px 0 0; border-top: 1px solid var(--line); }
+.faq h2 { margin-bottom: 12px; }
+.faq dl { margin: 0; }
+.faq dt { margin-top: 18px; font-weight: 700; color: var(--ink); }
+.faq dd { margin: 4px 0 0; color: var(--muted); }
+
+.back { display: inline-block; margin-top: 40px; }
+
+@media (max-width: 560px) {
+  .shots { margin-left: 0; }
+}
+kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-hi);
+  color: var(--gold-hi);
+  font: 600 14px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+@media (prefers-reduced-motion: reduce) {
+  .download { transition: none; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff0c2"/><stop offset="0.5" stop-color="#e7b552"/><stop offset="1" stop-color="#9c6a1c"/>
+        </linearGradient>
+      </defs>
+      <path d="M16 1 L19 13 L31 16 L19 19 L16 31 L13 19 L1 16 L13 13 Z" fill="url(#g)"/>
+      <path d="M16 7 L17.4 14.6 L25 16 L17.4 17.4 L16 25 L14.6 17.4 L7 16 L14.6 14.6 Z" fill="#120c05" opacity="0.55"/>
+      <circle cx="16" cy="16" r="1.6" fill="#fff6d8"/>
+    </svg>
+    曜金數據助手
+  </div>
+
+  <h1>安裝電腦版（Chrome）</h1>
+  <p class="lede narrow">在電腦的 Chrome 裝上曜金數據助手，遊戲開在左邊、助手開在右邊的側邊欄。助手會讀遊戲畫面上的機台與點數，駐守小卡、守護與房間訊號都和 Android App 一樣</p>
+
+  <div class="narrow">
+    <a class="download" href="/downloads/luckyds-assistant-chrome.zip" download>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
+      </svg>
+      下載電腦版擴充功能
+    </a>
+    <p class="meta">版本 1.0.0　·　約 25 KB　·　Google Chrome 116 以上（Windows／Mac）</p>
+  </div>
+
+  <div class="notice narrow">
+    <strong>請用電腦的 Google Chrome 開啟這一頁</strong><br>
+    手機請改用 <a href="/android/">Android App</a>，iPhone 請使用網頁版
+  </div>
+
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><h2>下載並解壓縮</h2></div>
+      <p>按上方「下載電腦版擴充功能」，下載完成後把 <b>luckyds-assistant-chrome.zip</b> 解壓縮</p>
+      <p class="hint">Windows：在檔案上按右鍵，選「解壓縮全部」；Mac：直接點兩下。解壓縮後會得到 luckyds-assistant-chrome 資料夾，請放在不會刪掉的地方（例如「文件」），Chrome 每次開啟都會從這個資料夾讀取</p>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><h2>打開開發人員模式</h2></div>
+      <p>在 Chrome 網址列輸入 <kbd>chrome://extensions</kbd> 按 Enter，打開右上角的 <b>開發人員模式</b></p>
+      <div class="shots">
+        <figure>
+          <img src="/assets/pc-install/01-devmode.webp" width="1200" height="750" alt="Chrome 擴充功能頁面，框出右上角「開發人員模式」開關" loading="lazy" decoding="async">
+          <figcaption>打開右上角的「開發人員模式」</figcaption>
+        </figure>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><h2>載入擴充功能</h2></div>
+      <p>按左上角的 <b>載入未封裝項目</b>，選擇剛才解壓縮出來的 <b>luckyds-assistant-chrome</b> 資料夾</p>
+      <p class="hint">要選的是資料夾本身，不是裡面的檔案，也不是 zip 檔</p>
+      <div class="shots">
+        <figure>
+          <img src="/assets/pc-install/02-load-unpacked.webp" width="1200" height="750" alt="開發人員模式開啟後出現的按鈕列，框出「載入未封裝項目」" loading="lazy" decoding="async">
+          <figcaption>按「載入未封裝項目」，選擇資料夾</figcaption>
+        </figure>
+        <figure>
+          <img src="/assets/pc-install/03-loaded.webp" width="1200" height="750" alt="擴充功能清單出現「曜金數據助手 1.0.0」，框出該卡片" loading="lazy" decoding="async">
+          <figcaption>出現「曜金數據助手」就安裝完成了</figcaption>
+        </figure>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><h2>固定到工具列</h2></div>
+      <p>按網址列右邊的 <b>拼圖圖示</b>，在「曜金數據助手」旁邊按 <b>圖釘</b>，金色星星圖示就會一直顯示在工具列上</p>
+      <div class="shots">
+        <figure>
+          <img src="/assets/pc-install/04-pin.webp" width="1200" height="750" alt="擴充功能選單，框出曜金數據助手旁的圖釘按鈕" loading="lazy" decoding="async">
+          <figcaption>按圖釘固定到工具列</figcaption>
+        </figure>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><h2>打開助手、登入</h2></div>
+      <p>按工具列上的 <b>金色星星</b>，右邊會打開曜金數據助手的側邊欄</p>
+      <p>這台電腦的 Chrome 已經登入過 luckyds.com 的話，會直接沿用同一個帳號，積分與開通時間都和手機上一樣。還沒登入時按 <b>用 LINE 登入</b>，會開一個新分頁登入，完成後側邊欄自動更新</p>
+      <div class="shots">
+        <figure>
+          <img src="/assets/pc-install/05-panel.webp" width="1200" height="750" alt="娛樂城網頁右側打開曜金數據助手側邊欄，框出工具列的金色星星與側邊欄" loading="lazy" decoding="async">
+          <figcaption>點金色星星，右側打開助手（圖為尚未登入的畫面）</figcaption>
+        </figure>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><h2>進入遊戲</h2></div>
+      <p>按側邊欄上方的 <b>開啟娛樂城</b>（或助手底部的 <b>進入遊戲</b>），照平常的方式登入、進遊戲、入座</p>
+      <p>側邊欄上方顯示 <b>已連上遊戲</b> 與目前的機台、點數，就表示助手讀得到遊戲畫面。駐守小卡會顯示目前機台的數據和推薦機台，按 <b>前往</b> 會自動切換到那一台，載入後按「開始遊戲」即可</p>
+      <p class="hint">遊戲分頁要保持在畫面上（不要縮到最小或切到別的分頁），助手才能即時比對房間訊號</p>
+    </li>
+  </ol>
+
+  <section class="faq narrow" aria-labelledby="faq-title">
+    <h2 id="faq-title">常見問題</h2>
+    <dl>
+      <dt>有新版本怎麼更新？</dt>
+      <dd>重新下載 zip，解壓縮後覆蓋原本的 luckyds-assistant-chrome 資料夾，再到 <kbd>chrome://extensions</kbd> 在曜金數據助手上按重新載入（圓形箭頭）</dd>
+      <dt>側邊欄一直顯示「尚未偵測到遊戲分頁」</dt>
+      <dd>請確認已經進入遊戲畫面（不是娛樂城首頁或大廳），並在 <kbd>chrome://extensions</kbd> 確認曜金數據助手是開啟狀態</dd>
+      <dt>助手會自動幫我玩遊戲嗎？</dt>
+      <dd>不會。助手只讀遊戲畫面上的數字，並依你的點選切換機台，不會替你轉動或下注，所有遊戲操作都由你自己決定</dd>
+      <dt>可以用 Edge 或其他瀏覽器嗎？</dt>
+      <dd>目前只支援電腦版 Google Chrome。手機請使用 <a href="/android/">Android App</a> 或網頁版</dd>
+    </dl>
+  </section>
+
+  <a class="back" href="/">回到曜金數據助手</a>
+</main>
+</body>
+</html>

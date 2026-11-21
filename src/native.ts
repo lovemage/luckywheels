@@ -5,6 +5,9 @@
 //   full：全螢幕的網站（App 開啟時的畫面），底部「進入遊戲」切到遊戲畫面
 //   dock：遊戲中點金色按鈕出現的駐守小卡，疊在遊戲上方、不擋操作；「完整助手」回到 full
 // App 端掌管目前模式；網頁以 setMode() 要求切換，App 套用後以 `luckyapp:mode` 事件通知回來。
+//
+// 電腦版 Chrome 擴充功能（chrome-extension/）也走同一套介面：網站嵌在側邊欄，擴充功能注入的
+// window.LuckyApp 帶 platform: 'chrome'（User-Agent 不變），讀遊戲分頁的方式與 App 相同。
 
 export type DockMode = 'dock' | 'full' | 'signal';
 
@@ -25,6 +28,10 @@ interface LuckyAppBridge {
   signalHit?(message: string): void;
   /** 1.4.0+：App 支援的功能，逗號分隔（例："signal"） */
   capabilities?(): string;
+  /** 電腦版擴充功能：'chrome'（Android App 沒有這個欄位） */
+  platform?: string;
+  /** 電腦版擴充功能：在新分頁進行 LINE 登入，完成後側邊欄自動重新整理 */
+  login?(): void;
 }
 
 /** 遊戲頁讀到的一轉結束盤面（App 1.4.0+）：seq 每轉遞增，counts 為各符號數量 */
@@ -53,7 +60,12 @@ declare global {
   }
 }
 
-export const isNativeApp = typeof navigator !== 'undefined' && /\bLuckyDsApp\//.test(navigator.userAgent);
+/** 電腦版 Chrome 擴充功能的側邊欄（擴充功能在網頁腳本執行前就注入 window.LuckyApp） */
+export const isChromeExtension = typeof window !== 'undefined' && window.LuckyApp?.platform === 'chrome';
+
+/** 在 App 或電腦版擴充功能裡（兩者都能讀遊戲畫面、切換機台） */
+export const isNativeApp =
+  (typeof navigator !== 'undefined' && /\bLuckyDsApp\//.test(navigator.userAgent)) || isChromeExtension;
 
 /** App 支援駐守小卡（1.1.0+）；舊版 App 只有完整面板 */
 export const hasDock = isNativeApp && typeof window !== 'undefined' && typeof window.LuckyApp?.setMode === 'function';
@@ -64,6 +76,15 @@ function call<T>(fn: () => T, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+/** LINE 登入：側邊欄裡不能開 LINE 登入頁，改由擴充功能開新分頁；其他環境照常導向 */
+export function startLineLogin(): void {
+  if (isChromeExtension && typeof window.LuckyApp?.login === 'function') {
+    call(() => window.LuckyApp?.login?.(), undefined);
+    return;
+  }
+  window.location.href = '/api/auth/line/start';
 }
 
 export function backToGame(): void {

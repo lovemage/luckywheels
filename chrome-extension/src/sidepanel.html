@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>曜金數據助手</title>
+<link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="bar" id="bar">
+    <span class="dot" id="dot" aria-hidden="true"></span>
+    <span class="status" id="status" role="status">尋找遊戲分頁中…</span>
+    <button type="button" class="bar-btn" id="openGame" hidden>開啟娛樂城</button>
+    <button type="button" class="bar-btn" id="focusGame" hidden>回到遊戲</button>
+  </header>
+  <div class="toast" id="toast" role="alert" hidden></div>
+  <iframe id="app" title="曜金數據助手" allow="clipboard-write; autoplay"></iframe>
+  <script src="config.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

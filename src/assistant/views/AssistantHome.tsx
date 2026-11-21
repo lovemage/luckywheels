@@ -13,6 +13,13 @@ import { exchangeClosedMessage, exchangeOpen, OpenPassButton } from '../OpenPass
 
 // Android 手機的瀏覽器（不在 App 內）才顯示安裝 App 的入口
 const showAppInstall = !isNativeApp && typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+// 電腦瀏覽器（不是手機、平板，也不在擴充功能裡）顯示電腦版擴充功能的安裝說明入口
+const showPcInstall =
+  !isNativeApp &&
+  typeof navigator !== 'undefined' &&
+  !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) &&
+  // iPadOS 的 Safari 預設送桌機版 User-Agent
+  !(/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 
 const RANK = ['1', '2', '3', '4', '5'];
 
@@ -202,6 +209,16 @@ export function AssistantHome({
           <span>
             <strong>安裝 Android App</strong>
             <span>在 App 裡邊玩遊戲邊看助手</span>
+          </span>
+          <span aria-hidden="true">›</span>
+        </a>
+      )}
+
+      {showPcInstall && (
+        <a className="aa-app-install" href="/chrome/">
+          <span>
+            <strong>安裝電腦版（Chrome）</strong>
+            <span>側邊欄邊玩遊戲邊看助手，含安裝教學</span>
           </span>
           <span aria-hidden="true">›</span>
         </a>

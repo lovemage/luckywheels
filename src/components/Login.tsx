@@ -1,4 +1,5 @@
 import type { LegalTab } from './Legal.js';
+import { startLineLogin } from '../native.js';
 import type { PublicSettings } from '../api/draw.js';
 
 function proxiedImageUrl(url: string | null | undefined): string | null {
@@ -35,9 +36,7 @@ export function Login({
         <p>請使用 LINE 帳號登入</p>
         <button
           className="login-button"
-          onClick={() => {
-            window.location.href = '/api/auth/line/start';
-          }}
+          onClick={startLineLogin}
         >
           用 LINE 登入
         </button>

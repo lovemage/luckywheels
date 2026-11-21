@@ -27,7 +27,7 @@ import { AssistantApp } from './assistant/AssistantApp.js';
 import { fetchPreviewStatus, type PreviewStatus } from './api/preview.js';
 import { AppDock, DockMessage } from './assistant/dock/AppDock.js';
 import { SignalFloat } from './assistant/dock/SignalFloat.js';
-import { currentDockMode, hasDock, isNativeApp, onDockModeChange, requestDockMode, type DockMode } from './native.js';
+import { currentDockMode, hasDock, isNativeApp, onDockModeChange, requestDockMode, startLineLogin, type DockMode } from './native.js';
 
 function proxiedImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -207,7 +207,7 @@ export function App() {
       body = (
         <DockMessage
           note="登入 LINE 後即可使用"
-          action={{ label: '用 LINE 登入', onClick: () => (window.location.href = '/api/auth/line/start') }}
+          action={{ label: '用 LINE 登入', onClick: startLineLogin }}
         />
       );
     } else if (!preview?.unlocked) {
