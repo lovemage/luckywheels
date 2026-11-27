@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { createHash } from 'node:crypto';
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 const { values } = parseArgs({

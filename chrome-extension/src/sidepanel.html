@@ -12,8 +12,9 @@
     <span class="status" id="status" role="status">尋找遊戲分頁中…</span>
     <button type="button" class="bar-btn" id="openGame" hidden>開啟娛樂城</button>
     <button type="button" class="bar-btn" id="focusGame" hidden>回到遊戲</button>
+    <!-- 浮在網站上方、不推動版面（避免提示出現／消失時會員點錯按鈕）；點一下關閉 -->
+    <div class="toast" id="toast" role="alert" title="點一下關閉" hidden></div>
   </header>
-  <div class="toast" id="toast" role="alert" hidden></div>
   <iframe id="app" title="曜金數據助手" allow="clipboard-write; autoplay"></iframe>
   <script src="config.js"></script>
   <script src="sidepanel.js"></script>

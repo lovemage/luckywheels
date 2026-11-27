@@ -29,6 +29,8 @@ body {
   padding: 6px 10px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
+  position: relative;
+  z-index: 2;
 }
 .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .bar.is-on .dot { background: var(--ok); }
@@ -48,8 +50,13 @@ body {
 .bar-btn:hover { background: rgba(232, 194, 116, 0.14); }
 .bar-btn:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
 .toast {
-  flex: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   padding: 8px 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
   background: #2a1f0e;
   border-bottom: 1px solid var(--gold);
   color: var(--gold-hi);

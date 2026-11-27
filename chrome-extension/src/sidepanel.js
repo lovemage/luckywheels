@@ -92,6 +92,11 @@ function showToast(message, warn = false) {
   toastTimer = setTimeout(() => (el.hidden = true), 6000);
 }
 
+$('toast').addEventListener('click', () => {
+  clearTimeout(toastTimer);
+  $('toast').hidden = true;
+});
+
 function notify(title, message) {
   if (message) showToast(message, true);
   try {
