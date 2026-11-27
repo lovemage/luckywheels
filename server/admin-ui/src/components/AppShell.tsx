@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAdminMe, type AdminNavKey } from '../api/me.js';
 import { fetchUsers } from '../api/users.js';
+import { fetchCollectorHealth, type CollectorHealth } from '../api/assistant-collector.js';
 import { MemberSearch } from './MemberSearch.js';
 
 type SidebarLink = {
@@ -58,6 +59,13 @@ export function AppShell() {
   const visible = (l: SidebarLink) =>
     Boolean(me.data?.isMain || me.data?.allowedNavs.includes(l.nav)) &&
     ((l.nav !== 'assistant' && l.nav !== 'exchange') || Boolean(me.data?.features?.dataAssistant));
+  const collectorHealth = useQuery({
+    queryKey: ['admin', 'assistant', 'collector', 'health'],
+    queryFn: fetchCollectorHealth,
+    enabled: visible(L.collector),
+    refetchInterval: 60_000,
+  });
+  const collectorAlert = collectorHealth.data && collectorHealth.data.status !== 'ok' ? collectorHealth.data : null;
 
   function alertCount(nav: AdminNavKey): number {
     if (nav === 'users') {
@@ -65,6 +73,7 @@ export function AppShell() {
       return userAlerts.data?.alerts.pendingApprovalCount ?? 0;
     }
     if (nav === 'redemptions') return userAlerts.data?.alerts.pendingRedemptionCount ?? 0;
+    if (nav === 'assistant') return collectorAlert ? Math.max(collectorAlert.consecutiveFailures, 1) : 0;
     return 0;
   }
 
@@ -97,6 +106,7 @@ export function AppShell() {
           ))}
         </nav>
         <main className="admin-content">
+          {collectorAlert && <CollectorAlertBanner health={collectorAlert} />}
           <Outlet />
         </main>
       </div>
@@ -106,7 +116,29 @@ export function AppShell() {
 }
 
 function alertLabelFor(nav: AdminNavKey, count: number) {
+  if (nav === 'assistant') return `採集異常：連續 ${count} 輪失敗`;
   return nav === 'users' ? `${count} 位會員待審核` : `${count} 筆中獎待確認`;
+}
+
+const STAMP = new Intl.DateTimeFormat('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+
+/** 採集失敗或資料逾時時，在每一頁頂端提醒；點擊前往採集頁查看紀錄 */
+function CollectorAlertBanner({ health }: { health: CollectorHealth }) {
+  const title =
+    health.status === 'stale'
+      ? '數據助手已停止更新：會員端目前顯示「資料暫停更新」'
+      : `數據採集失敗（連續 ${health.consecutiveFailures} 輪）`;
+  const err = health.lastError;
+  return (
+    <NavLink to={L.collector.to} className={`admin-collector-alert is-${health.status}`} role="alert">
+      <strong>{title}</strong>
+      {err?.message && <span>原因：{err.message}</span>}
+      <span>
+        最後成功：{health.lastSucceededAt ? STAMP.format(new Date(health.lastSucceededAt)) : '無'}
+        {' · '}前往採集頁
+      </span>
+    </NavLink>
+  );
 }
 
 function SideLink({ link, count }: { link: SidebarLink; count: number }) {

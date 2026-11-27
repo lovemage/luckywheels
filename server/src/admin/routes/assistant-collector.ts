@@ -6,6 +6,7 @@ import { AppError } from '../../errors.js';
 import { requireAdminNav } from '../auth/middleware.js';
 import { audit } from '../audit/helper.js';
 import { dataAssistantEnabled } from '../../assistant/feature.js';
+import { readFreshnessSettings } from '../../assistant/settings.js';
 import { decryptCredential, encryptCredential, parseCredentialsKey } from '../../assistant/credentials.js';
 import {
   COLLECTOR_SETTING_KEYS,
@@ -138,6 +139,37 @@ adminAssistantCollectorRoutes.get(`${BASE}/runs`, async (c) => {
     items,
     rooms: { total: roomCount, detailed: detailedCount },
     lastSucceededAt: lastSucceeded?.finishedAt ?? null,
+  });
+});
+
+// 後台各頁頂端的採集警示：最近一輪失敗（連續失敗輪數）或資料逾時（超過會員端判定「暫停更新」的門檻）
+adminAssistantCollectorRoutes.get(`${BASE}/health`, async (c) => {
+  const [freshness, recent, lastSucceeded] = await Promise.all([
+    readFreshnessSettings(prisma),
+    prisma.collectorRun.findMany({
+      where: { status: { not: 'running' } },
+      orderBy: { startedAt: 'desc' },
+      take: 50,
+      select: { status: true, finishedAt: true, startedAt: true, errorCode: true, errorMessage: true },
+    }),
+    prisma.collectorRun.findFirst({
+      where: { status: 'succeeded' },
+      orderBy: { startedAt: 'desc' },
+      select: { finishedAt: true },
+    }),
+  ]);
+  const failIdx = recent.findIndex((r) => r.status === 'succeeded');
+  const consecutiveFailures = failIdx === -1 ? recent.length : failIdx;
+  const lastFailure = consecutiveFailures > 0 ? recent[0]! : null;
+  const lastSucceededAt = lastSucceeded?.finishedAt ?? null;
+  const stale = !lastSucceededAt || Date.now() - lastSucceededAt.getTime() > freshness.listMaxAgeSeconds * 1000;
+  return c.json({
+    status: stale ? 'stale' : consecutiveFailures > 0 ? 'failing' : 'ok',
+    lastSucceededAt,
+    consecutiveFailures,
+    lastError: lastFailure
+      ? { code: lastFailure.errorCode, message: lastFailure.errorMessage, at: lastFailure.finishedAt ?? lastFailure.startedAt }
+      : null,
   });
 });
 

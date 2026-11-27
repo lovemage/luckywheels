@@ -18,7 +18,7 @@ export interface AtgGame {
 export const GOLDEN_SETH: AtgGame = {
   code: 'golden-seth',
   name: '戰神賽特 II',
-  resourceId: '22020103b31b7390f07b1551e8538589b5e51967',
+  resourceId: 'a1acbb1bed9db67c5884066b0fd48a2112e01ca0',
   gameType: 'slot-erase-any-times-2',
 };
 
@@ -250,6 +250,10 @@ async function login(context: BrowserContext, creds: Credentials) {
   });
   const body = await res.text();
   // 成功時回 location.reload()；失敗時是錯誤訊息彈窗（不把回應內容寫進 log，避免夾帶帳號資訊）
+  // 娛樂城要求定期更換密碼時，登入回應會導向改密碼頁
+  if (res.ok() && body.includes('update_cus_pass')) {
+    throw new CollectorError('LOGIN_FAILED', '娛樂城要求採集帳號更改密碼：請登入娛樂城改密碼，再到後台更新採集帳號密碼');
+  }
   if (!res.ok() || !body.includes('location.reload')) {
     throw new CollectorError('LOGIN_FAILED', `登入失敗（HTTP ${res.status()}）`);
   }

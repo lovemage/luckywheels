@@ -80,3 +80,17 @@ export function updateCollectorAccount(id: string, body: Partial<CollectorAccoun
 export function deleteCollectorAccount(id: string): Promise<{ ok: true }> {
   return api(`${BASE}/accounts/${id}`, { method: 'DELETE' });
 }
+
+/** ok＝正常；failing＝最近一輪失敗但資料尚未逾時；stale＝資料已逾時，會員端顯示「資料暫停更新」 */
+export type CollectorHealthStatus = 'ok' | 'failing' | 'stale';
+
+export interface CollectorHealth {
+  status: CollectorHealthStatus;
+  lastSucceededAt: string | null;
+  consecutiveFailures: number;
+  lastError: { code: string | null; message: string | null; at: string } | null;
+}
+
+export function fetchCollectorHealth(): Promise<CollectorHealth> {
+  return api(`${BASE}/health`);
+}

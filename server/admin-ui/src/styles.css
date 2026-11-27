@@ -1688,3 +1688,36 @@ th {
 .assistant-access-message input {
   width: 100%;
 }
+
+/* 採集異常警示（各頁頂端） */
+.admin-collector-alert {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: baseline;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 101, 122, 0.16);
+  color: var(--admin-ink);
+  font-size: 13px;
+  text-decoration: none;
+}
+.admin-collector-alert strong {
+  color: var(--admin-danger);
+  font-size: 14px;
+}
+.admin-collector-alert span {
+  color: var(--admin-muted);
+}
+.admin-collector-alert.is-failing {
+  background: rgba(240, 195, 74, 0.14);
+}
+.admin-collector-alert.is-failing strong {
+  color: var(--admin-accent-strong);
+}
+.admin-collector-alert:hover {
+  background: rgba(255, 101, 122, 0.24);
+}
+.admin-collector-alert.is-failing:hover {
+  background: rgba(240, 195, 74, 0.22);
+}

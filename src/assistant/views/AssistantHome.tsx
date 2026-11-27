@@ -4,7 +4,7 @@ import { fetchTeaserRooms, fetchTopRooms, type AssistantMe, type RoomsResponse }
 import { LightPillars } from '../LightPillars.js';
 import { InkIcon, InkTitle, inkTitleSrc } from '../InkTitle.js';
 import { COLLECT_INTRO_MS, CollectingLoader } from '../CollectingLoader.js';
-import { fmtAgo, fmtClock, fmtInt, fmtRemainingDetail, fmtRtp, fmtStamp, slotIconFor } from '../format.js';
+import { fmtInt, fmtRemainingDetail, fmtRtp, slotIconFor } from '../format.js';
 import type { AssistantView } from '../AssistantApp.js';
 import { isNativeApp } from '../../native.js';
 import { SignalCard } from '../SignalCard.js';
@@ -43,7 +43,6 @@ export function AssistantHome({
 }) {
   const active = me?.pass.active ?? false;
   const [top, setTop] = useState<TopState>({ kind: 'loading' });
-  const [now, setNow] = useState(() => Date.now());
   // 第一次拿到排行後，資料正常更新才跑約 4.5 秒「數據分析中」動畫，結束後才顯示排行；
   // 資料暫停更新（stale）、錯誤或未開通時直接顯示結果，不播動畫。只在進入首頁時判斷一次
   const [intro, setIntro] = useState<'pending' | 'playing' | 'done'>('pending');
@@ -69,13 +68,11 @@ export function AssistantHome({
           setTop(e instanceof ApiError && e.code === 'ASSISTANT_EXPIRED' ? { kind: 'locked' } : { kind: 'error' });
         });
     void load();
-    // 數據每數分鐘更新一輪；首頁停留時每分鐘重抓，並更新「幾秒前」
+    // 數據每數分鐘更新一輪；首頁停留時每分鐘重抓
     const refresh = window.setInterval(load, 60_000);
-    const tick = window.setInterval(() => setNow(Date.now()), 15_000);
     return () => {
       alive = false;
       window.clearInterval(refresh);
-      window.clearInterval(tick);
     };
   }, [me, active]);
 
@@ -86,9 +83,7 @@ export function AssistantHome({
     <div className="aa-home">
       <p className="aa-freshness" aria-live="polite">
         {game?.stale ? (
-          <span className="aa-freshness-stale">資料暫停更新 · 最後更新 {fmtStamp(game.updatedAt)}</span>
-        ) : game?.updatedAt ? (
-          <>資料更新 {fmtClock(game.updatedAt)} · {fmtAgo(game.updatedAt, now)}</>
+          <span className="aa-freshness-stale">資料暫停更新</span>
         ) : (
           <>{nickname}，歡迎使用</>
         )}
